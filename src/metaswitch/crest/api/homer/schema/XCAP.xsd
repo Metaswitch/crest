@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <!-- The element "simservs" maps to the Common Parts of a supplementary services document -->
+    <xs:element name="simservs">
+        <xs:annotation>
+            <xs:documentation>XML Schema for data manipulation of Supplementary Services
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="ss:absService" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="extensions" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:anyAttribute namespace="##any" processContents="lax"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="absService" type="ss:simservType" abstract="true"/>
+    <xs:complexType name="simservType">
+        <xs:attribute name="active" type="xs:boolean" use="optional" default="true"/>
+        <xs:anyAttribute namespace="##any" processContents="lax"/>
+    </xs:complexType>
+    <xs:complexType name="provisioned-type">
+        <xs:attribute name="provisioned" type="xs:boolean" 
+            use="optional" default="true" />
+        <xs:anyAttribute namespace="##any" processContents="lax"/>
+    </xs:complexType>
+    <xs:complexType name="supported-media-type">
+        <xs:choice>
+            <xs:element name="all-media" type="ss:empty-element-type"/>
+            <xs:element name="no-media" type="ss:empty-element-type"/>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="media" type="ss:media-type"/>
+            </xs:sequence>
+            <xs:any namespace="##other" processContents="lax"/>
+        </xs:choice>
+    </xs:complexType>
+    <xs:complexType name="provisioned-target-type">
+        <xs:choice>
+            <xs:element name="any-target-type" type="ss:empty-element-type"/>
+            <xs:element name="telephony-type" type="ss:empty-element-type"/>
+            <xs:any namespace="##other" processContents="lax"/>
+        </xs:choice>
+    </xs:complexType>
+    <!-- service specific IETF common policy condition elements-->
+    <xs:element name="anonymous" type="ss:empty-element-type"/>
+    <xs:element name="presence-status" type="ss:presence-status-activity-type"/>
+    <xs:element name="media" type="ss:media-type"/>
+    <xs:element name="communication-diverted" type="ss:empty-element-type"/>
+    <xs:element name="rule-deactivated" type="ss:empty-element-type"/>
+    <xs:element name="not-registered" type="ss:empty-element-type"/>
+    <xs:element name="busy" type="ss:empty-element-type"/>
+    <xs:element name="no-answer" type="ss:empty-element-type"/>
+    <xs:element name="not-reachable" type="ss:empty-element-type"/>
+    <xs:element name="roaming" type="ss:empty-element-type"/>
+    <xs:element name="international" type="ss:empty-element-type"/>
+    <xs:element name="international-exHC" type="ss:empty-element-type"/>
+    <!-- service specific type declarations -->
+    <xs:simpleType name="media-type" final="list restriction">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:simpleType name="presence-status-activity-type" final="list restriction">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+    <xs:complexType name="empty-element-type"/>
+</xs:schema>

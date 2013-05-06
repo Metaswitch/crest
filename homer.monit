@@ -1,0 +1,12 @@
+# Poll every 10 seconds
+set daemon 10
+
+# Monitor the server's PID file and check its public interfaces.
+check process homer pidfile /var/run/homer.pid
+  start program = "/etc/monit/run_logged /etc/init.d/homer start"
+  stop program = "/etc/monit/run_logged /etc/init.d/homer stop"
+  if failed host localhost port 7888 type TCP protocol http
+    and use the request "/ping" then restart
+# TODO monitor HTTPS as well as HTTP.
+#  if failed host localhost port 7443 type TCPSSL protocol http
+#    and use the request "/ping" then restart

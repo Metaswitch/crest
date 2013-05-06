@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:annotation>
+        <xs:documentation xml:lang="en">
+            Operator part of the Malicious Communication Identification (MCID) service
+        </xs:documentation>
+    </xs:annotation>
+    <!--xs:include schemaLocation="operator-common-data.xsd"/-->
+    <xs:element name="operator-malicious-communication-identification" substitutionGroup="ss:absOperatorService" nillable="true">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:operatorServiceConfigType">
+                    <xs:sequence>
+                        <xs:element name="mode">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="permanent"/>
+                                    <xs:enumeration value="temporary"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
+

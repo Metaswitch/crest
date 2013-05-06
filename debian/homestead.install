@@ -1,0 +1,9 @@
+eggs usr/share/clearwater/homestead/
+setup.py usr/share/clearwater/homestead/
+src usr/share/clearwater/homestead/
+modules usr/share/clearwater/homestead/
+homestead.local_settings/local_settings.py usr/share/clearwater/homestead/src/metaswitch/crest/
+homestead.monit usr/share/clearwater/homestead/
+iptables.rules usr/share/clearwater/homestead/
+homestead.root/* .
+backup usr/share/clearwater/homestead/

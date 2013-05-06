@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:annotation>
+        <xs:documentation xml:lang="en">
+            Operator part of the Advice of Charge (AOC) service
+        </xs:documentation>
+    </xs:annotation>
+    <!--xs:include schemaLocation="operator-common-data.xsd"/-->
+    <xs:element name="operator-advice-of-charge" substitutionGroup="ss:absOperatorService" nillable="true">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:operatorServiceConfigType">
+                    <xs:sequence>
+                        <xs:element name="service-type" type="ss:service-typeType"/>
+                        <xs:element name="Currency" type="ss:CurrencyType"/>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="service-typeType">
+        <xs:sequence>
+            <xs:element name="operator-aoc-d" type="ss:operator-aoc-type" nillable="true" minOccurs="0"/>
+            <xs:element name="operator-aoc-e" type="ss:operator-aoc-type" nillable="true" minOccurs="0"/>
+            <xs:element name="operator-aoc-s" type="ss:operator-aoc-type" nillable="true" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:simpleType name="CurrencyType">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="[A-Z]{3}"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="operator-aoc-type">
+        <xs:sequence>
+            <xs:element name="aoc-obligatory-type" type="ss:obligatory-typeType"/>
+        </xs:sequence>
+        <xs:attribute name="activated" type="xs:boolean" use="required"/>
+    </xs:complexType>
+    <xs:simpleType name="obligatory-typeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="AoCI"/>
+            <xs:enumeration value="AoCC"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>

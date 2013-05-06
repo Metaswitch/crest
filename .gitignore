@@ -1,0 +1,17 @@
+.buildout_downloads
+.installed.cfg
+*~
+bin
+_env
+bootstrap.py
+develop-eggs
+eggs
+src/*.egg-info
+logs
+./data
+parts
+*.pyc
+*.pid
+*.swp
+.coverage
+htmlcov/

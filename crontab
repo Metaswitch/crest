@@ -1,0 +1,8 @@
+# Set up a sensible path
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# m   h dom mon dow user   command
+
+# Just a template, we don't have any scripts to run yet.
+#  10  0  *   *   *  ubuntu cd /home/ubuntu/git/Homer/ && bin/python src/homer/backup_db.py
+

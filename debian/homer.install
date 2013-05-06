@@ -1,0 +1,9 @@
+eggs usr/share/clearwater/homer/
+setup.py usr/share/clearwater/homer/
+src usr/share/clearwater/homer/
+modules usr/share/clearwater/homer/
+homer.local_settings/local_settings.py usr/share/clearwater/homer/src/metaswitch/crest/
+homer.monit usr/share/clearwater/homer/
+iptables.rules usr/share/clearwater/homer/
+homer.root/* .
+backup usr/share/clearwater/homer/

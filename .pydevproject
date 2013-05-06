@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?eclipse-pydev version="1.0"?>
+
+<pydev_project>
+<pydev_pathproperty name="org.python.pydev.PROJECT_SOURCE_PATH">
+<path>/Homestead/src</path>
+<path>/Homestead/eggs/tornado-2.3-py2.7.egg</path>
+<path>/Homestead/eggs/py_bcrypt-0.2-py2.7-linux-i686.egg</path>
+<path>/Homestead/eggs/cql-1.0.10-py2.7.egg</path>
+<path>/Homestead/eggs/thrift-0.8.0-py2.7-linux-i686.egg</path>
+<path>/Homestead/eggs/msgpack_python-0.2.0-py2.7-linux-i686.egg</path>
+<path>/Homestead/eggs/pycrypto-2.6-py2.7-linux-i686.egg</path>
+<path>/Homestead/eggs/py_bcrypt-0.2-py2.7-linux-i686.egg</path>
+<path>/Homestead/eggs/phonenumbers-5.0b2-py2.7.egg</path>
+<path>/Homestead/eggs/mock-1.0b1-py2.7.egg</path>
+</pydev_pathproperty>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_VERSION">python 2.7</pydev_property>
+<pydev_property name="org.python.pydev.PYTHON_PROJECT_INTERPRETER">Default</pydev_property>
+</pydev_project>

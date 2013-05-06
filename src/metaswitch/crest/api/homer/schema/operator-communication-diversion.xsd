@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:annotation>
+        <xs:documentation xml:lang="en">
+            Operator part of the Communication Diversion (CDIV) services
+        </xs:documentation>
+    </xs:annotation>
+    <!--xs:include schemaLocation="operator-common-data.xsd"/-->
+    <xs:element name="operator-communication-diversion" substitutionGroup="ss:absOperatorService" nillable="true">
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:operatorServiceConfigType">
+                    <xs:sequence>
+                        <xs:element name="communication-retention-on-invocation" default="clear-communication-on-invocation-of-diversion">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="retain-until-alerting-at-diverted-to-user"/>
+                                    <xs:enumeration value="clear-communication-on-invocation-of-diversion"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="retention-when-diverting-rejected-at-diverted-to-user" default="no-action-at-diverting-user">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="continue-to-alert-diverting-user"/>
+                                    <xs:enumeration value="no-action-at-diverting-user"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="total-number-of-diversions-for-each-communication" type="xs:integer"/>
+                        <xs:element name="cdiv-indication-timer">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:integer">
+                                    <xs:minInclusive value="0"/>
+                                    <xs:maxInclusive value="60"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="communication-forwarding-on-no-reply-timer">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:integer">
+                                    <xs:minInclusive value="0"/>
+                                    <xs:maxInclusive value="180"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="cdivn-buffer-timer" default="86400">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:integer">
+                                    <xs:minInclusive value="0"/>
+                                    <xs:maxInclusive value="86400"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

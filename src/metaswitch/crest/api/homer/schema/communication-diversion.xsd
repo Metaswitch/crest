@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"   
+    xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap"   
+    xmlns:cp="urn:ietf:params:xml:ns:common-policy" 
+    xmlns:ocp="urn:oma:xml:xdm:common-policy"
+    targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap"
+    elementFormDefault="qualified" 
+    attributeFormDefault="unqualified">
+    <!-- import common policy definitions -->
+    <xs:import namespace="urn:ietf:params:xml:ns:common-policy" schemaLocation="common-policy.xsd"/>
+    <!-- import OMA common policy extensions -->
+    <xs:import namespace="urn:oma:xml:xdm:common-policy" schemaLocation="xdm_commonPolicy-V1_0.xsd"/>
+    <!-- communication diversion specific extensions to IETF common policy conditions. The cp:conditionsType is expanded with the elements: ss:not-registered, ss:busy, ss:no-answer, ss:not-reachable, ss:media as optional elements -->
+    <!-- communication diversion rule set based on the common policy rule set.-->
+    <xs:element name="communication-diversion" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>This is the communication diversion configuration document.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:simservType">
+                    <xs:sequence>
+                        <!-- add service specific elements here-->
+                        <xs:element ref="ss:NoReplyTimer" minOccurs="0"/>
+                        <xs:element ref="cp:ruleset" minOccurs="0"/>
+                    </xs:sequence>
+                </xs:extension>
+                <!-- service specific attributes can be defined here -->
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- communication diversion specific extensions to IETF common policy actions-->
+    <xs:element name="forward-to" type="ss:forward-to-type"/> 
+    <xs:simpleType name="reveal-URI-options-type">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="false"/>
+            <xs:enumeration value="not-reveal-GRUU"/>
+            <xs:enumeration value="true"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <!-- communication diversion specific type declarations -->
+    <xs:complexType name="forward-to-type">
+        <xs:sequence>
+            <xs:element name="target" type="xs:anyURI" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="notify-caller" type="xs:boolean" default="true" minOccurs="0"/>
+            <xs:element name="reveal-identity-to-caller" type="ss:reveal-URI-options-type" default="true" minOccurs="0"/>
+            <xs:element name="reveal-served-user-identity-to-caller" type="ss:reveal-URI-options-type" default="true" minOccurs="0"/>
+            <xs:element name="notify-served-user" type="xs:boolean" default="false" minOccurs="0"/>
+            <xs:element name="notify-served-user-on-outbound-call" type="xs:boolean" default="false" minOccurs="0"/>
+            <xs:element name="reveal-identity-to-target" type="ss:reveal-URI-options-type" default="true" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:element name="NoReplyTimer">
+        <xs:simpleType>
+            <xs:restriction base="xs:positiveInteger">
+                <xs:minInclusive value="5"/>
+                <xs:maxInclusive value="180"/>
+            </xs:restriction>
+        </xs:simpleType>
+    </xs:element>
+</xs:schema>
+

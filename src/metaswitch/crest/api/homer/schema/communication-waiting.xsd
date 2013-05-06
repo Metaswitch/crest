@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+    targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="communication-waiting" type="ss:simservType" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>communication waiting
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+</xs:schema>
+

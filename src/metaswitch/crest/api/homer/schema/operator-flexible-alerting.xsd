@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="operator-common-data.xsd"/>
+    <xs:element name="operator-flexible-alerting" substitutionGroup="ss:absOperatorService" nillable="true">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">
+                Operator part of the Flexible Alerting (FA) service
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:operatorServiceConfigType">
+                    <xs:sequence>
+                        <xs:element name="default-group" type="xs:anyURI"/>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="operator-flexible-alerting-group" substitutionGroup="ss:absOperatorService" nillable="true">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">
+                Operator schema per Flexible Alerting (FA) group
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:operatorServiceConfigType">
+                    <xs:sequence>
+                        <xs:element name="identity" type="xs:anyURI"/>
+                        <!--Pilot identity of the FA group-->
+                        <xs:element name="group-type">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="single-user"/>
+                                    <xs:enumeration value="multiple-users"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="membership">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="demand"/>
+                                    <xs:enumeration value="permanent"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                        <xs:element name="members">
+                            <!--List of members of the FA group-->
+                            <xs:complexType>
+                                <xs:sequence>
+                                    <xs:element name="member" minOccurs="0" maxOccurs="unbounded">
+                                        <xs:complexType>
+                                            <xs:simpleContent>
+                                                <xs:extension base="xs:anyURI">
+                                                    <xs:attribute name="active" type="xs:boolean"/>
+                                                </xs:extension>
+                                            </xs:simpleContent>
+                                        </xs:complexType>
+                                    </xs:element>
+                                </xs:sequence>
+                            </xs:complexType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>   
+</xs:schema>

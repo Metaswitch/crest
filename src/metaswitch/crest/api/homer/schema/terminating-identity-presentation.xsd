@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="terminating-identity-presentation-restriction" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>Terminating Identity presentation Restriction
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:simservType">
+                    <xs:sequence>
+                        <xs:element name="default-behaviour" default="presentation-restricted" minOccurs="0">
+                            <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                    <xs:enumeration value="presentation-restricted"/>
+                                    <xs:enumeration value="presentation-not-restricted"/>
+                                </xs:restriction>
+                            </xs:simpleType>
+                        </xs:element>
+                    </xs:sequence>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="terminating-identity-presentation" type="ss:simservType" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>Terminating Identity Presentation
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+</xs:schema>

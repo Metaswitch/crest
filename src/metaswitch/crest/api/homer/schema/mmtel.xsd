@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:cp="urn:ietf:params:xml:ns:common-policy" xmlns:ocp="urn:oma:xml:xdm:common-policy" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="XCAP.xsd"/>
+    <xs:include schemaLocation="operator-common-data.xsd"/>
+    <xs:include schemaLocation="originating-identity-presentation.xsd"/>
+    <xs:include schemaLocation="terminating-identity-presentation.xsd"/>
+    <xs:include schemaLocation="communication-diversion.xsd"/>
+    <xs:include schemaLocation="communication-waiting.xsd"/>
+    <xs:include schemaLocation="communication-barring.xsd"/>
+    <xs:include schemaLocation="operator-originating-identity-presentation.xsd"/>
+    <xs:include schemaLocation="operator-terminating-identity-presentation.xsd"/>
+    <xs:include schemaLocation="operator-malicious-communication-identification.xsd"/>
+    <xs:include schemaLocation="operator-communication-diversion.xsd"/>
+    <xs:include schemaLocation="operator-communication-waiting.xsd"/>
+    <xs:include schemaLocation="operator-communication-hold.xsd"/>
+    <xs:include schemaLocation="operator-communication-barring.xsd"/>
+    <xs:include schemaLocation="operator-completion-of-communication.xsd"/>
+    <xs:include schemaLocation="operator-message-waiting-indication.xsd"/>
+    <xs:include schemaLocation="operator-conference.xsd"/>
+    <xs:include schemaLocation="operator-advice-of-charge.xsd"/>
+    <xs:include schemaLocation="operator-explicit-communication-transfer.xsd"/>
+    <xs:include schemaLocation="operator-customized-alerting-tone.xsd"/>
+    <xs:include schemaLocation="operator-flexible-alerting.xsd"/>
+    <xs:include schemaLocation="flexible-alerting.xsd"/>
+    <xs:element name="MMTelServices" type="ss:tMMTelServicesType"/>
+    <xs:complexType name="tMMTelServicesType">
+        <xs:sequence>
+            <xs:element name="version" type="xs:integer"/>
+            <xs:element name="complete-originating-identity-presentation" type="ss:complete-originating-identity-presentation-type" minOccurs="0"/>
+            <xs:element name="complete-originating-identity-restriction" type="ss:complete-originating-identity-restriction-type" minOccurs="0"/>
+            <xs:element name="complete-terminating-identity-presentation" type="ss:complete-terminating-identity-presentation-type" minOccurs="0"/>
+            <xs:element name="complete-terminating-identity-restriction" type="ss:complete-terminating-identity-restriction-type" minOccurs="0"/>
+            <xs:element name="complete-malicious-communication-identification" type="ss:complete-malicious-communication-identification-type" minOccurs="0"/>
+            <xs:element name="complete-communication-diversion" type="ss:complete-communication-diversion-type" minOccurs="0"/>
+            <xs:element name="complete-communication-waiting" type="ss:complete-communication-waiting-type" minOccurs="0"/>
+            <xs:element name="complete-communication-hold" type="ss:complete-communication-hold-type" minOccurs="0"/>
+            <xs:element name="complete-communication-barring" type="ss:complete-communication-barring-type" minOccurs="0"/>
+            <xs:element name="complete-completion-of-communication-busy-subscriber" type="ss:complete-completion-of-communication-busy-subscriber-type" minOccurs="0"/>
+            <xs:element name="complete-completion-of-communication-no-reply" type="ss:complete-completion-of-communication-no-reply-type" minOccurs="0"/>
+            <xs:element name="complete-message-waiting-indication" type="ss:complete-message-waiting-indication-type" minOccurs="0"/>
+            <xs:element name="complete-conference" type="ss:complete-conference-type" minOccurs="0"/>
+            <xs:element name="complete-advice-of-charge" type="ss:complete-advice-of-charge-type" minOccurs="0"/>
+            <xs:element name="complete-explicit-communication-transfer" type="ss:complete-explicit-communication-transfer-type" minOccurs="0"/>
+            <xs:element name="complete-customized-alerting-tone" type="ss:complete-customized-alerting-tone-type" minOccurs="0"/>
+            <xs:element name="complete-flexible-alerting" type="ss:complete-flexible-alerting-type" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-originating-identity-presentation-type">
+        <xs:sequence>
+            <xs:element ref="ss:originating-identity-presentation"/>
+            <xs:element ref="ss:operator-originating-identity-presentation"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-originating-identity-restriction-type">
+        <xs:sequence>
+            <xs:element ref="ss:originating-identity-presentation-restriction"/>
+            <xs:element ref="ss:operator-originating-identity-presentation-restriction"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-terminating-identity-presentation-type">
+        <xs:sequence>
+            <xs:element ref="ss:terminating-identity-presentation"/>
+            <xs:element ref="ss:operator-terminating-identity-presentation"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-terminating-identity-restriction-type">
+        <xs:sequence>
+            <xs:element ref="ss:terminating-identity-presentation-restriction"/>
+            <xs:element ref="ss:operator-terminating-identity-presentation-restriction"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-malicious-communication-identification-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-malicious-communication-identification"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-communication-diversion-type">
+        <xs:sequence>
+            <xs:element ref="ss:communication-diversion"/>
+            <xs:element ref="ss:operator-communication-diversion"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-communication-waiting-type">
+        <xs:sequence>
+            <xs:element ref="ss:communication-waiting"/>
+            <xs:element ref="ss:operator-communication-waiting"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-communication-hold-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-communication-hold"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-communication-barring-type">
+        <xs:sequence>
+            <xs:element ref="ss:incoming-communication-barring"/>
+            <xs:element ref="ss:outgoing-communication-barring"/>
+            <xs:element ref="ss:operator-incoming-communication-barring"/>
+            <xs:element ref="ss:operator-outgoing-communication-barring"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-completion-of-communication-busy-subscriber-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-completion-of-communication-busy-subscriber"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-completion-of-communication-no-reply-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-completion-of-communication-no-reply"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-message-waiting-indication-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-message-waiting-indication"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-conference-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-conference"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-advice-of-charge-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-advice-of-charge"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-explicit-communication-transfer-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-explicit-communication-transfer"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-customized-alerting-tone-type">
+        <xs:sequence>
+            <xs:element ref="ss:operator-customized-alerting-tone"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="complete-flexible-alerting-type">
+        <xs:sequence>
+            <xs:element ref="ss:flexible-alerting-default"/>
+            <xs:element ref="ss:flexible-alerting-specific"/>
+            <xs:choice>
+                <xs:element ref="ss:operator-flexible-alerting"/>
+                <xs:element ref="ss:operator-flexible-alerting-group"/>
+            </xs:choice>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

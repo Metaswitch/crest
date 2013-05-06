@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:cp="urn:ietf:params:xml:ns:common-policy" 
+    xmlns:ocp="urn:oma:xml:xdm:common-policy" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <!-- import common policy definitions -->
+    <xs:import namespace="urn:ietf:params:xml:ns:common-policy" schemaLocation="common-policy.xsd"/>
+    <!-- import OMA common policy extensions -->
+    <xs:import namespace="urn:oma:xml:xdm:common-policy" schemaLocation="xdm_commonPolicy-V1_0.xsd"/>
+    <!-- incoming communication barring rule set based on the common policy rule set.-->
+    <xs:element name="incoming-communication-barring" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>This is the incoming communication barring configuration document.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:simservType">
+                    <xs:sequence>
+                        <!-- add service specific elements here-->
+                        <xs:element ref="cp:ruleset" minOccurs="0"/>
+                    </xs:sequence>
+                </xs:extension>
+                <!-- service specific attributes can be defined here -->
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+    <!-- outgoing communication barring rule set based on the common policy rule set.-->
+    <xs:element name="outgoing-communication-barring" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>This is the outgoing communication barring configuration document.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:simservType">
+                    <xs:sequence>
+                        <!-- add service specific elements here-->
+                        <xs:element ref="cp:ruleset" minOccurs="0"/>
+                    </xs:sequence>
+                </xs:extension>
+                <!-- service specific attributes can be defined here -->
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+    <!-- communication barring specific extensions to IETF common policy actions-->
+    <xs:element name="allow" type="ss:allow-action-type"/>
+    <!-- communication barring specific type declarations -->
+    <xs:simpleType name="allow-action-type" final="list restriction">
+        <xs:restriction base="xs:boolean"/>
+    </xs:simpleType>
+</xs:schema>

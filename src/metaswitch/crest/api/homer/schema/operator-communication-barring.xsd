@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:annotation>
+        <xs:documentation xml:lang="en">
+            Operator part of the Communication Barring (CB) service
+        </xs:documentation>
+    </xs:annotation>
+    <!--xs:include schemaLocation="operator-common-data.xsd"/-->
+    <xs:element name="operator-incoming-communication-barring" substitutionGroup="ss:absOperatorService" nillable="true"/>
+    <xs:element name="operator-outgoing-communication-barring" substitutionGroup="ss:absOperatorService" nillable="true"/>
+</xs:schema>

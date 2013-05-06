@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:include schemaLocation="XCAP.xsd"/>
+    <xs:element name="flexible-alerting-default" type="ss:simservType" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>Flexible Alerting Default Groups Membership
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <xs:element name="flexible-alerting-specific" substitutionGroup="ss:absService">
+        <xs:annotation>
+            <xs:documentation>Flexible Alerting Specific Groups Membership
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:complexContent>
+                <xs:extension base="ss:simservType">
+                    <xs:sequence>
+                        <xs:element name="identity" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                                <xs:simpleContent>
+                                    <xs:extension base="xs:anyURI">
+                                        <xs:attribute name="active" type="xs:boolean" use="optional" default="true"/>
+                                    </xs:extension>
+                                </xs:simpleContent>
+                            </xs:complexType>
+                        </xs:element>
+                        <xs:any namespace="##other" minOccurs="0" maxOccurs="unbounded" processContents="lax"/>
+                    </xs:sequence>
+                    <xs:anyAttribute namespace="##other"/>
+                </xs:extension>
+            </xs:complexContent>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>
+

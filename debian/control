@@ -1,0 +1,22 @@
+Source: homer
+Section: network
+Priority: optional
+# This field must stay as 'Project Clearwater Maintainers', as
+# clearwater-infrastructure explicitly checks for packages of this name when
+# updating
+Maintainer: Project Clearwater Maintainers <maintainers@projectclearwater.org>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: http://projectclearwater.org/
+
+Package: homer
+Architecture: any
+Depends: clearwater-infrastructure, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev,  monit, iptables-persistent
+Suggests: clearwater-logging, clearwater-snmpd
+Description: homer, the Cassandra powered XDMS
+
+Package: homestead
+Architecture: any
+Depends: clearwater-infrastructure, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev,  monit, iptables-persistent
+Suggests: clearwater-logging, clearwater-snmpd
+Description: homestead, the Cassandra powered HSS gateway

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Based on sample code supplied by www.datastax.com, modified to
+# expect file layout from a Clearwater cassandra install.
+#
+# Original source: http://www.datastax.com/dev/blog/bulk-loading
+#                  http://www.datastax.com/wp-content/uploads/2011/08/DataImport
+
+# paths to the cassandra source tree, cassandra jar and java
+CASSANDRA_HOME="/usr/share/cassandra/"
+CASSANDRA_JAR="$CASSANDRA_HOME/apache-cassandra.jar"
+
+# Java classpath. Must include:
+#   - directory of DataImportExample
+#   - directory with cassandra/log4j config files
+#   - cassandra jar
+#   - cassandra depencies jar
+CLASSPATH=".:/etc/cassandra/:$CASSANDRA_JAR"
+
+for jar in $CASSANDRA_HOME/lib/*.jar; do
+    CLASSPATH=$CLASSPATH:$jar
+done
+
+java -ea -cp $CLASSPATH -Xmx1024M \
+     -XX:+HeapDumpOnOutOfMemoryError \
+     -Dlog4j.configuration=log4j-tools.properties \
+     ClearwaterBulkProvisioner "$@"

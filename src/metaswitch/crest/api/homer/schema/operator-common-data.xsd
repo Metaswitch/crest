@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:ss="http://uri.etsi.org/ngn/params/xml/simservs/xcap" targetNamespace="http://uri.etsi.org/ngn/params/xml/simservs/xcap" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <!-- This schema file contains common types for the operator data-->
+    <xs:element name="absOperatorService" type="ss:operatorServiceConfigType" abstract="true"/>
+    <xs:complexType name="operatorServiceConfigType">
+        <xs:attribute name="authorized" type="xs:boolean" use="required"/>
+        <xs:anyAttribute namespace="##any" processContents="lax"/>
+    </xs:complexType>
+    <xs:simpleType name="identityPresentationModeType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="permanent"/>
+            <xs:enumeration value="temporary"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="identityPresentationRestrictionType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="only-identity"/>
+            <xs:enumeration value="all-private-information"/>
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="identityPresentationRestrictionOverrideType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="override-active"/>
+            <xs:enumeration value="override-not-active"/>
+        </xs:restriction>
+    </xs:simpleType>
+</xs:schema>
+
