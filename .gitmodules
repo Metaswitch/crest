@@ -12,4 +12,4 @@
 	url = git@github.com:Metaswitch/Telephus.git
 [submodule "modules/sdp"]
 	path = modules/sdp
-	url = git@bitbucket.org:metaswitch/sdp.git
+	url = git@github.com:Metaswitch/sdp.git
