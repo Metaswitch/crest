@@ -25,7 +25,7 @@ _For example, on AWS, instances have ony ~4Gb free so we can only provision appr
 
 ## Binary compilation
 
-    ./make
+    make
 
 This will compile the ClearwaterBulkProvisioner classes.  If the compiler cannot find the imported classes, ensure cassandra is correctly installed on your machine.
 

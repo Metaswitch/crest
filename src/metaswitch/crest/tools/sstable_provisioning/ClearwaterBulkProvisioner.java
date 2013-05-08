@@ -158,15 +158,12 @@ public class ClearwaterBulkProvisioner
                 System.out.println(String.format("Invalid input '%s' at line %d of %s", line, lineNumber, csvfile));
                 return false;
             }
-            try
-            {
-                public_id = columns[0].trim();
-                private_id = columns[1].trim();
-                digest = columns[2].trim();
-                simservs = columns[3].trim();
-                ifc = columns[4].trim();
-                return true;
-            }
+            public_id = columns[0].trim();
+            private_id = columns[1].trim();
+            digest = columns[2].trim();
+            simservs = columns[3].trim();
+            ifc = columns[4].trim();
+            return true;
         }
     }
 }
