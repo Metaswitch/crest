@@ -113,6 +113,12 @@ View the current UT coverage using:
 You should aim for 100% coverage on newly-written code. At the very
 least, you shouldn't reduce the coverage level when adding new code.
 
+Bulk provisioning
+=================
+
+For testing, you may need to bulk-provision numbers. Instructions for doing this
+can be found [here](Bulk-Provisioning Numbers.md).
+
 Packaging
 =========
 
