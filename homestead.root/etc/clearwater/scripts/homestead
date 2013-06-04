@@ -2,5 +2,12 @@
 . /etc/clearwater/config
 sed -e 's/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
         s/^CASS_HOST = .*$/CASS_HOST = "'localhost'"/g' </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
-cp /tmp/local_settings.py.$$ /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py
-mv /tmp/local_settings.py.$$ /usr/share/clearwater/homestead/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
+for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \
+           /usr/share/clearwater/homestead/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
+do
+  if [ -f $dst ]
+  then
+    cp /tmp/local_settings.py.$$ $dst
+  fi
+done
+rm /tmp/local_settings.py.$$
