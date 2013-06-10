@@ -50,7 +50,7 @@ def ensure_dir_exists(d):
     except Exception:
         pass
     if not os.path.isdir(d):
-        raise RuntimeError("Failed to create dir %s" % dir)
+        raise RuntimeError("Failed to create dir %s" % d)
 
 
 # Route configuration, which Handlers to install. Currently support "homer" and "homestead"
