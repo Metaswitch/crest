@@ -38,6 +38,7 @@ LOG_FILE_PREFIX = "homestead"
 SIP_DIGEST_REALM = ""
 CASS_HOST = "localhost"
 CASS_KEYSPACE = "homestead"
+SPROUT_HOSTNAME = ""
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8888
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
