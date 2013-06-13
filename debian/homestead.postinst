@@ -58,7 +58,7 @@ case "$1" in
     configure)
         rm -rf $HOMESTEAD_DIR/build
         virtualenv --python=$(which python) $HOMESTEAD_DIR/env
-        $HOMESTEAD_DIR/env/bin/easy_install $HOMESTEAD_DIR/eggs/*.egg
+        $HOMESTEAD_DIR/env/bin/easy_install --allow-hosts=None $HOMESTEAD_DIR/eggs/*.egg
         cd $HOMESTEAD_DIR
         $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/setup.py install
         cd -
