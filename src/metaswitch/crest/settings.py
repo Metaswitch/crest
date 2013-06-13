@@ -98,6 +98,7 @@ HSS_IP = "0.0.0.0"
 HSS_PORT = 3868
 # Debian install will pick this up from /etc/clearwater/config
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
+SPROUT_PORT = 5058
 
 # To avoid deploying with debug turned on, these settings should only ever be 
 # changed by creating a local_settings.py file in this directory.
