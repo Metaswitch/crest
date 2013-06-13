@@ -211,7 +211,7 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(mock_req.avps,
                           [{'User-Name': 'priv'}, 
                            {'Public-Identity': 'pub'}, 
-                           {'Server-Name': 'sprout:1234'},
+                           {'Server-Name': 'sip:sprout:1234'},
                            {'SIP-Number-Auth-Items': 1}, 
                            {'SIP-Auth-Data-Item': {'SIP-Authentication-Scheme': 'SIP Digest'}}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
@@ -249,7 +249,7 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(mock_req.avps,
                           [{'User-Name': 'priv'}, 
                            {'Public-Identity': 'pub'}, 
-                           {'Server-Name': 'sprout:1234'},
+                           {'Server-Name': 'sip:sprout:1234'},
                            {'Server-Assignment-Type': 1},
                            {'Destination-Realm': 'domain'},
                            {'User-Data-Already-Available': 0},
