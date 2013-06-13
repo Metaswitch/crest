@@ -131,7 +131,7 @@ class HSSPeerListener(stack.PeerListener):
     def __init__(self, app, domain, stack):
         self.app = app
         self.realm = domain
-        self.server_name = "sip:%s" % domain
+        self.server_name = settings.SPROUT_HOSTNAME
         self.cx = stack.getDictionary("cx")
 
     def connected(self, peer):

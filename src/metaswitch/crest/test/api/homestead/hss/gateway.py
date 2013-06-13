@@ -182,6 +182,7 @@ class TestHSSPeerListener(unittest.TestCase):
         self.peer = mock.MagicMock()
         self.peer_listener.connected(self.peer)
         self.assertEquals(self.peer, self.peer_listener.peer) 
+        settings.SPROUT_HOSTNAME = "sprout"
 
     def test_get_diameter_error_code(self):
         mock_error = mock.MagicMock()
@@ -209,7 +210,7 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(mock_req.avps,
                           [{'User-Name': 'priv'}, 
                            {'Public-Identity': 'pub'}, 
-                           {'Server-Name': 'sip:domain'}, 
+                           {'Server-Name': 'sprout'},
                            {'SIP-Number-Auth-Items': 1}, 
                            {'SIP-Auth-Data-Item': {'SIP-Authentication-Scheme': 'SIP Digest'}}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
@@ -247,7 +248,7 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(mock_req.avps,
                           [{'User-Name': 'priv'}, 
                            {'Public-Identity': 'pub'}, 
-                           {'Server-Name': 'sip:domain'}, 
+                           {'Server-Name': 'sprout'},
                            {'Server-Assignment-Type': 1},
                            {'Destination-Realm': 'domain'},
                            {'User-Data-Already-Available': 0},
