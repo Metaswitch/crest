@@ -40,15 +40,18 @@ env: bin/python
 
 bin/python bin/coverage: bin/buildout buildout.cfg
 ifeq ($(X86_64_ONLY),1)
-	ARCHFLAGS="-arch x86_64" ./bin/buildout -N 
+	ARCHFLAGS="-arch x86_64" ./bin/buildout -N
 else
-	ARCHFLAGS="-arch i386 -arch x86_64" ./bin/buildout -N 
+	ARCHFLAGS="-arch i386 -arch x86_64" ./bin/buildout -N
 endif
 
 bin/buildout: $(ENV_DIR)/bin/python bootstrap.py
 	mkdir -p .buildout_downloads/dist
 	cp thrift_download/thrift-0.8.0.tar.gz .buildout_downloads/dist/
 	$(ENV_DIR)/bin/python bootstrap.py
+
+bootstrap.py:
+	curl -S -s -O http://python-distribute.org/bootstrap.py
 
 $(ENV_DIR)/bin/python:
 	virtualenv --no-site-packages --distribute --python=$(PYTHON_BIN) $(ENV_DIR)
@@ -70,7 +73,7 @@ pyclean:
 
 .PHONY: envclean
 envclean:
-	rm -rf bin eggs develop-eggs parts .installed.cfg .downloads
+	rm -rf bin eggs develop-eggs parts .installed.cfg bootstrap.py .downloads .buildout_downloads
 	rm -rf distribute-*.tar.gz
 	rm -rf $(ENV_DIR)
 
