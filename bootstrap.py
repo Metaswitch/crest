@@ -23,7 +23,7 @@ $Id$
 import os, shutil, sys, tempfile, urllib2
 from optparse import OptionParser
 
-tmpeggs = tempfile.mkdtemp()
+tmpeggs = ".dcache"
 
 is_jython = sys.platform.startswith('java')
 
@@ -118,4 +118,3 @@ ws.add_entry(tmpeggs)
 ws.require('zc.buildout' + VERSION)
 import zc.buildout.buildout
 zc.buildout.buildout.main(args)
-shutil.rmtree(tmpeggs)
