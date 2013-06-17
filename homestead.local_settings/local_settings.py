@@ -38,7 +38,6 @@ LOG_FILE_PREFIX = "homestead"
 CASS_KEYSPACE = "homestead"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8888
-XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
 
 SIP_DIGEST_REALM = READ_FROM_ETC_CLEARWATER_CONFIG
 CASS_HOST = READ_FROM_ETC_CLEARWATER_CONFIG
