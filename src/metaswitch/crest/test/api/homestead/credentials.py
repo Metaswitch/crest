@@ -203,18 +203,17 @@ class TestAssocCredentialsHandler(unittest.TestCase):
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         get_deferred = self.handler.get("priv", "pub")
+        get_errback = mock.MagicMock()
+        get_deferred.addErrback(get_errback)
 
         # Expect a call to validate the pub/priv
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', start='pub', finish='pub')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='pub2', value='pub2', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
         self.mock_cass.get_slice.return_value.callback(result_list)
 
-
-        get_errback = mock.MagicMock()
-        get_deferred.addErrback(get_errback)
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
 
     def test_unassociated_user(self):

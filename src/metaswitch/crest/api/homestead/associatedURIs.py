@@ -109,6 +109,7 @@ class AssociatedURIsHandler(PassthroughHandler):
                                        key=private_id,
                                        column=public_id,
                                        value=public_id)
+                raise HTTPError(500)
 
             self.set_status(httplib.CREATED)
 
@@ -127,8 +128,8 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
     @defer.inlineCallbacks
     def get(self, public_id, private_id=None):
         print("PRI URIs: GET Priv: %s, Pub ID: %s" % (private_id, public_id))
-        if private_id is not None or public_id is None:
-            raise HTTPError(400)
+        if private_id is not None:
+            raise HTTPError(405)
 
         db_data = yield self.cass.get_slice(key=public_id,
                                             column_family=self.table)
@@ -149,7 +150,7 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
     def post(self, public_id, private_id=None):
         print("PRI URIs: POST Priv: %s, Pub: %s" % (private_id, public_id))
 
-        if private_id is not None or public_id is None:
+        if private_id is not None:
             raise HTTPError(405)
         else:
             private_id = self.request.body
@@ -170,8 +171,6 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
     @defer.inlineCallbacks
     def delete(self, public_id, private_id=None):
         print("PRI URIs: DELETE Priv: %s Pub %s" % (private_id, public_id))
-        if public_id is None:
-            raise HTTPError(405)
 
         if private_id is not None:
             yield self.delete_from_both_tables(private_id, public_id)
@@ -197,8 +196,8 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
     @defer.inlineCallbacks
     def get(self, private_id, public_id=None):
         print("PUB URIs: GET Priv: %s, Pub ID: %s" % (private_id, public_id))
-        if public_id is not None or private_id is None:
-            raise HTTPError(400)
+        if public_id is not None:
+            raise HTTPError(405)
 
         db_data = yield self.cass.get_slice(key=private_id,
                                             column_family=self.table)
@@ -215,7 +214,7 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
     def post(self, private_id, public_id=None):
         print("PUB URIs: POST Priv: %s, Pub: %s" % (private_id, public_id))
 
-        if public_id is not None or private_id is None:
+        if public_id is not None:
             raise HTTPError(405)
         else:
             public_id = self.request.body
@@ -237,8 +236,6 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
     @defer.inlineCallbacks
     def delete(self, private_id, public_id=None):
         print("PUB URIs: DELETE Priv: %s Pub %s" % (private_id, public_id))
-        if private_id is None:
-            raise HTTPError(405)
 
         if public_id is not None:
             yield self.delete_from_both_tables(private_id, public_id)
