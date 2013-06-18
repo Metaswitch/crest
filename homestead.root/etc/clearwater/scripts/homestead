@@ -2,7 +2,11 @@
 . /etc/clearwater/config
 sed -e 's/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
         s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g
-        s/^CASS_HOST = .*$/CASS_HOST = "'localhost'"/g' </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
+        s/^HSS_ENABLED = .*$/HSS_ENABLED = '$hss_enabled'/g
+        s/^HSS_HOSTNAME = .*$/HSS_HOSTNAME = "'$hss_hostname'"/g
+        s/^HSS_PORT = .*$/HSS_PORT = '$hss_port'/g
+        s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$homestead_password_encryption_key'"/g
+        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g' </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \
            /usr/share/clearwater/homestead/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
 do

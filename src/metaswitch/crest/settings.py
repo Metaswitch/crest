@@ -73,29 +73,21 @@ PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
 # Ports.
 HTTP_PORT = 8888
 
-# We use this key to encrypt sensitive fields in the database that we can't
-# avoid storing.  In general, we'd like to store passwords as bcrypt hashes
-# but we can only do that if the password is sent to us by the user in the 
-# clear.  Encrypting the password in the DB at least mitigates DB injection
-# attacks and prevents accidental exposure to staff.
-PASSWORD_ENCRYPTION_KEY = '2lB6HWYd1cvuGbAdey9cFL5bSWDzxHOsYyPLYOxV3Bs'
-
 # Tornado cookie encryption key.  Tornado instances that share this key will 
 # all trust each other's cookies.
-COOKIE_SECRET = '4<HqJaa5wi]EjSEq4^vpm#oCWp#$HJ#>exzD7bAa'
+#
+# Homer and Homestead don't set cookies, so this is unnecessary.
+COOKIE_SECRET = 'UNUSED'
 
 # SIP parameters
-SIP_DIGEST_REALM = 'cw-ngv.com'
+# Debian install will pick this up from /etc/clearwater/config
+SIP_DIGEST_REALM = 'example.com'
 
 # Cassandra configuration
 CASS_HOST = "localhost"
 CASS_PORT = 9160
 CASS_KEYSPACE = "default"
 
-# HSS configuration (by default, syncronization with the HSS is disabled)
-HSS_ENABLED = False
-HSS_IP = "0.0.0.0"
-HSS_PORT = 3868
 # Debian install will pick this up from /etc/clearwater/config
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
 SPROUT_PORT = 5058
