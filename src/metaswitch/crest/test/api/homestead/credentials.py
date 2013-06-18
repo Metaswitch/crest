@@ -69,6 +69,9 @@ class TestCredentialsHandler(unittest.TestCase):
 
         # Default to not using HSS, will override in tests that require it
         settings.HSS_ENABLED = False
+        settings.HSS_IP = "Dummy"
+        settings.HSS_PORT = 1000
+        settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
 
     @mock.patch("metaswitch.common.utils.decrypt_password")
     def test_get_mainline(self, decrypt_password):

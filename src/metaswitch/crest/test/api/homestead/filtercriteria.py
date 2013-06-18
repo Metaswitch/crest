@@ -69,6 +69,9 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         
         # Default to not using HSS, will override in tests that require it
         settings.HSS_ENABLED = False
+        settings.HSS_IP = "Dummy"
+        settings.HSS_PORT = 1000
+        settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
 
     def test_get_mainline(self):
         self.mock_cass.get.return_value = defer.Deferred()

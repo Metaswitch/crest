@@ -64,6 +64,9 @@ class TestHSSGateway(unittest.TestCase):
         HSSAppListener.return_value = self.app_listener
         
         settings.HSS_ENABLED = True
+        settings.HSS_IP = "Dummy"
+        settings.HSS_PORT = 1000
+        settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
         self.gateway = HSSGateway()
 
     def test_hss_enabled(self):
