@@ -40,6 +40,8 @@ INSTALLED_HANDLERS = ["homer"]
 HTTP_PORT = 7888
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homer/modules/common/metaswitch/common/default_simservs.xml"
 
-SIP_DIGEST_REALM = READ_FROM_ETC_CLEARWATER_CONFIG
-CASS_HOST = READ_FROM_ETC_CLEARWATER_CONFIG
-SPROUT_HOSTNAME = READ_FROM_ETC_CLEARWATER_CONFIG
+# Debian install will pick this up from /etc/clearwater/config 
+CASS_HOST = "localhost"
+
+# Debian install will pick this up from /etc/clearwater/config 
+SIP_DIGEST_REALM = MUST_BE_CONFIGURED

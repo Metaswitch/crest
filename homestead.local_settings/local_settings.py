@@ -39,10 +39,24 @@ CASS_KEYSPACE = "homestead"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8888
 
-SIP_DIGEST_REALM = READ_FROM_ETC_CLEARWATER_CONFIG
-CASS_HOST = READ_FROM_ETC_CLEARWATER_CONFIG
-SPROUT_HOSTNAME = READ_FROM_ETC_CLEARWATER_CONFIG
-HSS_ENABLED = READ_FROM_ETC_CLEARWATER_CONFIG
-HSS_HOSTNAME = READ_FROM_ETC_CLEARWATER_CONFIG
-HSS_PORT = READ_FROM_ETC_CLEARWATER_CONFIG
-PASSWORD_ENCRYPTION_KEY = READ_FROM_ETC_CLEARWATER_CONFIG
+# Debian install will pick this up from /etc/clearwater/config 
+CASS_HOST = "localhost"
+
+# HSS configuration (by default, synchronization with the HSS is disabled)
+# Debian install will pick this up from /etc/clearwater/config 
+HSS_ENABLED = False
+HSS_HOSTNAME = "0.0.0.0"
+HSS_PORT = 3868
+
+# Debian install will pick this up from /etc/clearwater/config 
+SIP_DIGEST_REALM = MUST_BE_CONFIGURED
+SPROUT_HOSTNAME = MUST_BE_CONFIGURED
+
+# We use this key to encrypt sensitive fields in the database that we can't
+# avoid storing.  In general, we'd like to store passwords as bcrypt hashes
+# but we can only do that if the password is sent to us by the user in the 
+# clear.  Encrypting the password in the DB at least mitigates DB injection
+# attacks and prevents accidental exposure to staff.
+#
+# Debian install will pick this up from /etc/clearwater/config
+PASSWORD_ENCRYPTION_KEY = MUST_BE_CONFIGURED
