@@ -45,3 +45,4 @@ CASS_HOST = "localhost"
 
 # Debian install will pick this up from /etc/clearwater/config 
 SIP_DIGEST_REALM = MUST_BE_CONFIGURED
+SPROUT_HOSTNAME = MUST_BE_CONFIGURED
