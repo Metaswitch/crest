@@ -38,9 +38,11 @@ import cyclone.web
 
 from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.credentials import CredentialsHandler
+from metaswitch.crest.api.homestead.credentials import PrivateCredentialsHandler, AssociatedCredentialsHandler
+from metaswitch.crest.api.homestead.associatedURIs import AssociatedPrivateHandler, AssociatedPublicHandler
 from metaswitch.crest.api.homestead.filtercriteria import FilterCriteriaHandler
 from metaswitch.crest.api.homestead.hss import gateway
+from metaswitch.crest.api.homestead import config
 
 # TODO More precise regexes
 PRIVATE_ID = r'[^/]+'
@@ -55,33 +57,44 @@ PUBLIC_ID = r'[^/]+'
 #     - table: the table to store the values in
 #     - column: name of the column to store against in Cassandra. The value stored is the request body
 ROUTES = [
-    # Credentials
-    # /credentials/<private ID>/<public ID>/(digest|aka)
-    (PATH_PREFIX + r'credentials/(' + PRIVATE_ID + r')/(' + PUBLIC_ID + r')/digest/?$',
-     CredentialsHandler,
-     {"table": "sip_digests", "column": "digest"}),
-
-    # Credentials for clients which need a SIP Digest but legitimately
-    # do not have a public ID. This API is for such clients only; most
-    # clients should use the credentials API instead. Only GET is
-    # supported.
+    # PrivateCredentials: the API for setting/getting/deleting credentials for a private ID.
     # /privatecredentials/<private ID>/digest
     (PATH_PREFIX + r'privatecredentials/(' + PRIVATE_ID + r')/digest/?$',
-     CredentialsHandler,
-     {"table": "sip_digests", "column": "digest"}),
+     PrivateCredentialsHandler,
+     {"table": config.SIP_DIGESTS_TABLE, "column": "digest"}),
+
+    # Credentials: Only get is supported.  Behaves like PrivateCredentials while also
+    # checking that the private & public IDs are associated.
+    # /credentials/<private ID>/<public ID>/digest
+    (PATH_PREFIX + r'credentials/(' + PRIVATE_ID + r')/(' + PUBLIC_ID + r')/digest/?$',
+     AssociatedCredentialsHandler,
+     {"table": config.SIP_DIGESTS_TABLE, "column": "digest"}),
+
+    # /associatedprivate/<public ID>/<private ID>
+    (PATH_PREFIX + r'associatedprivate/(' + PUBLIC_ID + r')/?(' + PRIVATE_ID + r')?/?$',
+     AssociatedPrivateHandler,
+     {"table": config.PRIVATE_IDS_TABLE, "column": "private_id"}),
+
+    # Associated URIs
+    # /associatedpublic/<private ID>/<public ID>
+    (PATH_PREFIX + r'associatedpublic/(' + PRIVATE_ID + r')/?(' + PUBLIC_ID + r')?/?$',
+     AssociatedPublicHandler,
+     {"table": config.PUBLIC_IDS_TABLE, "column": "public_id"}),
 
     # IFC
     # /filtercriteria/<public ID>
     (PATH_PREFIX + r'filtercriteria/(' + PUBLIC_ID + r')/?$',
      FilterCriteriaHandler,
-     {"table": "filter_criteria", "column": "value"}),
+     {"table": config.FILTER_CRITERIA_TABLE, "column": "value"}),
 ]
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
-CREATE_SIP_DIGESTS = "CREATE TABLE sip_digests (private_id text, digest text, PRIMARY KEY (private_id));"
-CREATE_IFCS = "CREATE TABLE filter_criteria (public_id text, value text, PRIMARY KEY (public_id));"
-CREATE_STATEMENTS = [CREATE_SIP_DIGESTS, CREATE_IFCS]
+CREATE_SIP_DIGESTS = "CREATE TABLE sip_digests (private_id text PRIMARY KEY, digest text);"
+CREATE_PUBLIC_IDS = "CREATE TABLE public_ids (private_id text PRIMARY KEY);"
+CREATE_PRIVATE_IDS = "CREATE TABLE private_ids (public_id text PRIMARY KEY);"
+CREATE_IFCS = "CREATE TABLE filter_criteria (public_id text PRIMARY KEY, value text);"
+CREATE_STATEMENTS = [CREATE_SIP_DIGESTS, CREATE_PUBLIC_IDS, CREATE_PRIVATE_IDS, CREATE_IFCS]
 
 # Module initialization
 def initialize(application):
