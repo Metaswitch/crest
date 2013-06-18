@@ -85,8 +85,8 @@ PASSWORD_ENCRYPTION_KEY = 'SECRET'
 # Tornado cookie encryption key.  Tornado instances that share this key will 
 # all trust each other's cookies.
 #
-# Debian install will pick this up from /etc/clearwater/config
-COOKIE_SECRET = 'SECRET'
+# Homer and Homestead don't set cookies, so this is unnecessary.
+COOKIE_SECRET = 'UNUSED'
 
 # SIP parameters
 # Debian install will pick this up from /etc/clearwater/config
