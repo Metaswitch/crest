@@ -98,7 +98,7 @@ CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
 
 # These are only set here because the UTs don't have local_settings.py configured.
 # We expect these settings to be overridden in that file for any actual deployment.
-HSS_ENABLED = HSS_PORT = HSS_IP = PASSWORD_ENCRYPTION_KEY = False
+HSS_PORT = HSS_IP = PASSWORD_ENCRYPTION_KEY = False
 
 # Include any locally-defined settings.
 _local_settings_file = os.path.join(_MY_DIR, "local_settings.py")

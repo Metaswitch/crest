@@ -26,7 +26,4 @@ it will query the HSS and attempt to import it.
 
 In the future, Homestead will support full two-way synchronization with the HSS.
 
-To enable HSS caching, make the following changes in the `local_settings.py` file:
-
-* Set `HSS_ENABLED` to True
-* Set `HSS_IP` and `HSS_PORT` to the values of the HSS to cache
+To enable HSS caching, see https://github.com/Metaswitch/clearwater-docs/wiki/External-HSS-Integration
