@@ -85,5 +85,5 @@ CREATE_STATEMENTS = [CREATE_SIP_DIGESTS, CREATE_IFCS]
 
 # Module initialization
 def initialize(application):
-    if settings.HSS_ENABLED:
+    if settings.HSS_IP not in ["", "0.0.0.0"]:
         application.hss_gateway = gateway.HSSGateway()
