@@ -39,7 +39,7 @@ import cyclone.web
 from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api import settings
 from metaswitch.crest.api.homestead.credentials import PrivateCredentialsHandler, AssociatedCredentialsHandler
-from metaswitch.crest.api.homestead.associatedURIs import AssociatedPrivateHandler, AssociatedPublicHandler
+from metaswitch.crest.api.homestead.associatedURIs import AssociatedPrivateHandler, AssociatedPublicHandler, AssociatedPublicByPublicHandler
 from metaswitch.crest.api.homestead.filtercriteria import FilterCriteriaHandler
 from metaswitch.crest.api.homestead.hss import gateway
 from metaswitch.crest.api.homestead import config
@@ -70,15 +70,20 @@ ROUTES = [
      AssociatedCredentialsHandler,
      {"table": config.SIP_DIGESTS_TABLE, "column": "digest"}),
 
+    # Associated URIs
     # /associatedprivate/<public ID>/<private ID>
     (PATH_PREFIX + r'associatedprivate/(' + PUBLIC_ID + r')/?(' + PRIVATE_ID + r')?/?$',
      AssociatedPrivateHandler,
      {"table": config.PRIVATE_IDS_TABLE, "column": "private_id"}),
 
-    # Associated URIs
     # /associatedpublic/<private ID>/<public ID>
     (PATH_PREFIX + r'associatedpublic/(' + PRIVATE_ID + r')/?(' + PUBLIC_ID + r')?/?$',
      AssociatedPublicHandler,
+     {"table": config.PUBLIC_IDS_TABLE, "column": "public_id"}),
+
+    # /associatedpublicbypublic/<public ID>
+    (PATH_PREFIX + r'associatedpublicbypublic/(' + PUBLIC_ID + r')/?$',
+     AssociatedPublicByPublicHandler,
      {"table": config.PUBLIC_IDS_TABLE, "column": "public_id"}),
 
     # IFC

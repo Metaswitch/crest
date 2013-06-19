@@ -61,7 +61,6 @@ class AssociatedURIsHandler(PassthroughHandler):
 
     """
     def put(self, *args):
-        print("URIs: PUT")
         raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
     @defer.inlineCallbacks
@@ -94,6 +93,8 @@ class AssociatedURIsHandler(PassthroughHandler):
             if len(db_data) >= config.MAX_ASSOCIATED_PRI_IDS:
                 raise HTTPError(httplib.BAD_REQUEST, "", {"reason":"Associated Private Identity limit reached"})
 
+            # Insert in both tables. If the 2nd insert fails for any reason
+            # at all, remove the first entry so that the tables stay in step.
             yield self.cass.insert(column_family=config.PUBLIC_IDS_TABLE,
                                    key=private_id,
                                    column=public_id,
@@ -126,7 +127,6 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
     """
     @defer.inlineCallbacks
     def get(self, public_id, private_id=None):
-        print("PRI URIs: GET Priv: %s, Pub ID: %s" % (private_id, public_id))
         if private_id is not None:
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
@@ -147,8 +147,6 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
 
     @defer.inlineCallbacks
     def post(self, public_id, private_id=None):
-        print("PRI URIs: POST Priv: %s, Pub: %s" % (private_id, public_id))
-
         if private_id is not None:
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
         else:
@@ -169,8 +167,6 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
 
     @defer.inlineCallbacks
     def delete(self, public_id, private_id=None):
-        print("PRI URIs: DELETE Priv: %s Pub %s" % (private_id, public_id))
-
         if private_id is not None:
             yield self.delete_from_both_tables(private_id, public_id)
         else:
@@ -194,7 +190,6 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
     """
     @defer.inlineCallbacks
     def get(self, private_id, public_id=None):
-        print("PUB URIs: GET Priv: %s, Pub ID: %s" % (private_id, public_id))
         if public_id is not None:
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
@@ -211,8 +206,6 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
 
     @defer.inlineCallbacks
     def post(self, private_id, public_id=None):
-        print("PUB URIs: POST Priv: %s, Pub: %s" % (private_id, public_id))
-
         if public_id is not None:
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
         else:
@@ -234,8 +227,6 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
 
     @defer.inlineCallbacks
     def delete(self, private_id, public_id=None):
-        print("PUB URIs: DELETE Priv: %s Pub %s" % (private_id, public_id))
-
         if public_id is not None:
             yield self.delete_from_both_tables(private_id, public_id)
         else:
@@ -247,3 +238,38 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
         self.set_status(httplib.NO_CONTENT)
         self.finish()
 
+class AssociatedPublicByPublicHandler(AssociatedURIsHandler):
+    """
+    Handler for AssociatedPublicByPublic
+
+    Handler for AssociatedPrivate - GET to retrieve the full list of public IDs
+    associated to the private ID associated to the supplied public ID.
+    This interface is READONLY - no PUT/POST/DELETE.
+
+    """
+    @defer.inlineCallbacks
+    def get(self, public_id):
+
+        db_data = yield self.cass.get_slice(key=public_id,
+                                            column_family=config.PRIVATE_IDS_TABLE)
+
+        private_ids = []
+        for record in db_data:
+            private_ids.append(record.column.value)
+        if private_ids == []:
+            raise HTTPError(httplib.NOT_FOUND)
+
+        # Currently only permit one private ID per public ID.
+        assert(len(private_ids) == 1)
+
+        db_data = yield self.cass.get_slice(key=private_ids[0],
+                                            column_family=config.PUBLIC_IDS_TABLE)
+
+        public_ids = []
+        for record in db_data:
+            public_ids.append(record.column.value)
+        if public_ids == []:
+            # Should never get here.  Assert?
+            raise HTTPError(httplib.NOT_FOUND)
+
+        self.finish({"public_ids": public_ids})
