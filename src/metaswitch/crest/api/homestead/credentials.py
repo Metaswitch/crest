@@ -57,14 +57,13 @@ class PrivateCredentialsHandler(PassthroughHandler):
     def get(self, private_id):
         print("Priv CREDs: GET Priv: %s" % private_id)
         try:
-
             encrypted_hash = yield self.cass.get(column_family=self.table,
                                                  key=private_id,
                                                  column=self.column)
             digest = utils.decrypt_password(encrypted_hash.column.value,
                                             settings.PASSWORD_ENCRYPTION_KEY)
         except NotFoundException, e:
-            raise HTTPError(404)
+            raise HTTPError(httplib.NOT_FOUND)
             # Clearwater doesn't support an HSS lookup for credentials on this
             # interface.  The only time we should get a request for credentials
             # with just a privateID is from restund, and by that point the
@@ -77,6 +76,7 @@ class PrivateCredentialsHandler(PassthroughHandler):
     def put(self, private_id):
         print("Priv CREDs: PUT Priv: %s" % private_id)
         response = {}
+
         pw_hash = self.request_data.get("digest", None)
         encrypted_hash = utils.encrypt_password(pw_hash, settings.PASSWORD_ENCRYPTION_KEY)
 
@@ -96,7 +96,7 @@ class PrivateCredentialsHandler(PassthroughHandler):
         self.finish()
 
     def post(self, *args):
-        raise HTTPError(405)
+        raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
 
 class AssociatedCredentialsHandler(PassthroughHandler):
@@ -120,7 +120,7 @@ class AssociatedCredentialsHandler(PassthroughHandler):
                 exists = True
 
         if not exists:
-            raise HTTPError(404)
+            raise HTTPError(httplib.NOT_FOUND)
 
         # Now retrieve the digest - locally if present, else from the HSS
         try:
@@ -132,12 +132,12 @@ class AssociatedCredentialsHandler(PassthroughHandler):
                                             settings.PASSWORD_ENCRYPTION_KEY)
         except NotFoundException, e:
             if not settings.HSS_ENABLED:
-                raise HTTPError(404)
+                raise HTTPError(httplib.NOT_FOUND)
 
             try:
                 digest = yield self.application.hss_gateway.get_digest(private_id, public_id)
             except HSSNotFound, e:
-                raise HTTPError(404)
+                raise HTTPError(httplib.NOT_FOUND)
             # Have result from HSS, store in Cassandra
             encrypted_hash = utils.encrypt_password(digest, settings.PASSWORD_ENCRYPTION_KEY)
             yield self.cass.insert(column_family=self.table,
@@ -148,10 +148,10 @@ class AssociatedCredentialsHandler(PassthroughHandler):
         self.finish({"digest": digest})
 
     def post(self, private_id, public_id=None):
-        raise HTTPError(405)
+        raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
     def delete(self, private_id, public_id=None):
-        raise HTTPError(405)
+        raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
     def put(self, *args):
-        raise HTTPError(405)
+        raise HTTPError(httplib.METHOD_NOT_ALLOWED)

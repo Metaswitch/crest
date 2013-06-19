@@ -90,10 +90,10 @@ ROUTES = [
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
-CREATE_SIP_DIGESTS = "CREATE TABLE sip_digests (private_id text PRIMARY KEY, digest text);"
-CREATE_PUBLIC_IDS = "CREATE TABLE public_ids (private_id text PRIMARY KEY);"
-CREATE_PRIVATE_IDS = "CREATE TABLE private_ids (public_id text PRIMARY KEY);"
-CREATE_IFCS = "CREATE TABLE filter_criteria (public_id text PRIMARY KEY, value text);"
+CREATE_SIP_DIGESTS = "CREATE TABLE "+config.SIP_DIGESTS_TABLE+" (private_id text PRIMARY KEY, digest text);"
+CREATE_PUBLIC_IDS = "CREATE TABLE "+config.PUBLIC_IDS_TABLE+" (private_id text PRIMARY KEY);"
+CREATE_PRIVATE_IDS = "CREATE TABLE "+config.PRIVATE_IDS_TABLE+" (public_id text PRIMARY KEY);"
+CREATE_IFCS = "CREATE TABLE "+config.FILTER_CRITERIA_TABLE+" (public_id text PRIMARY KEY, value text);"
 CREATE_STATEMENTS = [CREATE_SIP_DIGESTS, CREATE_PUBLIC_IDS, CREATE_PRIVATE_IDS, CREATE_IFCS]
 
 # Module initialization

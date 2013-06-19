@@ -62,7 +62,7 @@ class AssociatedURIsHandler(PassthroughHandler):
     """
     def put(self, *args):
         print("URIs: PUT")
-        raise HTTPError(405)
+        raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
     @defer.inlineCallbacks
     def insert_in_both_tables(self, private_id, public_id):
@@ -75,9 +75,8 @@ class AssociatedURIsHandler(PassthroughHandler):
                                             start=public_id,
                                             finish=public_id)
 
-        for column in db_data:
-            if column.column.name == public_id:
-                exists = True
+        for record in db_data:
+            exists = (record.column.name == public_id)
 
         if exists:
             self.set_status(httplib.OK)
@@ -87,13 +86,13 @@ class AssociatedURIsHandler(PassthroughHandler):
                                                 column_family=config.PUBLIC_IDS_TABLE)
 
             if len(db_data) >= config.MAX_ASSOCIATED_PUB_IDS:
-                raise HTTPError(400, "", {"reason":"Associated Public Identity limit reached"})
+                raise HTTPError(httplib.BAD_REQUEST, "", {"reason":"Associated Public Identity limit reached"})
 
             db_data = yield self.cass.get_slice(key=public_id,
                                                 column_family=config.PRIVATE_IDS_TABLE)
 
             if len(db_data) >= config.MAX_ASSOCIATED_PRI_IDS:
-                raise HTTPError(400, "", {"reason":"Associated Private Identity limit reached"})
+                raise HTTPError(httplib.BAD_REQUEST, "", {"reason":"Associated Private Identity limit reached"})
 
             yield self.cass.insert(column_family=config.PUBLIC_IDS_TABLE,
                                    key=private_id,
@@ -109,7 +108,7 @@ class AssociatedURIsHandler(PassthroughHandler):
                                        key=private_id,
                                        column=public_id,
                                        value=public_id)
-                raise HTTPError(500)
+                raise HTTPError(httplib.INTERNAL_SERVER_ERROR)
 
             self.set_status(httplib.CREATED)
 
@@ -129,19 +128,19 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
     def get(self, public_id, private_id=None):
         print("PRI URIs: GET Priv: %s, Pub ID: %s" % (private_id, public_id))
         if private_id is not None:
-            raise HTTPError(405)
+            raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
         db_data = yield self.cass.get_slice(key=public_id,
                                             column_family=self.table)
 
         private_ids = []
-        for column in db_data:
-            private_ids.append(column.column.value)
+        for record in db_data:
+            private_ids.append(record.column.value)
 
         if private_ids == []:
             # Note: The get_slice API does not throw a NotFoundException if it
             # finds no matches
-            raise HTTPError(404)
+            raise HTTPError(httplib.NOT_FOUND)
 
         self.finish({"public_id": public_id, "private_ids": private_ids})
 
@@ -151,11 +150,11 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
         print("PRI URIs: POST Priv: %s, Pub: %s" % (private_id, public_id))
 
         if private_id is not None:
-            raise HTTPError(405)
+            raise HTTPError(httplib.METHOD_NOT_ALLOWED)
         else:
             private_id = self.request.body
             if private_id == "":
-                raise HTTPError(405)
+                raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
         yield self.insert_in_both_tables(private_id, public_id)
 
@@ -163,8 +162,8 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
         db_data = yield self.cass.get_slice(key=public_id,
                                             column_family=self.table)
         private_ids = []
-        for column in db_data:
-            private_ids.append(column.column.value)
+        for record in db_data:
+            private_ids.append(record.column.value)
 
         self.finish({"public_id": public_id, "private_ids": private_ids})
 
@@ -178,8 +177,8 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
             db_data = yield self.cass.get_slice(key=public_id,
                                                 column_family=self.table)
 
-            for column in db_data:
-                yield self.delete_from_both_tables(column.column.value, public_id)
+            for record in db_data:
+                yield self.delete_from_both_tables(record.column.value, public_id)
 
         self.set_status(httplib.NO_CONTENT)
         self.finish()
@@ -197,16 +196,16 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
     def get(self, private_id, public_id=None):
         print("PUB URIs: GET Priv: %s, Pub ID: %s" % (private_id, public_id))
         if public_id is not None:
-            raise HTTPError(405)
+            raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
         db_data = yield self.cass.get_slice(key=private_id,
                                             column_family=self.table)
 
         public_ids = []
-        for column in db_data:
-            public_ids.append(column.column.value)
+        for record in db_data:
+            public_ids.append(record.column.value)
         if public_ids == []:
-            raise HTTPError(404)
+            raise HTTPError(httplib.NOT_FOUND)
 
         self.finish({"private_id": private_id, "public_ids": public_ids})
 
@@ -215,11 +214,11 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
         print("PUB URIs: POST Priv: %s, Pub: %s" % (private_id, public_id))
 
         if public_id is not None:
-            raise HTTPError(405)
+            raise HTTPError(httplib.METHOD_NOT_ALLOWED)
         else:
             public_id = self.request.body
             if public_id == "":
-                raise HTTPError(405)
+                raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
         yield self.insert_in_both_tables(private_id, public_id)
 
@@ -227,8 +226,8 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
         db_data = yield self.cass.get_slice(key=private_id,
                                             column_family=self.table)
         public_ids = []
-        for column in db_data:
-            public_ids.append(column.column.value)
+        for record in db_data:
+            public_ids.append(record.column.value)
 
         self.finish({"private_id": private_id, "public_ids": public_ids})
 
@@ -242,8 +241,8 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
         else:
             db_data = yield self.cass.get_slice(key=private_id,
                                                 column_family=self.table)
-            for column in db_data:
-                yield self.delete_from_both_tables(private_id, column.column.value)
+            for record in db_data:
+                yield self.delete_from_both_tables(private_id, record.column.value)
 
         self.set_status(httplib.NO_CONTENT)
         self.finish()
