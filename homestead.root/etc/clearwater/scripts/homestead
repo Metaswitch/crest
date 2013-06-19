@@ -1,4 +1,10 @@
 #!/bin/sh
+# Set up default values which will be overwritten if they exist in /etc/clearwater/config
+hss_enabled="False"
+hss_hostname="0.0.0.0"
+hss_port=3868
+homestead_password_encryption_key="2lB6HWYd1cvuGbAdey9cFL5bSWDzxHOsYyPLYOxV3Bs"
+cassandra_hostname="localhost"
 . /etc/clearwater/config
 sed -e 's/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
         s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g

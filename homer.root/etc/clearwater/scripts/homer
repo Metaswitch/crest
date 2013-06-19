@@ -1,4 +1,6 @@
 #!/bin/sh
+# Set default values which will be overwritten if they exist in /etc/clearwater/config
+cassandra_hostname="localhost" 
 . /etc/clearwater/config
 sed -e 's/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
         s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g
