@@ -63,11 +63,13 @@ class TestHSSGateway(unittest.TestCase):
         self.app_listener = mock.MagicMock()
         HSSAppListener.return_value = self.app_listener
         
-        settings.HSS_ENABLED = True
+        settings.HSS_IP = "example.com"
         self.gateway = HSSGateway()
 
     def test_hss_enabled(self):
-        settings.HSS_ENABLED = False
+        settings.HSS_IP = "0.0.0.0"
+        self.assertRaises(HSSNotEnabled, HSSGateway)
+        settings.HSS_IP = ""
         self.assertRaises(HSSNotEnabled, HSSGateway)
 
     # There is a fair amount of code here, for testing what is essentially a

@@ -51,7 +51,7 @@ DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without HSS_ENABLED set to true"""
+    """Exception to throw if gateway is created without a valid HSS_IP"""
     pass
 
 class HSSNotFound(Exception):
@@ -64,7 +64,7 @@ class HSSGateway(stack.ApplicationListener):
     to enable fetching of data in a more HTTP-like fashion
     """
     def __init__(self):
-        if not settings.HSS_ENABLED:
+        if settings.HSS_IP in ["", "0.0.0.0"]:
             raise HSSNotEnabled()
         
         dstack = stack.Stack()

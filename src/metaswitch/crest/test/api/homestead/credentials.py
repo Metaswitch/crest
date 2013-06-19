@@ -68,7 +68,7 @@ class TestCredentialsHandler(unittest.TestCase):
         self.handler.application.hss_gateway = self.mock_hss
 
         # Default to not using HSS, will override in tests that require it
-        settings.HSS_ENABLED = False
+        settings.HSS_IP = ""
 
     @mock.patch("metaswitch.common.utils.decrypt_password")
     def test_get_mainline(self, decrypt_password):
@@ -85,7 +85,7 @@ class TestCredentialsHandler(unittest.TestCase):
 
     @mock.patch("metaswitch.common.utils.encrypt_password")
     def test_get_from_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
+        settings.HSS_IP = "example.com"
         self.mock_cass.get.return_value = defer.Deferred()
         self.mock_hss.get_digest.return_value = defer.Deferred()
         self.mock_cass.insert.return_value = defer.Deferred()
@@ -117,7 +117,7 @@ class TestCredentialsHandler(unittest.TestCase):
 
     @mock.patch("metaswitch.common.utils.encrypt_password")
     def test_unknown_user_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
+        settings.HSS_IP = "example.com"
         self.mock_cass.get.return_value = defer.Deferred()
         self.mock_hss.get_digest.return_value = defer.Deferred()
         self.mock_cass.insert.return_value = defer.Deferred()
@@ -209,7 +209,7 @@ class TestCredentialsHandler(unittest.TestCase):
 
     @mock.patch("metaswitch.common.utils.encrypt_password")
     def test_private_get_from_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
+        settings.HSS_IP = "example.com"
         self.mock_cass.get.return_value = defer.Deferred()
         self.mock_hss.get_digest.return_value = defer.Deferred()
         self.mock_cass.insert.return_value = defer.Deferred()
@@ -241,7 +241,7 @@ class TestCredentialsHandler(unittest.TestCase):
 
     @mock.patch("metaswitch.common.utils.encrypt_password")
     def test_private_unknown_user_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
+        settings.HSS_IP = "example.com"
         self.mock_cass.get.return_value = defer.Deferred()
         self.mock_hss.get_digest.return_value = defer.Deferred()
         self.mock_cass.insert.return_value = defer.Deferred()
