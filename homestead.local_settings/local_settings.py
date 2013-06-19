@@ -44,9 +44,13 @@ CASS_HOST = "localhost"
 
 # HSS configuration (by default, synchronization with the HSS is disabled)
 # Debian install will pick this up from /etc/clearwater/config 
-HSS_ENABLED = False
 HSS_IP = "0.0.0.0"
 HSS_PORT = 3868
+
+if HSS_IP in ["", "0.0.0.0"]:
+    HSS_ENABLED = True
+else:
+    HSS_ENABLED = False
 
 # Debian install will pick this up from /etc/clearwater/config 
 SIP_DIGEST_REALM = MUST_BE_CONFIGURED

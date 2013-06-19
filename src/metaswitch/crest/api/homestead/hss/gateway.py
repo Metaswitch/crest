@@ -51,7 +51,7 @@ DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without HSS_ENABLED set to true"""
+    """Exception to throw if gateway is created without a valid HSS_IP"""
     pass
 
 class HSSNotFound(Exception):

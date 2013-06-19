@@ -68,6 +68,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         self.handler.application.hss_gateway = self.mock_hss
         
         # Default to not using HSS, will override in tests that require it
+        settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
         settings.HSS_ENABLED = False
 
     def test_get_mainline(self):

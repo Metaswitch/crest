@@ -63,7 +63,10 @@ class TestHSSGateway(unittest.TestCase):
         self.app_listener = mock.MagicMock()
         HSSAppListener.return_value = self.app_listener
         
+        settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
         settings.HSS_ENABLED = True
+        settings.HSS_IP = "example.com"
+        settings.HSS_PORT = 3868
         self.gateway = HSSGateway()
 
     def test_hss_enabled(self):
