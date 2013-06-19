@@ -64,7 +64,7 @@ class HSSGateway(stack.ApplicationListener):
     to enable fetching of data in a more HTTP-like fashion
     """
     def __init__(self):
-        if settings.HSS_IP in ["", "0.0.0.0"]:
+        if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
         
         dstack = stack.Stack()

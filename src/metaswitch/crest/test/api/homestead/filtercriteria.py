@@ -69,7 +69,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         
         # Default to not using HSS, will override in tests that require it
         settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
-        settings.HSS_IP = ""
+        settings.HSS_ENABLED = False
 
     def test_get_mainline(self):
         self.mock_cass.get.return_value = defer.Deferred()
@@ -83,7 +83,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
     
     @mock.patch("metaswitch.common.utils.sip_public_id_to_private")
     def test_get_from_hss(self, sip_public_id_to_private):
-        settings.HSS_IP = "example.com"
+        settings.HSS_ENABLED = True
         self.mock_cass.get.return_value = defer.Deferred()
         self.mock_hss.get_ifc.return_value = defer.Deferred()
         self.mock_cass.insert.return_value = defer.Deferred()
@@ -115,7 +115,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
 
     @mock.patch("metaswitch.common.utils.sip_public_id_to_private")
     def test_unknown_user_hss(self, sip_public_id_to_private):
-        settings.HSS_IP = "example.com"
+        settings.HSS_ENABLED = True
         self.mock_cass.get.return_value = defer.Deferred()
         self.mock_hss.get_ifc.return_value = defer.Deferred()
         self.mock_cass.insert.return_value = defer.Deferred()

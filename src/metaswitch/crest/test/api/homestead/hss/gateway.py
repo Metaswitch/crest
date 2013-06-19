@@ -64,14 +64,13 @@ class TestHSSGateway(unittest.TestCase):
         HSSAppListener.return_value = self.app_listener
         
         settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
+        settings.HSS_ENABLED = True
         settings.HSS_IP = "example.com"
         settings.HSS_PORT = 3868
         self.gateway = HSSGateway()
 
     def test_hss_enabled(self):
-        settings.HSS_IP = "0.0.0.0"
-        self.assertRaises(HSSNotEnabled, HSSGateway)
-        settings.HSS_IP = ""
+        settings.HSS_ENABLED = False
         self.assertRaises(HSSNotEnabled, HSSGateway)
 
     # There is a fair amount of code here, for testing what is essentially a

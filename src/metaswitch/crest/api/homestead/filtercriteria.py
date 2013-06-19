@@ -59,7 +59,7 @@ class FilterCriteriaHandler(PassthroughHandler):
                                          column=self.column)
             ifc = result.column.value
         except NotFoundException, e:
-            if settings.HSS_IP in ["", "0.0.0.0"]: 
+            if not settings.HSS_ENABLED: 
                 # No HSS
                 raise HTTPError(404)
             # IFC not in Cassandra, attempt to fetch from HSS

@@ -62,7 +62,7 @@ class CredentialsHandler(PassthroughHandler):
             digest = utils.decrypt_password(encrypted_hash.column.value,
                                             settings.PASSWORD_ENCRYPTION_KEY)
         except NotFoundException, e:
-            if settings.HSS_IP in ["", "0.0.0.0"]:
+            if not settings.HSS_ENABLED:
                 raise HTTPError(404)
             # Digest not in Cassandra, attempt to fetch from HSS
             if public_id is None:
