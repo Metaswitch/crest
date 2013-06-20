@@ -51,7 +51,7 @@ DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without HSS_ENABLED set to true"""
+    """Exception to throw if gateway is created without a valid HSS_IP"""
     pass
 
 class HSSNotFound(Exception):
@@ -131,7 +131,7 @@ class HSSPeerListener(stack.PeerListener):
     def __init__(self, app, domain, stack):
         self.app = app
         self.realm = domain
-        self.server_name = "sip:%s" % domain
+        self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
 
     def connected(self, peer):

@@ -26,9 +26,7 @@ Pre-requisites
 1. Pip and virtualenv
 
     ```
-    sudo apt-get install python-pip python-dev build-essential
-    sudo pip install --upgrade pip
-    sudo pip install --upgrade virtualenv
+    sudo apt-get install python-pip python-dev python-virtualenv build-essential
     ```
 
 2. Lib-curl
@@ -41,6 +39,12 @@ Pre-requisites
 
     ```
     sudo apt-get install debhelper devscripts
+    ```
+
+4. XML development libraries
+
+    ```
+    sudo apt-get install libxml2-dev libxslt-dev
     ```
 
 Setting up a virtualenv
