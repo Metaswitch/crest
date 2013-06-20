@@ -55,7 +55,6 @@ class PrivateCredentialsHandler(PassthroughHandler):
     """
     @defer.inlineCallbacks
     def get(self, private_id):
-        print("Priv CREDs: GET Priv: %s" % private_id)
         try:
             encrypted_hash = yield self.cass.get(column_family=self.table,
                                                  key=private_id,
@@ -74,7 +73,6 @@ class PrivateCredentialsHandler(PassthroughHandler):
 
     @defer.inlineCallbacks
     def put(self, private_id):
-        print("Priv CREDs: PUT Priv: %s" % private_id)
         response = {}
 
         pw_hash = self.request_data.get("digest", None)
@@ -89,8 +87,6 @@ class PrivateCredentialsHandler(PassthroughHandler):
 
     @defer.inlineCallbacks
     def delete(self, private_id):
-        print("Priv CREDs: DELETE Priv: %s" % private_id)
-
         yield self.cass.remove(column_family=self.table, key=private_id, column=self.column)
         self.set_status(httplib.NO_CONTENT)
         self.finish()
@@ -106,8 +102,6 @@ class AssociatedCredentialsHandler(PassthroughHandler):
     """
     @defer.inlineCallbacks
     def get(self, private_id, public_id):
-        print("Assoc CREDs: GET Private: %s Pub %s" % (private_id, public_id))
-
         # First, validate that the 2 IDs are associated. 404 if not.
         exists = False
         db_data = yield self.cass.get_slice(key=private_id,

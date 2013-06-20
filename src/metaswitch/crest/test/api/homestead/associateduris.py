@@ -62,7 +62,6 @@ class TestAssociatedPublicHandler(unittest.TestCase):
                                                               table=config.PUBLIC_IDS_TABLE,
                                                               column="col")
         self.mock_cass = mock.MagicMock()
-        self.mock_cass2 = mock.MagicMock()
         self.handler.cass = self.mock_cass
 
 
@@ -92,13 +91,13 @@ class TestAssociatedPublicHandler(unittest.TestCase):
                                                          key='priv')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
         self.mock_cass.get_slice.return_value.callback(result_list)
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["pub"]})
+        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["sip:pub"]})
 
     def test_get_many_results(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
@@ -110,256 +109,244 @@ class TestAssociatedPublicHandler(unittest.TestCase):
                                                          key='priv')
         result_list = [
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None),
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub2', value='pub2', ttl=None), counter_super_column=None,
+            name='sip:pub2', value='sip:pub2', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
         self.mock_cass.get_slice.return_value.callback(result_list)
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["pub", "pub2"]})
+        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["sip:pub", "sip:pub2"]})
 
     def test_get_wrong_parms1(self):
         self.request.body = ""
-        get_deferred = self.handler.get("priv", "pub")
+        get_deferred = self.handler.get("priv", "sip:pub")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
 
     def test_post_wrong_parms1(self):
         self.request.body = ""
-        post_deferred = self.handler.post("priv", "pub")
+        post_deferred = self.handler.post("priv", "sip:pub")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
         self.assertEquals(post_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
 
     def test_post_add_first_entry(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'pub'
+        self.request.body = 'sip:pub'
 
         self.handler.post("priv")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub',
-                                                         finish='pub')
+                                                         start='sip:pub',
+                                                         finish='sip:pub')
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback([])
 
         # 2x get-slice to check for limits
 
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                          key='priv')
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                         key='priv')
 
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback([])
-
+        rv.callback([])
 
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
+                                                         key='sip:pub')
+
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.insert.return_value = defer.Deferred()
+        rv.callback([])
 
         # 2 x insert
 
-        self.mock_cass2.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub', value='pub')
-        # restore the initial mock cass
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub', value='sip:pub')
+
+        rv = self.mock_cass.insert.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.insert.return_value.callback(mock.MagicMock())
+        rv.callback(mock.MagicMock())
 
-        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv', value='priv')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv', value='priv')
+
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(mock.MagicMock())
 
         # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.CREATED)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["pub"]})
-
+        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["sip:pub"]})
 
     def test_post_exists(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'pub'
+        self.request.body = 'sip:pub'
 
         self.handler.post("priv")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub',
-                                                         finish='pub')
+                                                         start='sip:pub',
+                                                         finish='sip:pub')
 
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback(result_list)
-
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(result_list)
 
         # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["pub"]})
+        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["sip:pub"]})
 
     def test_post_update_add_subsequent_entry(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'pub2'
+        self.request.body = 'sip:pub2'
 
         self.handler.post("priv")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub2',
-                                                         finish='pub2')
+                                                         start='sip:pub2',
+                                                         finish='sip:pub2')
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback([])
 
         # 2x get-slice to check for limits
-
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                          key='priv')
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                         key='priv')
 
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback(result_list)
-
+        rv.callback(result_list)
 
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub2')
+                                                         key='sip:pub2')
 
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
-
-        # 2 x insert
-
-        self.mock_cass2.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub2', value='pub2')
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.insert.return_value.callback(mock.MagicMock())
+        rv.callback([])
 
-        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='pub2', column='priv', value='priv')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
+        # 2 x insert
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub2', value='sip:pub2')
+
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.insert.return_value = defer.Deferred()
+        rv.callback(mock.MagicMock())
+
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub2', column='priv', value='priv')
+
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(mock.MagicMock())
 
         # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
         result_list = [
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None),
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub2', value='pub2', ttl=None), counter_super_column=None,
+            name='sip:pub2', value='sip:pub2', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.CREATED)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["pub", "pub2"]})
-
+        self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["sip:pub", "sip:pub2"]})
 
     def test_post_update_add_entry_fails_limit_hit(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'pub2'
+        self.request.body = 'sip:pub2'
 
         post_deferred = self.handler.post("priv")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub2',
-                                                         finish='pub2')
+                                                         start='sip:pub2',
+                                                         finish='sip:pub2')
 
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback([])
 
         # 2x get-slice to check for limits
-
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                           key='priv')
 
         result_list = [
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None),
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub2', value='pub2', ttl=None), counter_super_column=None,
+            name='sip:pub2', value='sip:pub2', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None),
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub3', value='pub3', ttl=None), counter_super_column=None,
+            name='sip:pub3', value='sip:pub3', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None),
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub4', value='pub4', ttl=None), counter_super_column=None,
+            name='sip:pub4', value='sip:pub4', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None),
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub5', value='pub5', ttl=None), counter_super_column=None,
+            name='sip:pub5', value='sip:pub5', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
-        self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        self.mock_cass.insert.return_value = defer.Deferred()
+        rv.callback(result_list)
 
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
@@ -376,10 +363,10 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        self.handler.delete("priv", "pub")
+        self.handler.delete("priv", "sip:pub")
         self.mock_cass.remove.return_value.callback(mock.MagicMock())
-        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub'),
-                                                call(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv')],
+        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub'),
+                                                call(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv')],
                                                any_order = True)
 
         self.assertTrue(self.handler.finish.called)
@@ -392,18 +379,18 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.request.body = ""
         self.handler.delete("priv")
 
-        # Expect a call to query the pub/priv
+        # Expect a call to query the set of IDs to delete
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
         self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.mock_cass.remove.return_value.callback(mock.MagicMock())
-        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub'),
-                                                call(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv')],
+        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub'),
+                                                call(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv')],
                                                any_order = True)
 
         self.assertTrue(self.handler.finish.called)
@@ -417,7 +404,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.request.body = ""
         get_deferred = self.handler.delete("priv")
 
-        # Expect a call to query the pub/priv
+        # Expect a call to query the set of IDs to delete
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
         self.mock_cass.get_slice.return_value.callback([])
@@ -425,11 +412,6 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.NO_CONTENT)
 
-
-
-
-
-#############################################################################################
 
 class TestAssociatedPrivateHandler(unittest.TestCase):
     """
@@ -444,20 +426,19 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
                                                                table=config.PRIVATE_IDS_TABLE,
                                                                column="col")
         self.mock_cass = mock.MagicMock()
-        self.mock_cass2 = mock.MagicMock()
         self.handler.cass = self.mock_cass
 
     def test_private_no_put(self):
-        self.assertRaises(HTTPError, self.handler.put, "pub")
+        self.assertRaises(HTTPError, self.handler.put, "sip:pub")
 
     def test_get_no_result(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        get_deferred = self.handler.get("pub")
+        get_deferred = self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+                                                         key='sip:pub')
         self.mock_cass.get_slice.return_value.callback([])
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
@@ -468,9 +449,9 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        self.handler.get("pub")
+        self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+                                                         key='sip:pub')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
             name='priv', value='priv', ttl=None), counter_super_column=None,
@@ -479,16 +460,16 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value.callback(result_list)
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "pub", "private_ids": ["priv"]})
+        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "sip:pub", "private_ids": ["priv"]})
 
     def test_get_many_results(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        self.handler.get("pub")
+        self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+                                                         key='sip:pub')
         result_list = [
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
             name='priv', value='priv', ttl=None), counter_super_column=None,
@@ -500,326 +481,220 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value.callback(result_list)
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "pub", "private_ids": ["priv", "priv2"]})
+        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "sip:pub", "private_ids": ["priv", "priv2"]})
 
     def test_get_wrong_parms1(self):
         self.request.body = ""
-        get_deferred = self.handler.get("pub", "priv")
+        get_deferred = self.handler.get("sip:pub", "priv")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
 
     def test_post_wrong_parms1(self):
         self.request.body = ""
-        post_deferred = self.handler.post("pub", "priv")
+        post_deferred = self.handler.post("sip:pub", "priv")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
         self.assertEquals(post_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
 
-
     def test_post_add_first_entry(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = 'priv'
 
-        self.handler.post("pub")
+        self.handler.post("sip:pub")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub',
-                                                         finish='pub')
+                                                         start='sip:pub',
+                                                         finish='sip:pub')
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback([])
 
         # 2x get-slice to check for limits
 
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                           key='priv')
 
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback([])
-
+        rv.callback([])
 
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
-
-        # 2 x insert
-
-        self.mock_cass2.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub', value='pub')
-        # restore the initial mock cass
+                                                         key='sip:pub')
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.insert.return_value.callback(mock.MagicMock())
+        rv.callback([])
 
-        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv', value='priv')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
+        # 2 x insert
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub', value='sip:pub')
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.insert.return_value = defer.Deferred()
+        rv.callback(mock.MagicMock())
+
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv', value='priv')
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(mock.MagicMock())
 
         # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
+                                                         key='sip:pub')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
             name='priv', value='priv', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.CREATED)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "pub", "private_ids": ["priv"]})
+        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "sip:pub", "private_ids": ["priv"]})
 
     def test_post_failed_2nd_insert(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = 'priv'
 
-        post_deferred = self.handler.post("pub")
+        post_deferred = self.handler.post("sip:pub")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub',
-                                                         finish='pub')
+                                                         start='sip:pub',
+                                                         finish='sip:pub')
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
-
-        # 2x get-slice to check for limits
-
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                          key='priv')
-
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback([])
+        rv.callback([])
 
+        # 2x get-slice to check for limits
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                         key='priv')
+
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback([])
 
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
-
-        # 2 x insert
-
-        self.mock_cass2.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub', value='pub')
-        # restore the initial mock cass
+                                                         key='sip:pub')
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.insert.return_value.callback(mock.MagicMock())
+        rv.callback([])
 
-        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv', value='priv')
+        # 2 x insert
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub', value='sip:pub')
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.insert.return_value = defer.Deferred()
+        rv.callback(mock.MagicMock())
 
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.remove.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
+        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv', value='priv')
+
+        rv = self.mock_cass.insert.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.remove.return_value = defer.Deferred()
 
         # the key point... throw an exception from the database.  Doesn't matter what.
-        self.mock_cass.insert.return_value.errback(Exception("fail"))
+        rv.errback(Exception("fail"))
 
         # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.remove.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                         key='priv', column='pub', value='pub')
-        self.mock_cass2.remove.return_value.callback(mock.MagicMock())
+        self.mock_cass.remove.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                         key='priv', column='sip:pub', value='sip:pub')
+        self.mock_cass.remove.return_value.callback(mock.MagicMock())
 
         self.assertEquals(post_errback.call_args[0][0].getErrorMessage(), 'HTTP 500: Internal Server Error')
 
     def test_post_exists(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = 'priv'
 
-        self.handler.post("pub")
+        self.handler.post("sip:pub")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv',
-                                                         start='pub',
-                                                         finish='pub')
+                                                         start='sip:pub',
+                                                         finish='sip:pub')
 
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback(result_list)
-
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(result_list)
 
         # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
+                                                         key='sip:pub')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
             name='priv', value='priv', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "pub", "private_ids": ["priv"]})
-
-    def test_post_update_add_subsequent_entry(self):
-        self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        self.request.body = 'priv2'
-
-        self.handler.post("pub")
-        # get_slice to check if it exists
-        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                         key='priv2',
-                                                         start='pub',
-                                                         finish='pub')
-
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
-
-        # 2x get-slice to check for limits
-
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                          key='priv2')
-
-        result_list = [
-             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None)]
-
-        # restore the initial mock cass
-        self.mock_cass.reset_mock()
-        self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback(result_list)
-
-
-        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
-
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
-
-        # 2 x insert
-
-        self.mock_cass2.insert.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv2', column='pub', value='pub')
-        # restore the initial mock cass
-        self.mock_cass.reset_mock()
-        self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.insert.return_value.callback(mock.MagicMock())
-
-        self.mock_cass.insert.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv2', value='priv2')
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
-
-        # get_slice public IDs, key=priv to get returned data
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
-        result_list = [
-            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='priv', value='priv', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None),
-            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='priv2', value='priv2', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None)]
-
-        self.mock_cass2.get_slice.return_value.callback(result_list)
-
-        self.assertTrue(self.handler.finish.called)
-        self.assertEquals(self.handler.get_status(), httplib.CREATED)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "pub", "private_ids": ["priv", "priv2"]})
-
+        self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "sip:pub", "private_ids": ["priv"]})
 
     def test_post_update_add_entry_fails_limit_hit(self):
+        # This is correct for the case where each public ID can only be
+        # associated with one private ID.
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = 'priv2'
 
-        post_deferred = self.handler.post("pub")
+        post_deferred = self.handler.post("sip:pub")
         # get_slice to check if it exists
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv2',
-                                                         start='pub',
-                                                         finish='pub')
+                                                         start='sip:pub',
+                                                         finish='sip:pub')
 
-
-        # switch to the other mock Cassandra so that subsequent calls don't go straight through.
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback([])
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback([])
 
         # 2x get-slice to check for limits
-
-        self.mock_cass2.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
-                                                          key='priv2')
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                         key='priv2')
 
         result_list = [
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='pub', value='pub', ttl=None), counter_super_column=None,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        # restore the initial mock cass
+        rv = self.mock_cass.get_slice.return_value
         self.mock_cass.reset_mock()
         self.mock_cass.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass
-        self.mock_cass2.get_slice.return_value.callback(result_list)
+        rv.callback(result_list)
 
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                          key='pub')
+                                                          key='sip:pub')
 
         result_list = [
             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
             name='priv', value='priv', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None),
-            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='priv6', value='priv6', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None),
-            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='priv3', value='priv3', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None),
-            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='priv4', value='priv4', ttl=None), counter_super_column=None,
-            super_column=None, counter_column=None),
-            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
-            name='priv5', value='priv5', ttl=None), counter_super_column=None,
             super_column=None, counter_column=None)]
 
-        # restore the 2nd mock cass
-        self.mock_cass2.reset_mock()
-        self.mock_cass2.get_slice.return_value = defer.Deferred()
-        self.handler.cass = self.mock_cass2
-        self.mock_cass.get_slice.return_value.callback(result_list)
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(result_list)
 
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
@@ -827,7 +702,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
 
     def test_post_missing_body(self):
         self.request.body = ""
-        post_deferred = self.handler.post("pub")
+        post_deferred = self.handler.post("sip:pub")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
         self.assertEquals(post_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
@@ -836,10 +711,10 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        self.handler.delete("pub", "priv")
+        self.handler.delete("sip:pub", "priv")
         self.mock_cass.remove.return_value.callback(mock.MagicMock())
-        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub'),
-                                                call(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv')],
+        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub'),
+                                                call(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv')],
                                                any_order = True)
 
         self.assertTrue(self.handler.finish.called)
@@ -850,11 +725,11 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        self.handler.delete("pub")
+        self.handler.delete("sip:pub")
 
-        # Expect a call to query the pub/priv
+        # Expect a call to query the set of IDs to delete
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+                                                         key='sip:pub')
         result_list = [
              ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
             name='priv', value='priv', ttl=None), counter_super_column=None,
@@ -862,26 +737,132 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value.callback(result_list)
 
         self.mock_cass.remove.return_value.callback(mock.MagicMock())
-        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='pub'),
-                                                call(column_family=config.PRIVATE_IDS_TABLE, key='pub', column='priv')],
+        self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub'),
+                                                call(column_family=config.PRIVATE_IDS_TABLE, key='sip:pub', column='priv')],
                                                any_order = True)
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.NO_CONTENT)
-
 
     def test_delete_wildcard_nonexistent(self):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         self.request.body = ""
-        get_deferred = self.handler.delete("pub")
+        get_deferred = self.handler.delete("sip:pub")
 
-        # Expect a call to query the pub/priv
+        # Expect a call to query the set of IDs to delete
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
-                                                         key='pub')
+                                                         key='sip:pub')
         self.mock_cass.get_slice.return_value.callback([])
 
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.NO_CONTENT)
+
+class TestAssociatedPublicByPublicHandler(unittest.TestCase):
+    """
+    Detailed, isolated unit tests of the associatedPublicByPublicHandler class.
+    """
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.app = mock.MagicMock()
+        self.request = mock.MagicMock()
+        self.handler = associatedURIs.AssociatedPublicByPublicHandler(self.app,
+                                                               self.request,
+                                                               table=config.PRIVATE_IDS_TABLE,
+                                                               column="col")
+        self.mock_cass = mock.MagicMock()
+        self.handler.cass = self.mock_cass
+
+    def test_pubbypub_no_put(self):
+        self.assertRaises(HTTPError, self.handler.put, "sip:pub")
+
+    def test_pubbypub_no_post(self):
+        self.assertRaises(HTTPError, self.handler.post, "sip:pub")
+
+    def test_pubbypub_no_delete(self):
+        self.assertRaises(HTTPError, self.handler.delete, "sip:pub")
+
+    def test_get_no_result(self):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        self.mock_cass.get.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        self.request.body = ""
+        get_deferred = self.handler.get("sip:pub")
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
+                                                         key='sip:pub')
+        self.mock_cass.get_slice.return_value.callback([])
+        get_errback = mock.MagicMock()
+        get_deferred.addErrback(get_errback)
+        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
+
+    def test_get_one_result(self):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        self.mock_cass.get.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        self.request.body = ""
+        self.handler.get("sip:pub")
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
+                                                         key='sip:pub')
+        result_list = [
+             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='priv', value='priv', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+
+        # set the 2nd mock cass
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(result_list)
+
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                        key='priv')
+        result_list = [
+             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+
+        self.mock_cass.get_slice.return_value.callback(result_list)
+
+        self.assertTrue(self.handler.finish.called)
+        self.assertEquals(self.handler.get_status(), httplib.OK)
+        self.assertEquals(self.handler.finish.call_args[0][0], {"public_ids": ["sip:pub"]})
+
+    def test_get_many_results(self):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        self.mock_cass.get.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        self.request.body = ""
+        self.handler.get("sip:pub")
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
+                                                         key='sip:pub')
+
+        result_list = [
+             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='priv', value='priv', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+
+        rv = self.mock_cass.get_slice.return_value
+        self.mock_cass.reset_mock()
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        rv.callback(result_list)
+
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
+                                                         key='priv')
+        result_list = [
+            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='sip:pub', value='sip:pub', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None),
+            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='sip:pub2', value='sip:pub2', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None),
+            ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='sip:pub3', value='sip:pub3', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+
+        self.mock_cass.get_slice.return_value.callback(result_list)
+
+        self.assertTrue(self.handler.finish.called)
+        self.assertEquals(self.handler.get_status(), httplib.OK)
+        self.assertEquals(self.handler.finish.call_args[0][0], {"public_ids": ["sip:pub", "sip:pub2", "sip:pub3"]})
 

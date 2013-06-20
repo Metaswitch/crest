@@ -144,7 +144,6 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
 
         self.finish({"public_id": public_id, "private_ids": private_ids})
 
-
     @defer.inlineCallbacks
     def post(self, public_id, private_id=None):
         if private_id is not None:
@@ -224,7 +223,6 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
 
         self.finish({"private_id": private_id, "public_ids": public_ids})
 
-
     @defer.inlineCallbacks
     def delete(self, private_id, public_id=None):
         if public_id is not None:
@@ -268,8 +266,11 @@ class AssociatedPublicByPublicHandler(AssociatedURIsHandler):
         public_ids = []
         for record in db_data:
             public_ids.append(record.column.value)
-        if public_ids == []:
-            # Should never get here.  Assert?
-            raise HTTPError(httplib.NOT_FOUND)
+
+        assert(public_ids != [])  # There are probably tiny windows in which this
+                                  # is not the case. Best strategy?
 
         self.finish({"public_ids": public_ids})
+
+    def delete(self, *args):
+        raise HTTPError(405)
