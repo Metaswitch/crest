@@ -72,7 +72,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.get("priv")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
@@ -85,7 +85,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.get("priv")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
@@ -103,7 +103,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.get("priv")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE,
                                                          key='priv')
@@ -121,14 +121,14 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.assertEquals(self.handler.finish.call_args[0][0], {"private_id": "priv", "public_ids": ["sip:pub", "sip:pub2"]})
 
     def test_get_wrong_parms1(self):
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.get("priv", "sip:pub")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
 
     def test_post_wrong_parms1(self):
-        self.request.body = ""
+        self.request.arguments = {}
         post_deferred = self.handler.post("priv", "sip:pub")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
@@ -137,7 +137,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
     def test_post_add_first_entry(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'sip:pub'
+        self.request.arguments = { 'public_id': 'sip:pub'}
 
         self.handler.post("priv")
         # get_slice to check if it exists
@@ -201,7 +201,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
     def test_post_exists(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'sip:pub'
+        self.request.arguments = { 'public_id': 'sip:pub' }
 
         self.handler.post("priv")
         # get_slice to check if it exists
@@ -236,7 +236,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
     def test_post_update_add_subsequent_entry(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'sip:pub2'
+        self.request.arguments = { 'public_id': 'sip:pub2' }
 
         self.handler.post("priv")
         # get_slice to check if it exists
@@ -307,7 +307,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
     def test_post_update_add_entry_fails_limit_hit(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'sip:pub2'
+        self.request.arguments = { 'public_id': 'sip:pub2' }
 
         post_deferred = self.handler.post("priv")
         # get_slice to check if it exists
@@ -353,7 +353,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.assertEquals(post_errback.call_args[0][0].getErrorMessage(), 'HTTP 400: Bad Request')
 
     def test_post_missing_body(self):
-        self.request.body = ""
+        self.request.arguments = {}
         post_deferred = self.handler.post("priv")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
@@ -362,7 +362,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
     def test_delete_specific_mainline(self):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.delete("priv", "sip:pub")
         self.mock_cass.remove.return_value.callback(mock.MagicMock())
         self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub'),
@@ -376,7 +376,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.delete("priv")
 
         # Expect a call to query the set of IDs to delete
@@ -401,7 +401,7 @@ class TestAssociatedPublicHandler(unittest.TestCase):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.delete("priv")
 
         # Expect a call to query the set of IDs to delete
@@ -435,7 +435,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
                                                          key='sip:pub')
@@ -448,7 +448,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
                                                          key='sip:pub')
@@ -466,7 +466,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
                                                          key='sip:pub')
@@ -484,14 +484,14 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.assertEquals(self.handler.finish.call_args[0][0], {"public_id": "sip:pub", "private_ids": ["priv", "priv2"]})
 
     def test_get_wrong_parms1(self):
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.get("sip:pub", "priv")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
 
     def test_post_wrong_parms1(self):
-        self.request.body = ""
+        self.request.arguments = {}
         post_deferred = self.handler.post("sip:pub", "priv")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
@@ -500,7 +500,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
     def test_post_add_first_entry(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'priv'
+        self.request.arguments = { 'private_id': 'priv' }
 
         self.handler.post("sip:pub")
         # get_slice to check if it exists
@@ -560,7 +560,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
     def test_post_failed_2nd_insert(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'priv'
+        self.request.arguments = { 'private_id': 'priv' }
 
         post_deferred = self.handler.post("sip:pub")
         post_errback = mock.MagicMock()
@@ -618,7 +618,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
     def test_post_exists(self):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'priv'
+        self.request.arguments = { 'private_id': 'priv' }
 
         self.handler.post("sip:pub")
         # get_slice to check if it exists
@@ -655,7 +655,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         # associated with one private ID.
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = 'priv2'
+        self.request.arguments = { 'private_id': 'priv2' }
 
         post_deferred = self.handler.post("sip:pub")
         # get_slice to check if it exists
@@ -701,7 +701,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.assertEquals(post_errback.call_args[0][0].getErrorMessage(), 'HTTP 400: Bad Request')
 
     def test_post_missing_body(self):
-        self.request.body = ""
+        self.request.arguments = {}
         post_deferred = self.handler.post("sip:pub")
         post_errback = mock.MagicMock()
         post_deferred.addErrback(post_errback)
@@ -710,7 +710,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
     def test_delete_specific_mainline(self):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.delete("sip:pub", "priv")
         self.mock_cass.remove.return_value.callback(mock.MagicMock())
         self.mock_cass.remove.assert_has_calls([call(column_family=config.PUBLIC_IDS_TABLE, key='priv', column='sip:pub'),
@@ -724,7 +724,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.delete("sip:pub")
 
         # Expect a call to query the set of IDs to delete
@@ -748,7 +748,7 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
         self.mock_cass.remove.return_value = defer.Deferred()
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.delete("sip:pub")
 
         # Expect a call to query the set of IDs to delete
@@ -787,7 +787,7 @@ class TestAssociatedPublicByPublicHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         get_deferred = self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
                                                          key='sip:pub')
@@ -800,7 +800,7 @@ class TestAssociatedPublicByPublicHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
                                                          key='sip:pub')
@@ -832,7 +832,7 @@ class TestAssociatedPublicByPublicHandler(unittest.TestCase):
         self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
-        self.request.body = ""
+        self.request.arguments = {}
         self.handler.get("sip:pub")
         self.mock_cass.get_slice.assert_called_once_with(column_family=config.PRIVATE_IDS_TABLE,
                                                          key='sip:pub')
