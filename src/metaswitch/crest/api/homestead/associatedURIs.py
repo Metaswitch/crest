@@ -149,7 +149,7 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
         if private_id is not None:
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
         else:
-            private_id = self.request.body
+            private_id = self.request_data.get("private_id", None)
             if private_id == "":
                 raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
@@ -208,7 +208,7 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
         if public_id is not None:
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
         else:
-            public_id = self.request.body
+            public_id = self.request_data.get("public_id", None)
             if public_id == "":
                 raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
