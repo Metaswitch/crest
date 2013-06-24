@@ -41,7 +41,7 @@ import unittest
 
 from mock import ANY
 from twisted.internet import defer
-from twisted.python.failure import Failure 
+from twisted.python.failure import Failure
 
 from metaswitch.crest import settings
 from metaswitch.crest.api.homestead.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener
@@ -55,14 +55,14 @@ class TestHSSGateway(unittest.TestCase):
     @mock.patch("diameter.stack")
     def setUp(self, stack, HSSPeerListener, HSSAppListener):
         unittest.TestCase.setUp(self)
-        
+
         self.dstack = mock.MagicMock()
         stack.Stack.return_value = self.dstack
         self.peer_listener = mock.MagicMock()
         HSSPeerListener.return_value = self.peer_listener
         self.app_listener = mock.MagicMock()
         HSSAppListener.return_value = self.app_listener
-        
+
         settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
         settings.HSS_ENABLED = True
         settings.HSS_IP = "example.com"
@@ -96,25 +96,45 @@ class TestHSSGateway(unittest.TestCase):
         get_deferred.addErrback(get_errback)
         self.peer_listener.fetch_multimedia_auth.return_value.errback(HSSNotFound())
         self.assertEquals(get_errback.call_args[0][0].type, HSSNotFound)
-    
+
     def test_get_ifc(self):
-        self.peer_listener.fetchIFC.return_value = defer.Deferred()
+        self.peer_listener.fetch_server_assignment.return_value = defer.Deferred()
         get_deferred = self.gateway.get_ifc("priv", "pub")
-        self.peer_listener.fetchIFC.assert_called_once_with("priv", "pub")
+        self.peer_listener.fetch_server_assignment.assert_called_once_with("priv", "pub")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
-        self.peer_listener.fetchIFC.return_value.callback("ifc")
+        # server_assignmetn returns both the public ids and the iFC. We only care about the iFC
+        self.peer_listener.fetch_server_assignment.return_value.callback(([], "ifc"))
         self.assertEquals(get_callback.call_args[0][0], "ifc")
-        
+
     def test_get_ifc_not_found(self):
-        self.peer_listener.fetchIFC.return_value = defer.Deferred()
+        self.peer_listener.fetch_server_assignment.return_value = defer.Deferred()
         get_deferred = self.gateway.get_ifc("priv", "pub")
-        self.peer_listener.fetchIFC.assert_called_once_with("priv", "pub")
+        self.peer_listener.fetch_server_assignment.assert_called_once_with("priv", "pub")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
-        self.peer_listener.fetchIFC.return_value.errback(HSSNotFound())
+        self.peer_listener.fetch_server_assignment.return_value.errback(HSSNotFound())
         self.assertEquals(get_errback.call_args[0][0].type, HSSNotFound)
-    
+
+    def test_get_public_ids(self):
+        self.peer_listener.fetch_server_assignment.return_value = defer.Deferred()
+        get_deferred = self.gateway.get_public_ids("priv", "pub")
+        self.peer_listener.fetch_server_assignment.assert_called_once_with("priv", "pub")
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        # server_assignmetn returns both the public ids and the iFC. We only care about the ids
+        self.peer_listener.fetch_server_assignment.return_value.callback((["pub1", "pub2"], "ifc"))
+        self.assertEquals(get_callback.call_args[0][0], ["pub1", "pub2"])
+
+    def test_get_public_ids_not_found(self):
+        self.peer_listener.fetch_server_assignment.return_value = defer.Deferred()
+        get_deferred = self.gateway.get_public_ids("priv", "pub")
+        self.peer_listener.fetch_server_assignment.assert_called_once_with("priv", "pub")
+        get_errback = mock.MagicMock()
+        get_deferred.addErrback(get_errback)
+        self.peer_listener.fetch_server_assignment.return_value.errback(HSSNotFound())
+        self.assertEquals(get_errback.call_args[0][0].type, HSSNotFound)
+
 class TestHSSAppListener(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
@@ -122,17 +142,17 @@ class TestHSSAppListener(unittest.TestCase):
         stack = mock.MagicMock()
         stack.getDictionary.return_value = self.cx
         self.app_listener = HSSAppListener(stack)
-        
+
         self.request = mock.MagicMock()
         self.request.application_id = "app_id"
         self.request.command_code = "command_code"
         self.request.eTe = "E.T. phone home"
-    
+
     def test_request_hash(self):
         self.assertEquals(self.app_listener.request_hash(self.request),
                      ("app_id", "command_code", "E.T. phone home"))
 
-    
+
     def test_add_pending_response(self):
         deferred = defer.Deferred()
         self.app_listener.add_pending_response(self.request, deferred)
@@ -159,16 +179,16 @@ class TestHSSPeerListener(unittest.TestCase):
                 mock.MagicMock.__init__(self)
                 self.avp = avp
                 self.value = value
-            
+
             def withOctetString(self, s):
                 return {self.avp: s}
-                
+
             def withInteger32(self, i):
                 return {self.avp: i}
-                
+
             def withAVP(self, avp):
                 return {self.avp: avp}
-                
+
         def getAVP(self, avp):
             if avp == 'Vendor-Specific-Application-Id':
                 return {avp: None}
@@ -180,11 +200,11 @@ class TestHSSPeerListener(unittest.TestCase):
         stack = mock.MagicMock()
         stack.getDictionary.return_value = self.cx
         self.app = mock.MagicMock()
-        
+
         self.peer_listener = HSSPeerListener(self.app, "domain", stack)
         self.peer = mock.MagicMock()
         self.peer_listener.connected(self.peer)
-        self.assertEquals(self.peer, self.peer_listener.peer) 
+        self.assertEquals(self.peer, self.peer_listener.peer)
         settings.SPROUT_HOSTNAME = "sprout"
         settings.SPROUT_PORT = 1234
 
@@ -195,7 +215,7 @@ class TestHSSPeerListener(unittest.TestCase):
         mock_exp.getGroup.return_value = [None, mock_error]
         self.cx.findFirstAVP.return_value = mock_exp
         request = mock.MagicMock()
-        
+
         error_code = self.peer_listener.get_diameter_error_code(request)
         self.cx.findFirstAVP.assert_called_once_with(request, "Experimental-Result")
         mock_exp.getGroup.assert_called_once_with()
@@ -212,10 +232,10 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'}, 
-                           {'Public-Identity': 'pub'}, 
+                          [{'User-Name': 'priv'},
+                           {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
-                           {'SIP-Number-Auth-Items': 1}, 
+                           {'SIP-Number-Auth-Items': 1},
                            {'SIP-Auth-Data-Item': {'SIP-Authentication-Scheme': 'SIP Digest'}}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
@@ -241,17 +261,15 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred.addErrback(deferred_errback)
         inner_deferred.callback(mock_answer)
         self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
-            
-    @mock.patch("xml.etree.ElementTree.tostring")
-    @mock.patch("xml.etree.ElementTree.fromstring")
-    def test_fetchIFC(self, fromstring, tostring):
+
+    def test_fetch_server_assignment(self):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetchIFC("priv", "pub")
+        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Server-Assignment", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'}, 
-                           {'Public-Identity': 'pub'}, 
+                          [{'User-Name': 'priv'},
+                           {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'Server-Assignment-Type': 1},
                            {'Destination-Realm': 'domain'},
@@ -262,27 +280,86 @@ class TestHSSPeerListener(unittest.TestCase):
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic returning a value from the HSS
         mock_answer = mock.MagicMock()
+        ifc_xml = (
+        "<ServiceProfile>"
+          "<PublicIdentity>"
+            "<Identity>pub</Identity>"
+            "<Extension>"
+              "<IdentityType>0</IdentityType>"
+            "</Extension>"
+          "</PublicIdentity>"
+          "<InitialFilterCriteria>"
+            "ifc"
+          "</InitialFilterCriteria>"
+        "</ServiceProfile>")
         self.cx.findFirstAVP.return_value = mock.MagicMock()
-        self.cx.findFirstAVP.return_value.getOctetString.return_value = "user_data"
+        self.cx.findFirstAVP.return_value.getOctetString.return_value = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<IMSSubscription>"
+          "<PrivateID>priv</PrivateID>"
+          "%s"
+        "</IMSSubscription>") % ifc_xml
         deferred_callback = mock.MagicMock()
         deferred.addCallback(deferred_callback)
-        # IFC is more complex than MM auth, we have to mock out the xml parsing
-        mock_xml = mock.MagicMock()
-        fromstring.return_value = mock_xml
-        mock_sp = mock.MagicMock()
-        mock_sp.find.return_value.text = "pub"
-        mock_xml.iterfind.return_value = [mock_sp]
-        tostring.return_value = "ifc"
         inner_deferred.callback(mock_answer)
         self.cx.findFirstAVP.assert_called_once_with(mock_answer, "User-Data")
-        self.assertEquals(deferred_callback.call_args[0][0], "ifc")
-    
-    @mock.patch("xml.etree.ElementTree.tostring")
-    @mock.patch("xml.etree.ElementTree.fromstring")
-    def test_fetchIFC_error(self, fromstring, tostring):
+        self.assertEquals(deferred_callback.call_args[0][0], (['pub'], ifc_xml))
+
+    def test_fetch_server_assignment_multi(self):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetchIFC("priv", "pub")
+        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Server-Assignment", True)
+        self.assertEquals(mock_req.avps,
+                          [{'User-Name': 'priv'},
+                           {'Public-Identity': 'pub'},
+                           {'Server-Name': 'sip:sprout:1234'},
+                           {'Server-Assignment-Type': 1},
+                           {'Destination-Realm': 'domain'},
+                           {'User-Data-Already-Available': 0},
+                           {'Vendor-Specific-Application-Id': None},
+                           {'Auth-Session-State': 0}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        # Now mimic returning a value from the HSS
+        mock_answer = mock.MagicMock()
+        ifc_xml = (
+        "<ServiceProfile>"
+          "<PublicIdentity>"
+            "<Identity>pub</Identity>"
+            "<Extension>"
+              "<IdentityType>0</IdentityType>"
+            "</Extension>"
+          "</PublicIdentity>"
+          "<PublicIdentity>"
+            "<Identity>pub2</Identity>"
+            "<Extension>"
+              "<IdentityType>0</IdentityType>"
+            "</Extension>"
+          "</PublicIdentity>"
+          "<InitialFilterCriteria>"
+            "ifc"
+          "</InitialFilterCriteria>"
+        "</ServiceProfile>")
+        self.cx.findFirstAVP.return_value = mock.MagicMock()
+        self.cx.findFirstAVP.return_value.getOctetString.return_value = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<IMSSubscription>"
+          "<PrivateID>priv</PrivateID>"
+          "%s"
+        "</IMSSubscription>") % ifc_xml
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        self.cx.findFirstAVP.assert_called_once_with(mock_answer, "User-Data")
+        self.assertEquals(deferred_callback.call_args[0][0], (['pub', 'pub2'], ifc_xml))
+
+    @mock.patch("xml.etree.ElementTree.tostring")
+    @mock.patch("xml.etree.ElementTree.fromstring")
+    def test_fetch_server_assignment_error(self, fromstring, tostring):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic error returning a value from the HSS
         mock_answer = mock.MagicMock()
@@ -291,13 +368,13 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred.addErrback(deferred_errback)
         inner_deferred.callback(mock_answer)
         self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
-        
+
     @mock.patch("xml.etree.ElementTree.tostring")
     @mock.patch("xml.etree.ElementTree.fromstring")
-    def test_fetchIFC_incorrect_public_id(self, fromstring, tostring):
+    def test_fetch_server_assignment_incorrect_public_id(self, fromstring, tostring):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetchIFC("priv", "pub")
+        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic returning a value from the HSS (but with the incorrect public id)
         mock_answer = mock.MagicMock()
