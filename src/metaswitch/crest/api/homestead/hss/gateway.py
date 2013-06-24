@@ -205,8 +205,8 @@ class HSSPeerListener(stack.PeerListener):
         # Iterate over all nodes in xml, returning the one matching the correct
         # public id
         for sp in xml.iterfind('./ServiceProfile'):
-            for p in sp.iterfind('./PublicIdentity/Identity'):
-                if p.text == sp.find('./PublicIdentity/Identity').text:
+            for returned_public_id in sp.iterfind('./PublicIdentity/Identity'):
+                if returned_public_id.text == public_id:
                     # Note that returnValue is the standard method of returning from
                     # defer.inlineCallbacks decorated generators, so that once a public
                     # id is returned the generator will terminate
