@@ -35,17 +35,18 @@
 
 import logging
 import httplib
+import urllib
 
 from cyclone.web import HTTPError
 from telephus.cassandra.ttypes import NotFoundException
 from twisted.internet import defer
 
+from metaswitch.common import utils
 from metaswitch.crest.api.passthrough import PassthroughHandler
 from metaswitch.crest import settings
-from metaswitch.common import utils
 from metaswitch.crest.api.homestead.hss.gateway import HSSNotFound
 from metaswitch.crest.api.homestead import config
-
+from metaswitch.crest.api.homestead.associatedURIs import AssociatedURIsHandler
 _log = logging.getLogger("crest.api.homestead")
 
 class PrivateCredentialsHandler(PassthroughHandler):
@@ -95,30 +96,24 @@ class PrivateCredentialsHandler(PassthroughHandler):
         raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
 
-class AssociatedCredentialsHandler(PassthroughHandler):
+class AssociatedCredentialsHandler(AssociatedURIsHandler):
     """
     Handler for getting Credentials, & confirming associated public ID.
 
     """
     @defer.inlineCallbacks
     def get(self, private_id, public_id):
-        # First, validate that the 2 IDs are associated. 404 if not.
-        exists = False
-        db_data = yield self.cass.get_slice(key=private_id,
-                                            column_family=config.PUBLIC_IDS_TABLE,
-                                            start=public_id,
-                                            finish=public_id)
-
-        for column in db_data:
-            if column.column.name == public_id:
-                exists = True
-
-        if not exists:
-            raise HTTPError(httplib.NOT_FOUND)
-
-        # Now retrieve the digest - locally if present, else from the HSS
         try:
-
+            exists = False
+            db_data = yield self.cass.get_slice(key=private_id,
+                                                column_family=config.PUBLIC_IDS_TABLE,
+                                                start=public_id,
+                                                finish=public_id)
+            for column in db_data:
+                if column.column.name == public_id:
+                    exists = True
+            if not exists:
+                raise NotFoundException()
             encrypted_hash = yield self.cass.get(column_family=self.table,
                                                  key=private_id,
                                                  column=self.column)
@@ -128,16 +123,23 @@ class AssociatedCredentialsHandler(PassthroughHandler):
             if not settings.HSS_ENABLED:
                 raise HTTPError(httplib.NOT_FOUND)
 
+            # Either the digest or the association doesn't exist in the DB, attempt an
+            # import from the HSS
             try:
                 digest = yield self.application.hss_gateway.get_digest(private_id, public_id)
+                public_ids = yield self.application.hss_gateway.get_public_ids(private_id, public_id)
             except HSSNotFound, e:
                 raise HTTPError(httplib.NOT_FOUND)
             # Have result from HSS, store in Cassandra
             encrypted_hash = utils.encrypt_password(digest, settings.PASSWORD_ENCRYPTION_KEY)
+            _log.info("Got digest from HSS")
             yield self.cass.insert(column_family=self.table,
                                    key=private_id,
                                    column=self.column,
                                    value=encrypted_hash)
+            _log.info("Got associated public identities from HSS: %s" % public_ids)
+            for p in public_ids:
+                yield self.insert_in_both_tables(private_id, p)
 
         self.finish({"digest": digest})
 
