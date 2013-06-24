@@ -81,42 +81,53 @@ class AssociatedURIsHandler(PassthroughHandler):
             self.set_status(httplib.OK)
         else:
             # check that neither pri nor public ID is at limit of allowed associations
-            db_data = yield self.cass.get_slice(key=private_id,
-                                                column_family=config.PUBLIC_IDS_TABLE)
+            d1 = self.cass.get_slice(key=private_id,
+                                     column_family=config.PUBLIC_IDS_TABLE)
+            d2 = self.cass.get_slice(key=public_id,
+                                     column_family=config.PRIVATE_IDS_TABLE)
+            pub_ids = yield d1
+            priv_ids = yield d2
 
-            if len(db_data) >= config.MAX_ASSOCIATED_PUB_IDS:
+            if len(pub_ids) >= config.MAX_ASSOCIATED_PUB_IDS:
                 raise HTTPError(httplib.BAD_REQUEST, "", {"reason":"Associated Public Identity limit reached"})
 
-            db_data = yield self.cass.get_slice(key=public_id,
-                                                column_family=config.PRIVATE_IDS_TABLE)
-
-            if len(db_data) >= config.MAX_ASSOCIATED_PRI_IDS:
+            if len(priv_ids) >= config.MAX_ASSOCIATED_PRI_IDS:
                 raise HTTPError(httplib.BAD_REQUEST, "", {"reason":"Associated Private Identity limit reached"})
 
-            # Insert in both tables. If the 2nd insert fails for any reason
-            # at all, remove the first entry so that the tables stay in step.
-            yield self.cass.insert(column_family=config.PUBLIC_IDS_TABLE,
-                                   key=private_id,
-                                   column=public_id,
-                                   value=public_id)
             try:
-                yield self.cass.insert(column_family=config.PRIVATE_IDS_TABLE,
-                                       key=public_id,
-                                       column=private_id,
-                                       value=private_id)
+                # Insert in both tables. If either insert fails for any reason
+                # at all, remove both entries so that the tables stay in step.
+                d1 = self.cass.insert(column_family=config.PUBLIC_IDS_TABLE,
+                                      key=private_id,
+                                      column=public_id,
+                                      value=public_id)
+                d2 = self.cass.insert(column_family=config.PRIVATE_IDS_TABLE,
+                                      key=public_id,
+                                      column=private_id,
+                                      value=private_id)
+                yield d1
+                yield d2
             except:
-                yield self.cass.remove(column_family=config.PUBLIC_IDS_TABLE,
-                                       key=private_id,
-                                       column=public_id,
-                                       value=public_id)
+                d3 = self.cass.remove(column_family=config.PUBLIC_IDS_TABLE,
+                                      key=private_id,
+                                      column=public_id,
+                                      value=public_id)
+                d4 = self.cass.remove(column_family=config.PRIVATE_IDS_TABLE,
+                                      key=public_id,
+                                      column=private_id,
+                                      value=private_id)
+                yield d3
+                yield d4
                 raise HTTPError(httplib.INTERNAL_SERVER_ERROR)
 
             self.set_status(httplib.CREATED)
 
     @defer.inlineCallbacks
     def delete_from_both_tables(self, private_id, public_id):
-        yield self.cass.remove(column_family=config.PUBLIC_IDS_TABLE, key=private_id, column=public_id)
-        yield self.cass.remove(column_family=config.PRIVATE_IDS_TABLE, key=public_id, column=private_id)
+        d1 = self.cass.remove(column_family=config.PUBLIC_IDS_TABLE, key=private_id, column=public_id)
+        d2 = self.cass.remove(column_family=config.PRIVATE_IDS_TABLE, key=public_id, column=private_id)
+        yield d1
+        yield d2
 
 
 class AssociatedPrivateHandler(AssociatedURIsHandler):
