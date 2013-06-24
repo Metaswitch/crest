@@ -35,17 +35,18 @@
 
 import logging
 import httplib
+import urllib
 
 from cyclone.web import HTTPError
 from telephus.cassandra.ttypes import NotFoundException
 from twisted.internet import defer
 
+from metaswitch.common import utils
 from metaswitch.crest.api.passthrough import PassthroughHandler
 from metaswitch.crest import settings
-from metaswitch.common import utils
 from metaswitch.crest.api.homestead.hss.gateway import HSSNotFound
 from metaswitch.crest.api.homestead import config
-
+from metaswitch.crest.api.homestead.associatedURIs import AssociatedURIsHandler
 _log = logging.getLogger("crest.api.homestead")
 
 class PrivateCredentialsHandler(PassthroughHandler):
@@ -95,7 +96,7 @@ class PrivateCredentialsHandler(PassthroughHandler):
         raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
 
-class AssociatedCredentialsHandler(PassthroughHandler):
+class AssociatedCredentialsHandler(AssociatedURIsHandler):
     """
     Handler for getting Credentials, & confirming associated public ID.
 
@@ -131,11 +132,14 @@ class AssociatedCredentialsHandler(PassthroughHandler):
                 raise HTTPError(httplib.NOT_FOUND)
             # Have result from HSS, store in Cassandra
             encrypted_hash = utils.encrypt_password(digest, settings.PASSWORD_ENCRYPTION_KEY)
-            # yield self.cass.insert(column_family=self.table,
-            #                        key=private_id,
-            #                        column=self.column,
-            #                        value=encrypted_hash)
-            _log.info("Got associated publics: %s" % public_ids)
+            _log.info("Got digest from HSS")
+            yield self.cass.insert(column_family=self.table,
+                                   key=private_id,
+                                   column=self.column,
+                                   value=encrypted_hash)
+            _log.info("Got associated public identities from HSS: %s" % public_ids)
+            for p in public_ids:
+                yield self.insert_in_both_tables(private_id, p)
 
         self.finish({"digest": digest})
 
