@@ -39,9 +39,10 @@ die () {
   exit 1
 }
 
-[ "$#" -ge 1 ] || die "Usage: restore_backup.sh <keyspace> <backup> (will default to latest backup if none specified)"
+[ "$#" -ge 1 ] || die "Usage: restore_backup.sh <keyspace> <backup> (will default to latest backup if none specified) <backup directory>"
 KEYSPACE=$1
 BACKUP=$2
+BACKUP_DIR=$3
 DATA_DIR=/var/lib/cassandra/data
 COMMITLOG_DIR=/var/lib/cassandra/commitlog
 
@@ -52,8 +53,16 @@ else
   echo "Will attempt to backup from backup $BACKUP"
 fi
 
+if [[ -z "$BACKUP_DIR" ]]
+then
+  BACKUP_DIR="/usr/share/clearwater/$1/backup/backups"
+  echo "No backup directory specified, will attempt to backup from $BACKUP_DIR"
+else
+  echo "Will attempt to backup from directory $BACKUP_DIR"
+fi
+
 # Cassandra keeps snapshots per columnfamily, so we need to restore them individually
-for d in $DATA_DIR/$KEYSPACE/*
+for d in $BACKUP_DIR/*
 do
   cd $d
   
@@ -89,10 +98,12 @@ rm -rf $COMMITLOG_DIR/*
 for d in $DATA_DIR/$KEYSPACE/*
 do
   cd $d
-  echo "Deleting old .db files..."
+  TABLE=`basename $d`
+  echo "$TABLE: Deleting old .db files..."
   find . -maxdepth 1 -type f -exec rm -rf {} \;
-  echo "Restoring from backup: $BACKUP"
-  sudo -u cassandra cp snapshots/$BACKUP/* .
+  echo "$TABLE: Restoring from backup: $BACKUP"
+  cp $BACKUP_DIR/$TABLE/snapshots/$BACKUP/* .
+  chown cassandra:cassandra *
 done
 
 monit start cassandra || service cassandra start

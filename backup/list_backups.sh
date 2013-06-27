@@ -39,13 +39,22 @@ die () {
   exit 1
 }
 
-[ "$#" -eq 1 ] || die "Usage: list_backup.sh <keyspace>"
+[ "$#" -eq 1 ] || die "Usage: list_backup.sh <keyspace> <backup directory>"
 KEYSPACE=$1
+BACKUP_DIR=$2
 DATA_DIR=/var/lib/cassandra/data
 [ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
 
+if [[ -z "$BACKUP_DIR" ]]
+then
+  BACKUP_DIR="/usr/share/clearwater/$KEYSPACE/backup/backups"
+  echo "No backup directory specified, defaulting to $BACKUP_DIR"
+else
+  echo "Will look for backups in $BACKUP_DIR"
+fi
+
 echo "Backups for keyspace $KEYSPACE:"
-DIRS=$(find $DATA_DIR/$KEYSPACE/ -type d | grep 'snapshots$')
+DIRS=$(find $BACKUP_DIR -type d | grep 'snapshots$')
 for d in $DIRS
 do
   echo
