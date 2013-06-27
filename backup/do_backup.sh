@@ -58,6 +58,16 @@ do
   done
 done
 
+EXTERNAL_DIRS=$(find $BACKUP_DIR -type d | grep 'snapshots$')
+for d in $EXTERNAL_DIRS
+do
+  for f in $(ls -t $d | tail -n +4)
+  do
+    echo "Deleting old backup: $d/$f"
+    rm -r $d/$f
+  done
+done
+
 echo "Creating backup for keyspace $KEYSPACE..."
 nodetool -h localhost -p 7199 snapshot $KEYSPACE
 
