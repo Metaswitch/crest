@@ -97,13 +97,12 @@ rm -rf $COMMITLOG_DIR/*
 
 for d in $DATA_DIR/$KEYSPACE/*
 do
-  cd $d
   TABLE=`basename $d`
   echo "$TABLE: Deleting old .db files..."
-  find . -maxdepth 1 -type f -exec rm -rf {} \;
+  find $d -maxdepth 1 -type f -exec rm -f {} \;
   echo "$TABLE: Restoring from backup: $BACKUP"
-  cp $BACKUP_DIR/$TABLE/snapshots/$BACKUP/* .
-  chown cassandra:cassandra *
+  cp $BACKUP_DIR/$TABLE/snapshots/$BACKUP/* $d
+  chown cassandra:cassandra $d/*
 done
 
 monit start cassandra || service cassandra start
