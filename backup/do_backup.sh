@@ -46,7 +46,7 @@ BACKUP_DIR="/usr/share/clearwater/$1/backup/backups"
 [ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
 if [[ ! -d "$BACKUP_DIR" ]]
 then
-  mkdir -p BACKUP_DIR
+  mkdir -p $BACKUP_DIR
   echo "Created backup directory $BACKUP_DIR"
 fi
 
