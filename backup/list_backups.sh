@@ -39,7 +39,7 @@ die () {
   exit 1
 }
 
-[ "$#" -eq 1 ] || die "Usage: list_backup.sh <keyspace> <backup directory>"
+[ "$#" -ge 1 ] || die "Usage: list_backup.sh <keyspace> <backup directory>"
 KEYSPACE=$1
 BACKUP_DIR=$2
 DATA_DIR=/var/lib/cassandra/data

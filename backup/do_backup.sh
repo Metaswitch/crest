@@ -44,7 +44,12 @@ KEYSPACE=$1
 DATA_DIR=/var/lib/cassandra/data
 BACKUP_DIR="/usr/share/clearwater/$1/backup/backups"
 [ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
-[ -d $BACKUP_DIR ] || die "Backup directory $BACKUP_DIR does not exist"
+if [[ ! -d "$BACKUP_DIR" ]]
+then
+  mkdir -p BACKUP_DIR
+  echo "Created backup directory $BACKUP_DIR"
+fi
+
 
 # Remove old backups (keeping last 3)
 # Cassandra keeps snapshots per columnfamily, so we need to delete them individually
@@ -77,5 +82,4 @@ do
   echo "Copying table $TABLE to backup directory..."
   mkdir -p $BACKUP_DIR/$TABLE/snapshots
   cp -al $DATA_DIR/$KEYSPACE/$TABLE/snapshots $BACKUP_DIR/$TABLE
-  chmod -R 644 $BACKUP_DIR/$TABLE 
 done
