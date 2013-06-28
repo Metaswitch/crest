@@ -39,7 +39,7 @@ die () {
   exit 1
 }
 
-[ "$#" -ge 1 ] || die "Usage: restore_backup.sh <keyspace> <backup> (will default to latest backup if none specified) <backup directory>"
+[ "$#" -ge 1 ] || die "Usage: restore_backup.sh <keyspace> [backup] (will default to latest backup if none specified) [backup directory]"
 KEYSPACE=$1
 BACKUP=$2
 BACKUP_DIR=$3
