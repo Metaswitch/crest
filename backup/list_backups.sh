@@ -55,6 +55,11 @@ fi
 
 echo "Backups for keyspace $KEYSPACE:"
 DIRS=$(find $BACKUP_DIR -type d | grep 'snapshots$')
+if [[ -z "$DIRS" ]]
+then
+  echo "No backups found in $BACKUP_DIR"
+  exit 1
+fi
 for d in $DIRS
 do
   echo
