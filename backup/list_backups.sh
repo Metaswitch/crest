@@ -58,7 +58,7 @@ then
   for b in $BACKUP_DIR/*
   do
     SNAPSHOT=`basename $b`
-    echo "$SNAPSHOT - $(date -d @$SNAPSHOT)"
+    echo "$SNAPSHOT"
   done
 else
   die "No backups exist in $BACKUP_DIR"
