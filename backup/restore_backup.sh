@@ -55,54 +55,50 @@ fi
 
 if [[ -z "$BACKUP_DIR" ]]
 then
-  BACKUP_DIR="/usr/share/clearwater/$1/backup/backups"
+  BACKUP_DIR="/usr/share/clearwater/$KEYSPACE/backup/backups"
   echo "No backup directory specified, will attempt to backup from $BACKUP_DIR"
 else
   echo "Will attempt to backup from directory $BACKUP_DIR"
 fi
 
-# Cassandra keeps snapshots per columnfamily, so we need to restore them individually
-for d in $BACKUP_DIR/*
-do
-  cd $d
-  
-  # First make sure we have a backup to backup from
-  if [ -d "snapshots" ]
+if [[ "$(ls -A $BACKUP_DIR)" ]]
+then
+  if [[ -z $BACKUP ]]
   then
-    if [[ -z $BACKUP ]]
-    then
-      echo "No valid backup specified, will attempt to backup from latest"
-      BACKUP=$(ls -t snapshots | head -1)
-    elif [ -d "snapshots/$BACKUP" ]
-    then
-      echo "Found backup directory $BACKUP"
-    else
-      die "Could not find specified backup directory for columnfamily $d, use list_backups to see available backups"
-    fi 
+    echo "No valid backup specified, will attempt to backup from latest"
+    BACKUP=$(ls -t $BACKUP_DIR | head -1)
+    mkdir -p $DATA_DIR
+  elif [ -d "$BACKUP_DIR/$BACKUP" ]
+  then
+    echo "Found backup directory $BACKUP_DIR/$BACKUP"
   else
-    die "Snapshot directory does not exist for columnfamily $d"
+    die "Could not find specified backup directory $BACKUP_DIR/$BACKUP, use list_backups to see available backups"
   fi
-done
+else
+  die "No backups exist in $BACKUP_DIR"
+fi
 
 # We've made sure all the necessary backups exist, proceed with backup
 [ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
 echo "Restoring backup for keyspace $KEYSPACE..."
 
 # Stop monit from restarting Cassandra while we restore
-monit stop cassandra 
+monit stop cassandra
 service cassandra stop
 
 echo "Clearing commitlog..."
 rm -rf $COMMITLOG_DIR/*
 
-for d in $DATA_DIR/$KEYSPACE/*
+for t in $BACKUP_DIR/$BACKUP/*
 do
-  TABLE=`basename $d`
+  TABLE=`basename $t`
+  TARGET_DIR=$DATA_DIR/$KEYSPACE/$TABLE
+  mkdir -p $TARGET_DIR
   echo "$TABLE: Deleting old .db files..."
-  find $d -maxdepth 1 -type f -exec rm -f {} \;
+  find $TARGET_DIR -maxdepth 1 -type f -exec rm -f {} \;
   echo "$TABLE: Restoring from backup: $BACKUP"
-  cp $BACKUP_DIR/$TABLE/snapshots/$BACKUP/* $d
-  chown cassandra:cassandra $d/*
+  cp $BACKUP_DIR/$BACKUP/$TABLE/* $TARGET_DIR
+  chown cassandra:cassandra $TARGET_DIR/*
 done
 
 monit start cassandra || service cassandra start

@@ -50,7 +50,6 @@ then
   echo "Created backup directory $BACKUP_DIR"
 fi
 
-
 # Remove old backups (keeping last 3)
 # Cassandra keeps snapshots per columnfamily, so we need to delete them individually
 DIRS=$(find $DATA_DIR/$KEYSPACE/ -type d | grep 'snapshots$')
@@ -63,23 +62,24 @@ do
   done
 done
 
-EXTERNAL_DIRS=$(find $BACKUP_DIR -type d | grep 'snapshots$')
-for d in $EXTERNAL_DIRS
+for f in $(ls -t $BACKUP_DIR | tail -n +4)
 do
-  for f in $(ls -t $d | tail -n +4)
-  do
-    echo "Deleting old backup: $d/$f"
-    rm -r $d/$f
-  done
+  echo "Deleting old backup: $BACKUP_DIR/$f"
+  rm -r $BACKUP_DIR/$f
 done
 
 echo "Creating backup for keyspace $KEYSPACE..."
 nodetool -h localhost -p 7199 snapshot $KEYSPACE
 
-for d in $DATA_DIR/$KEYSPACE/*
+for t in $DATA_DIR/$KEYSPACE/*
 do
-  TABLE=`basename $d`
-  echo "Copying table $TABLE to backup directory..."
-  mkdir -p $BACKUP_DIR/$TABLE/snapshots
-  cp -al $DATA_DIR/$KEYSPACE/$TABLE/snapshots $BACKUP_DIR/$TABLE
+  TABLE=`basename $t`
+  for s in $DATA_DIR/$KEYSPACE/$TABLE/snapshots/*
+  do
+    SNAPSHOT=`basename $s`
+    mkdir -p $BACKUP_DIR/$SNAPSHOT/$TABLE
+    cp -al $DATA_DIR/$KEYSPACE/$TABLE/snapshots/$SNAPSHOT/* $BACKUP_DIR/$SNAPSHOT/$TABLE
+  done
 done
+
+echo "Backups can be found at: $BACKUP_DIR"

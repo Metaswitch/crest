@@ -53,19 +53,13 @@ else
   echo "Will look for backups in $BACKUP_DIR"
 fi
 
-echo "Backups for keyspace $KEYSPACE:"
-DIRS=$(find $BACKUP_DIR -type d | grep 'snapshots$')
-if [[ -z "$DIRS" ]]
+if [[ "$(ls -A $BACKUP_DIR)" ]]
 then
-  echo "No backups found in $BACKUP_DIR"
-  exit 1
-fi
-for d in $DIRS
-do
-  echo
-  echo "Backups for columnfamily $d:"
-  for f in $(ls -t $d)
+  for b in $BACKUP_DIR/*
   do
-    echo "$f $d/$f"
-  done | column -t
-done
+    SNAPSHOT=`basename $b`
+    echo "$SNAPSHOT - $(date -d @$SNAPSHOT)"
+  done
+else
+  die "No backups exist in $BACKUP_DIR"
+fi
