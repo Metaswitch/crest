@@ -42,7 +42,13 @@ die () {
 [ "$#" -eq 1 ] || die "Usage: do_backup.sh <keyspace>"
 KEYSPACE=$1
 DATA_DIR=/var/lib/cassandra/data
+BACKUP_DIR="/usr/share/clearwater/$1/backup/backups"
 [ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
+if [[ ! -d "$BACKUP_DIR" ]]
+then
+  mkdir -p $BACKUP_DIR
+  echo "Created backup directory $BACKUP_DIR"
+fi
 
 # Remove old backups (keeping last 3)
 # Cassandra keeps snapshots per columnfamily, so we need to delete them individually
@@ -56,5 +62,24 @@ do
   done
 done
 
+for f in $(ls -t $BACKUP_DIR | tail -n +4)
+do
+  echo "Deleting old backup: $BACKUP_DIR/$f"
+  rm -r $BACKUP_DIR/$f
+done
+
 echo "Creating backup for keyspace $KEYSPACE..."
 nodetool -h localhost -p 7199 snapshot $KEYSPACE
+
+for t in $DATA_DIR/$KEYSPACE/*
+do
+  TABLE=`basename $t`
+  for s in $DATA_DIR/$KEYSPACE/$TABLE/snapshots/*
+  do
+    SNAPSHOT=`basename $s`
+    mkdir -p $BACKUP_DIR/$SNAPSHOT/$TABLE
+    cp -al $DATA_DIR/$KEYSPACE/$TABLE/snapshots/$SNAPSHOT/* $BACKUP_DIR/$SNAPSHOT/$TABLE
+  done
+done
+
+echo "Backups can be found at: $BACKUP_DIR"
