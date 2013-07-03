@@ -108,6 +108,34 @@ public class ClearwaterBulkProvisioner
                 null,
                 64);
 
+        String public_ids_table = "public_ids";
+        File public_ids_directory = new File(keyspace + "/" + public_ids_table);
+        if (!public_ids_directory.exists())
+            public_ids_directory.mkdir();
+
+        SSTableSimpleUnsortedWriter publicIdsWriter = new SSTableSimpleUnsortedWriter(
+                public_ids_directory,
+                new RandomPartitioner(),
+                keyspace,
+                public_ids_table,
+                AsciiType.instance,
+                null,
+                64);
+
+        String private_ids_table = "private_ids";
+        File private_ids_directory = new File(keyspace + "/" + private_ids_table);
+        if (!private_ids_directory.exists())
+            private_ids_directory.mkdir();
+
+        SSTableSimpleUnsortedWriter privateIdsWriter = new SSTableSimpleUnsortedWriter(
+                private_ids_directory,
+                new RandomPartitioner(),
+                keyspace,
+                private_ids_table,
+                AsciiType.instance,
+                null,
+                64);
+
         String ifc_table = "filter_criteria";
         File ifc_directory = new File(keyspace + "/" + ifc_table);
         if (!ifc_directory.exists())
@@ -133,6 +161,10 @@ public class ClearwaterBulkProvisioner
             {
                 digestWriter.newRow(bytes(entry.private_id));
                 digestWriter.addColumn(bytes("digest"), bytes(entry.digest), timestamp);
+                publicIdsWriter.newRow(bytes(entry.private_id));
+                publicIdsWriter.addColumn(bytes(entry.public_id), bytes(entry.public_id), timestamp);
+                privateIdsWriter.newRow(bytes(entry.public_id));
+                privateIdsWriter.addColumn(bytes(entry.private_id), bytes(entry.private_id), timestamp);
                 ifcWriter.newRow(bytes(entry.public_id));
                 ifcWriter.addColumn(bytes("value"), bytes(entry.ifc), timestamp);
             }
@@ -140,6 +172,8 @@ public class ClearwaterBulkProvisioner
         }
         // Don't forget to close!
         digestWriter.close();
+        publicIdsWriter.close();
+        privateIdsWriter.close();
         ifcWriter.close();
         System.exit(0);
     }

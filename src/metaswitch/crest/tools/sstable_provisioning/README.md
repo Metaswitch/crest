@@ -58,4 +58,6 @@ _For homestead:_
 
     . /etc/clearwater/config
     sstableloader -v -d $local_ip homestead/sip_digests
+    sstableloader -v -d $local_ip homestead/public_ids
+    sstableloader -v -d $local_ip homestead/private_ids
     sstableloader -v -d $local_ip homestead/filter_criteria
