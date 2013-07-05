@@ -77,8 +77,10 @@ class HSSGateway(stack.ApplicationListener):
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
         dstack.addSupportedVendor(10415)
-        dstack.addSupportedVendor(10319)
+        dstack.addSupportedVendor(13019)
+        dstack.registerApplication(app, 0, 16777216)
         dstack.registerApplication(app, 10415, 16777216)
+        dstack.registerApplication(app, 13019, 16777216)
         dstack.registerPeerListener(self.peer_listener)
         dstack.registerPeerIO(HSSPeerIO())
         dstack.clientV4Add(settings.HSS_IP, settings.HSS_PORT)
