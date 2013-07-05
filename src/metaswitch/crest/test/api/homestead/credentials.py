@@ -41,26 +41,99 @@ import unittest
 
 from mock import ANY
 from cyclone.web import HTTPError
-from telephus.cassandra.ttypes import NotFoundException
+from telephus.cassandra.ttypes import NotFoundException, Column, ColumnOrSuperColumn
 from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from metaswitch.crest import settings
 from metaswitch.crest.api.homestead import credentials
 from metaswitch.crest.api.homestead.hss.gateway import HSSNotFound
+from metaswitch.crest.api.homestead import config
 
-class TestCredentialsHandler(unittest.TestCase):
+class TestPrivateCredentialsHandler(unittest.TestCase):
     """
-    Detailed, isolated unit tests of the CredentialsHandler class.
+    Detailed, isolated unit tests of the PrivateCredentialsHandler class.
     """
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
-        self.handler = credentials.CredentialsHandler(self.app,
-                                                      self.request,
-                                                      table="table",
-                                                      column="col")
+        self.handler = credentials.PrivateCredentialsHandler(self.app,
+                                                             self.request,
+                                                             table="table",
+                                                             column="col")
+        self.mock_cass = mock.MagicMock()
+        self.handler.cass = self.mock_cass
+
+        self.mock_hss = mock.MagicMock()
+        self.handler.application.hss_gateway = self.mock_hss
+
+        # Default to not using HSS, will override in tests that require it
+        settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
+        settings.HSS_ENABLED = False
+
+    @mock.patch("metaswitch.common.utils.decrypt_password")
+    def test_get_mainline(self, decrypt_password):
+        self.mock_cass.get.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        decrypt_password.return_value = "dec_pw"
+        self.handler.get("priv")
+        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
+        result = mock.MagicMock()
+        result.column.value = "enc_pw"
+        self.mock_cass.get.return_value.callback(result)
+        decrypt_password.assert_called_once_with("enc_pw", settings.PASSWORD_ENCRYPTION_KEY)
+        self.assertEquals(self.handler.finish.call_args[0][0], {"digest": "dec_pw"})
+
+    def test_unknown_user(self):
+        self.mock_cass.get.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        get_deferred = self.handler.get("priv")
+        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
+        get_errback = mock.MagicMock()
+        get_deferred.addErrback(get_errback)
+        self.mock_cass.get.return_value.errback(NotFoundException())
+        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
+
+    @mock.patch("metaswitch.common.utils.encrypt_password")
+    def test_put_with_digest(self, encrypt_password):
+        self.mock_cass.insert.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        self.request.body = '{"digest": "md5_hash"}'
+        self.request.headers = {}
+        encrypt_password.return_value = "enc_hash"
+        self.handler.put("priv")
+        encrypt_password.assert_called_once_with("md5_hash", settings.PASSWORD_ENCRYPTION_KEY)
+        self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='priv', value='enc_hash')
+        self.mock_cass.insert.return_value.callback(mock.MagicMock())
+        self.assertEquals(self.handler.finish.call_args[0][0], {})
+
+    def test_delete_mainline(self):
+        self.mock_cass.remove.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        self.handler.delete("priv")
+        self.mock_cass.remove.assert_called_once_with(column='col', column_family='table', key='priv')
+        self.mock_cass.remove.return_value.callback(mock.MagicMock())
+        self.assertTrue(self.handler.finish.called)
+        self.assertEquals(self.handler.get_status(), httplib.NO_CONTENT)
+
+    def test_no_post(self):
+        self.assertRaises(HTTPError, self.handler.post, "priv")
+
+
+
+class TestAssocCredentialsHandler(unittest.TestCase):
+    """
+    Detailed, isolated unit tests of the AssociatedCredentialsHandler class.
+    """
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.app = mock.MagicMock()
+        self.request = mock.MagicMock()
+        self.handler = credentials.AssociatedCredentialsHandler(self.app,
+                                                                self.request,
+                                                                table="table",
+                                                                column="col")
         self.mock_cass = mock.MagicMock()
         self.handler.cass = self.mock_cass
 
@@ -70,136 +143,35 @@ class TestCredentialsHandler(unittest.TestCase):
         # Default to not using HSS, will override in tests that require it
         settings.HSS_ENABLED = False
 
-    @mock.patch("metaswitch.common.utils.decrypt_password")
-    def test_get_mainline(self, decrypt_password):
-        self.mock_cass.get.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        decrypt_password.return_value = "dec_pw"
-        self.handler.get("priv", "pub")
-        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
-        result = mock.MagicMock()
-        result.column.value = "enc_pw"
-        self.mock_cass.get.return_value.callback(result)
-        decrypt_password.assert_called_once_with("enc_pw", settings.PASSWORD_ENCRYPTION_KEY)
-        self.assertEquals(self.handler.finish.call_args[0][0], {"digest": "dec_pw"})
-
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_get_from_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
-        self.mock_cass.get.return_value = defer.Deferred()
-        self.mock_hss.get_digest.return_value = defer.Deferred()
-        self.mock_cass.insert.return_value = defer.Deferred()
-        encrypt_password.return_value = "enc_happy_digest"
-        self.handler.finish = mock.MagicMock()
-        # Get as far as attempting to fetch from Cassandra
-        self.handler.get("priv", "pub")
-        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
-        # Next, fail the GET from Cassandra
-        self.mock_cass.get.return_value.errback(NotFoundException())
-        self.mock_hss.get_digest.assert_called_once_with('priv', 'pub')
-        # Now, succeed in retreiving from HSS
-        self.mock_hss.get_digest.return_value.callback("happy_digest")
-        # Finally, the new digest should be put into Cassandra
-        encrypt_password.assert_called_once_with("happy_digest", settings.PASSWORD_ENCRYPTION_KEY)
-        self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='priv', value='enc_happy_digest')
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
-        self.assertEquals(self.handler.finish.call_args[0][0], {"digest": "happy_digest"})
-
-    def test_unknown_user(self):
-        self.mock_cass.get.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        get_deferred = self.handler.get("priv", "pub")
-        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
-        get_errback = mock.MagicMock()
-        get_deferred.addErrback(get_errback)
-        self.mock_cass.get.return_value.errback(NotFoundException())
-        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
-
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_unknown_user_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
-        self.mock_cass.get.return_value = defer.Deferred()
-        self.mock_hss.get_digest.return_value = defer.Deferred()
-        self.mock_cass.insert.return_value = defer.Deferred()
-        encrypt_password.return_value = "enc_happy_digest"
-        self.handler.finish = mock.MagicMock()
-        # Get as far as attempting to fetch from Cassandra
-        get_deferred = self.handler.get("priv", "pub")
-        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
-        # Next, fail the GET from Cassandra
-        self.mock_cass.get.return_value.errback(NotFoundException())
-        self.mock_hss.get_digest.assert_called_once_with('priv', 'pub')
-        # Now, fail in retreiving from HSS
-        get_errback = mock.MagicMock()
-        get_deferred.addErrback(get_errback)
-        self.mock_hss.get_digest.return_value.errback(HSSNotFound())
-        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
-
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_post_with_digest(self, encrypt_password):
-        self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        self.request.body = '{"digest": "md5_hash"}'
-        self.request.headers = {}
-        encrypt_password.return_value = "enc_hash"
-        self.handler.post("priv", "pub")
-        encrypt_password.assert_called_once_with("md5_hash", settings.PASSWORD_ENCRYPTION_KEY)
-        self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='priv', value='enc_hash')
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
-        self.assertEquals(self.handler.finish.call_args[0][0], {})
-
-    @mock.patch("metaswitch.common.utils.md5")
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_post_with_pw(self, encrypt_password, md5):
-        self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        self.request.body = '{"password": "foo"}'
-        self.request.headers = {}
-        md5.return_value = "md5_hash"
-        encrypt_password.return_value = "enc_hash"
-        self.handler.post("priv", "pub")
-        md5.assert_called_once_with("priv:%s:foo" % settings.SIP_DIGEST_REALM)
-        encrypt_password.assert_called_once_with("md5_hash", settings.PASSWORD_ENCRYPTION_KEY)
-        self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='priv', value='enc_hash')
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
-        self.assertEquals(self.handler.finish.call_args[0][0], {})
-
-    @mock.patch("metaswitch.common.utils.create_secure_human_readable_id")
-    @mock.patch("metaswitch.common.utils.md5")
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_post_without_pw(self, encrypt_password, md5, create_id):
-        self.mock_cass.insert.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        self.request.body = None
-        self.request.headers = {}
-        md5.return_value = "md5_hash"
-        encrypt_password.return_value = "enc_hash"
-        create_id.return_value = "pw"
-        self.handler.post("priv", "pub")
-        md5.assert_called_once_with("priv:%s:pw" % settings.SIP_DIGEST_REALM)
-        encrypt_password.assert_called_once_with("md5_hash", settings.PASSWORD_ENCRYPTION_KEY)
-        self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='priv', value='enc_hash')
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
-        self.assertEquals(self.handler.finish.call_args[0][0], {'password': 'pw'})
-
-    def test_delete_mainline(self):
-        self.mock_cass.remove.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        self.handler.delete("priv", "pub")
-        self.mock_cass.remove.assert_called_once_with(column='col', column_family='table', key='priv')
-        self.mock_cass.remove.return_value.callback(mock.MagicMock())
-        self.assertTrue(self.handler.finish.called)
-        self.assertEquals(self.handler.get_status(), httplib.NO_CONTENT)
-
     def test_no_put(self):
         self.assertRaises(HTTPError, self.handler.put, "priv", "pub")
 
+    def test_no_post(self):
+        self.assertRaises(HTTPError, self.handler.post, "priv", "pub")
+
+    def test_no_delete(self):
+        self.assertRaises(HTTPError, self.handler.delete, "priv", "pub")
+
     @mock.patch("metaswitch.common.utils.decrypt_password")
-    def test_private_get_mainline(self, decrypt_password):
+    def test_get_mainline(self, decrypt_password):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
         decrypt_password.return_value = "dec_pw"
-        self.handler.get("priv")
+
+        # Make the call
+        self.handler.get("priv", "pub")
+
+        # Expect a call to validate the pub/priv
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', start='pub', finish='pub')
+        result = mock.MagicMock()
+        result_list = [
+             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='pub', value='pub', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+        self.mock_cass.get_slice.return_value.callback(result_list)
+
+        # Now the database query to retrieve the digest
         self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
         result = mock.MagicMock()
         result.column.value = "enc_pw"
@@ -207,69 +179,56 @@ class TestCredentialsHandler(unittest.TestCase):
         decrypt_password.assert_called_once_with("enc_pw", settings.PASSWORD_ENCRYPTION_KEY)
         self.assertEquals(self.handler.finish.call_args[0][0], {"digest": "dec_pw"})
 
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_private_get_from_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
+    def test_user_no_digest(self):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
-        self.mock_hss.get_digest.return_value = defer.Deferred()
-        self.mock_cass.insert.return_value = defer.Deferred()
-        encrypt_password.return_value = "enc_happy_digest"
         self.handler.finish = mock.MagicMock()
-        # Get as far as attempting to fetch from Cassandra
-        self.handler.get("priv")
-        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
-        # Next, fail the GET from Cassandra
-        self.mock_cass.get.return_value.errback(NotFoundException())
-        self.mock_hss.get_digest.assert_called_once_with('priv', 'sip:priv')
-        # Now, succeed in retreiving from HSS
-        self.mock_hss.get_digest.return_value.callback("happy_digest")
-        # Finally, the new digest should be put into Cassandra
-        encrypt_password.assert_called_once_with("happy_digest", settings.PASSWORD_ENCRYPTION_KEY)
-        self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='priv', value='enc_happy_digest')
-        self.mock_cass.insert.return_value.callback(mock.MagicMock())
-        self.assertEquals(self.handler.finish.call_args[0][0], {"digest": "happy_digest"})
+        get_deferred = self.handler.get("priv", "pub")
 
-    def test_private_unknown_user(self):
-        self.mock_cass.get.return_value = defer.Deferred()
-        self.handler.finish = mock.MagicMock()
-        get_deferred = self.handler.get("priv")
+        # Expect a call to validate the pub/priv
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', start='pub', finish='pub')
+        result_list = [
+             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='pub', value='pub', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+        self.mock_cass.get_slice.return_value.callback(result_list)
+
         self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.mock_cass.get.return_value.errback(NotFoundException())
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
 
-    @mock.patch("metaswitch.common.utils.encrypt_password")
-    def test_private_unknown_user_hss(self, encrypt_password):
-        settings.HSS_ENABLED = True
+    def test_user_wrong_association(self):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
         self.mock_cass.get.return_value = defer.Deferred()
-        self.mock_hss.get_digest.return_value = defer.Deferred()
-        self.mock_cass.insert.return_value = defer.Deferred()
-        encrypt_password.return_value = "enc_happy_digest"
         self.handler.finish = mock.MagicMock()
-        # Get as far as attempting to fetch from Cassandra
-        get_deferred = self.handler.get("priv")
-        self.mock_cass.get.assert_called_once_with(column='col', column_family='table', key='priv')
-        # Next, fail the GET from Cassandra
-        self.mock_cass.get.return_value.errback(NotFoundException())
-        self.mock_hss.get_digest.assert_called_once_with('priv', 'sip:priv')
-        # Now, fail in retreiving from HSS
+        get_deferred = self.handler.get("priv", "pub")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
-        self.mock_hss.get_digest.return_value.errback(HSSNotFound())
+
+        # Expect a call to validate the pub/priv
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', start='pub', finish='pub')
+        result_list = [
+             ColumnOrSuperColumn(column=Column(timestamp=1371131096949743,
+            name='pub2', value='pub2', ttl=None), counter_super_column=None,
+            super_column=None, counter_column=None)]
+        self.mock_cass.get_slice.return_value.callback(result_list)
+
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
 
-    def test_private_no_post(self):
-        get_deferred = self.handler.post("priv")
+    def test_unassociated_user(self):
+        self.mock_cass.get_slice.return_value = defer.Deferred()
+        self.mock_cass.get.return_value = defer.Deferred()
+        self.handler.finish = mock.MagicMock()
+        get_deferred = self.handler.get("priv", "pub")
+
+        # Expect a call to validate the pub/priv
+        self.mock_cass.get_slice.assert_called_once_with(column_family=config.PUBLIC_IDS_TABLE, key='priv', start='pub', finish='pub')
+
+        self.mock_cass.get_slice.return_value.callback([])
+
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
-        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
+        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
 
-    def test_private_no_delete(self):
-        get_deferred = self.handler.delete("priv")
-        get_errback = mock.MagicMock()
-        get_deferred.addErrback(get_errback)
-        self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 405: Method Not Allowed')
-
-    def test_private_no_put(self):
-        self.assertRaises(HTTPError, self.handler.put, "priv")

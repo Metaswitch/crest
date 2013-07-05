@@ -1,13 +1,17 @@
 Crest - Development Guide
 ===========
 
-These instructions have been tested on ubuntu 12.04, using Python version 2.7.3.
+These instructions have been tested on Ubuntu 12.04, using Python version 2.7.3.
 
 Get the code
 ============
 
-    git clone git@github.com:metaswitch.crest.git
-    git submodule update --init --recursive
+    git clone --recursvive git@github.com:Metaswitch/crest.git
+
+This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
+
+    git config --global url."https://github.com/".insteadOf git@github.com:
+    git clone --recursive git@github.com:Metaswitch/crest.git 
 
 The code consists of the `crest` repository and its submodules as
 defined in `.gitmodules`:
@@ -26,9 +30,7 @@ Pre-requisites
 1. Pip and virtualenv
 
     ```
-    sudo apt-get install python-pip python-dev build-essential
-    sudo pip install --upgrade pip
-    sudo pip install --upgrade virtualenv
+    sudo apt-get install python-pip python-dev python-virtualenv build-essential
     ```
 
 2. Lib-curl
@@ -41,6 +43,12 @@ Pre-requisites
 
     ```
     sudo apt-get install debhelper devscripts
+    ```
+
+4. XML development libraries
+
+    ```
+    sudo apt-get install libxml2-dev libxslt-dev
     ```
 
 Setting up a virtualenv

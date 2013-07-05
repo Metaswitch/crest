@@ -52,7 +52,7 @@ def get_or_create():
         connection = cql.connect(settings.CASS_HOST,
                                  settings.CASS_PORT,
                                  settings.CASS_KEYSPACE,
-                                 cql_version='3.0.0')
+                                 cql_version='2.0.0')
         assert connection
         thread_local.connection = connection
     return connection

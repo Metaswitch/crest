@@ -58,7 +58,7 @@ case "$1" in
     configure)
         rm -rf $HOMESTEAD_DIR/build
         virtualenv --python=$(which python) $HOMESTEAD_DIR/env
-        $HOMESTEAD_DIR/env/bin/easy_install $HOMESTEAD_DIR/eggs/*.egg
+        $HOMESTEAD_DIR/env/bin/easy_install --allow-hosts=None -f $HOMESTEAD_DIR/eggs/ $HOMESTEAD_DIR/eggs/*.egg
         cd $HOMESTEAD_DIR
         $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/setup.py install
         cd -
@@ -75,15 +75,18 @@ case "$1" in
         echo Connecting to Cassandra on localhost...
         if echo "describe KEYSPACE homestead;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homestead"
         then
-            echo "Homer database already exists in Cassandra, not configuring"
+            echo "Homestead database already exists in Cassandra - ensure that all tables exist"
+            cd $HOMESTEAD_DIR
+            $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/upgrade_homestead_db.py
+            cd -
         else
             echo "Initializing homestead Cassandra database"
             echo "create KEYSPACE homestead with strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
-
             cd $HOMESTEAD_DIR
             $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/create_db.py
             cd -
         fi
+
         # Start monit monitoring ourselves
         cp $HOMESTEAD_DIR/*.monit /etc/monit/conf.d/
         service monit restart

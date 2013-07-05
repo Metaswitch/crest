@@ -51,7 +51,7 @@ DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without HSS_ENABLED set to true"""
+    """Exception to throw if gateway is created without a valid HSS_IP"""
     pass
 
 class HSSNotFound(Exception):
@@ -66,17 +66,16 @@ class HSSGateway(stack.ApplicationListener):
     def __init__(self):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
-        
+
         dstack = stack.Stack()
         dstack.loadDictionary("cx", DICT_PATH)
         dstack.identity = "sip:%s" % settings.SIP_DIGEST_REALM
         dstack.realm = settings.SIP_DIGEST_REALM
 
         app = HSSAppListener(dstack)
-        self.peer_listener = HSSPeerListener(app, 
+        self.peer_listener = HSSPeerListener(app,
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
-        
         dstack.addSupportedVendor(10415)
         dstack.addSupportedVendor(10319)
         dstack.registerApplication(app, 10415, 16777216)
@@ -87,19 +86,25 @@ class HSSGateway(stack.ApplicationListener):
         # Twisted will run dstack.tick every second
         tick = LoopingCall(dstack.tick)
         tick.start(1)
-    
+
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id):
         _log.debug("Getting auth for priv:%s pub:%s"  % (private_id, public_id))
         result = yield self.peer_listener.fetch_multimedia_auth(private_id, public_id)
         defer.returnValue(result)
-    
+
     @defer.inlineCallbacks
     def get_ifc(self, private_id, public_id):
         _log.debug("Getting IFC for priv:%s pub:%s"  % (private_id, public_id))
-        result = yield self.peer_listener.fetchIFC(private_id, public_id)
-        defer.returnValue(result)
-    
+        (public_ids, ifc) = yield self.peer_listener.fetch_server_assignment(private_id, public_id)
+        defer.returnValue(ifc)
+
+    @defer.inlineCallbacks
+    def get_public_ids(self, private_id, public_id):
+        _log.debug("Getting Public Identities for priv:%s pub:%s"  % (private_id, public_id))
+        (public_ids, ifc) = yield self.peer_listener.fetch_server_assignment(private_id, public_id)
+        defer.returnValue(public_ids)
+
 class HSSAppListener(stack.ApplicationListener):
     """
     The HSSAppListener maintains a list of pending requests outstanding on the HSS
@@ -133,7 +138,7 @@ class HSSPeerListener(stack.PeerListener):
     def __init__(self, app, domain, stack):
         self.app = app
         self.realm = domain
-        self.server_name = "sip:%s" % domain
+        self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
 
     def connected(self, peer):
@@ -161,7 +166,7 @@ class HSSPeerListener(stack.PeerListener):
         self.peer.stack.sendByPeer(self.peer, req)
         # Hook up our deferred to the callback
         d = defer.Deferred()
-        self.app.add_pending_response(req, d) 
+        self.app.add_pending_response(req, d)
         answer = yield d
         # Have response, parse out digest
         digest = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-HA1")
@@ -172,7 +177,7 @@ class HSSPeerListener(stack.PeerListener):
             raise HSSNotFound()
 
     @defer.inlineCallbacks
-    def fetchIFC(self, private_id, public_id):
+    def fetch_server_assignment(self, private_id, public_id):
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         public_id = str(public_id)
         private_id = str(private_id)
@@ -189,9 +194,9 @@ class HSSPeerListener(stack.PeerListener):
         self.peer.stack.sendByPeer(self.peer, req)
         # Hook up our deferred to the callback
         d = defer.Deferred()
-        self.app.add_pending_response(req, d) 
+        self.app.add_pending_response(req, d)
         answer = yield d
-        
+
         _log.debug("Received Server-Assignment response for %s:" % private_id)
         user_data = self.cx.findFirstAVP(answer, "User-Data")
         if not user_data:
@@ -201,12 +206,15 @@ class HSSPeerListener(stack.PeerListener):
         # Iterate over all nodes in xml, returning the one matching the correct
         # public id
         for sp in xml.iterfind('./ServiceProfile'):
-            if public_id == sp.find('./PublicIdentity/Identity').text:
-                # Note that returnValue is the standard method of returning from 
-                # defer.inlineCallbacks decorated generators, so that once a public
-                # id is returned the generator will terminate
-                defer.returnValue(ElementTree.tostring(sp))
-        # If none match, throw. 
+            for returned_public_id in sp.iterfind('./PublicIdentity/Identity'):
+                if returned_public_id.text == public_id:
+                    # Note that returnValue is the standard method of returning from
+                    # defer.inlineCallbacks decorated generators, so that once a public
+                    # id is returned the generator will terminate
+                    ifc = ElementTree.tostring(sp)
+                    public_ids = [p.text for p in sp.iterfind('./PublicIdentity/Identity')]
+                    defer.returnValue((public_ids, ifc))
+        # If none match, throw.
         _log.info("No matching IFCs found for public id %s" % public_id)
         raise HSSNotFound()
 

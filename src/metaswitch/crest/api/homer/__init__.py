@@ -65,5 +65,5 @@ ROUTES = [
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
-CREATE_SIMSERVS = "CREATE TABLE simservs (user text, value text, PRIMARY KEY (user));"
+CREATE_SIMSERVS = "CREATE TABLE simservs (user text PRIMARY KEY, value text);"
 CREATE_STATEMENTS = [CREATE_SIMSERVS]

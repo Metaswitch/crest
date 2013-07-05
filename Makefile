@@ -48,7 +48,7 @@ endif
 bin/buildout: $(ENV_DIR)/bin/python bootstrap.py
 	mkdir -p .buildout_downloads/dist
 	cp thrift_download/thrift-0.8.0.tar.gz .buildout_downloads/dist/
-	$(ENV_DIR)/bin/python bootstrap.py
+	bash ./bootstrap-wrapper.sh $(ENV_DIR)
 
 bootstrap.py:
 	curl -S -s -O http://python-distribute.org/bootstrap.py
