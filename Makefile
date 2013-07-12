@@ -50,7 +50,6 @@ bin/buildout: $(ENV_DIR)/bin/python
 	cp thrift_download/thrift-0.8.0.tar.gz .buildout_downloads/dist/
 	$(ENV_DIR)/bin/easy_install zc.buildout
 	$(ENV_DIR)/bin/buildout
-	ln -s $(ENV_DIR)/bin/buildout ./bin/buildout
 
 $(ENV_DIR)/bin/python:
 	virtualenv --no-site-packages --distribute --python=$(PYTHON_BIN) $(ENV_DIR)
