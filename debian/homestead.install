@@ -1,4 +1,5 @@
 eggs usr/share/clearwater/homestead/
+_env/lib/python2.7/site-packages/zc.buildout-2.2.0-py2.7.egg usr/share/clearwater/homestead/eggs/
 setup.py usr/share/clearwater/homestead/
 src usr/share/clearwater/homestead/
 modules usr/share/clearwater/homestead/
