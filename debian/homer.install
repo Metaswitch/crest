@@ -1,5 +1,4 @@
 eggs usr/share/clearwater/homer/
-_env/lib/python2.7/site-packages/zc.buildout-2.2.0-py2.7.egg usr/share/clearwater/homer/eggs/
 setup.py usr/share/clearwater/homer/
 src usr/share/clearwater/homer/
 modules usr/share/clearwater/homer/
