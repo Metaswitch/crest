@@ -50,6 +50,7 @@ bin/buildout: $(ENV_DIR)/bin/python
 	mkdir -p .buildout_downloads/dist
 	cp thrift_download/thrift-0.8.0.tar.gz .buildout_downloads/dist/
 	$(ENV_DIR)/bin/easy_install "setuptools>0.7"
+	$(ENV_DIR)/bin/easy_install distribute
 	$(ENV_DIR)/bin/easy_install zc.buildout
 	mkdir -p bin/
 	ln -s $(ENV_DIR)/bin/buildout bin/
