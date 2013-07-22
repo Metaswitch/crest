@@ -28,6 +28,6 @@ override_dh_auto_install:
 
 # Don't start - monit does that for us.
 override_dh_installinit:
-	dh_installinit --no-start
+	dh_installinit --no-start -u"defaults 60 40"
 
 override_dh_shlibdeps:
