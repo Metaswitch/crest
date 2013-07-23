@@ -68,9 +68,14 @@ case "$1" in
             $HOMESTEAD_DIR/env/bin/python $module/setup.py install
             cd -
         done
-        [ ! -f /etc/iptables/rules.v4 ] || cp /etc/iptables/rules.v4 /etc/iptables/rules.v4.pre-homestead
-        cp $HOMESTEAD_DIR/iptables.rules /etc/iptables/rules.v4
-        service iptables-persistent restart
+        # If this install is on a node that already has ellis installed, do not replace the iprules - it needs port 80 more than homestead
+        if ! dpkg-query -W -f='${Status} ${Version}\n' ellis > /dev/null 2>&1
+        then
+            [ ! -f /etc/iptables/rules.v4 ] || cp /etc/iptables/rules.v4 /etc/iptables/rules.v4.pre-homestead
+            cp $HOMESTEAD_DIR/iptables.rules /etc/iptables/rules.v4
+            service iptables-persistent restart
+        fi
+
         /etc/clearwater/scripts/homestead
         echo Connecting to Cassandra on localhost...
         if echo "describe KEYSPACE homestead;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homestead"
@@ -90,10 +95,11 @@ case "$1" in
         # Start monit monitoring ourselves
         cp $HOMESTEAD_DIR/*.monit /etc/monit/conf.d/
         service monit restart
-        # Now tell monit to start us if it hasn't already.  The
-        # restart may not have happened yet, so monit may not yet have
-        # heard of us. In that case, start ourselves.
-        monit start homestead || service homestead start
+        # Restart homestead.  Always do this by terminating homestead so monit will
+        # restart it more-or-less immediately.  (monit restart seems to have
+        # significant lag.)
+        # Don't fail if it's already stopped.
+        service homestead stop || /bin/true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
