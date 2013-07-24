@@ -79,6 +79,22 @@ override file from `src/metaswitch/crest/local_settings.py`.  The file is
 executed in the context of `settings.py` after `settings.py` completes.  Anything
 that could be put at the bottom of `settings.py` can be put in `local_settings.py`.
 
+For a homestead node, you'll probably need at least the following in `local_settings.py`.
+
+    LOG_FILE_PREFIX = "homestead"
+    CASS_KEYSPACE = "homestead"
+    INSTALLED_HANDLERS = ["homestead"]
+    HTTP_PORT = 8888
+    HSS_ENABLED = False
+    PASSWORD_ENCRYPTION_KEY = "secret"
+
+For a homer node, you'll probably need the following instead.
+
+    LOG_FILE_PREFIX = "homer"
+    CASS_KEYSPACE = "homer"
+    INSTALLED_HANDLERS = ["homer"]
+    HTTP_PORT = 7888
+
 Cassandra
 =========
 
