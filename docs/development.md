@@ -66,10 +66,6 @@ As part of the environment, a special Python executable is generated in the
 PYTHONPATH to pick up the dependencies in the env directory. Whenever you run
 crest or its tools, be sure to use this, rather than the system Python.
 
-To run the server as part of development use:
-
-    make run
-
 Local settings
 ==============
 
@@ -120,6 +116,13 @@ The easiest way to examine what is in the database is to use cqlsh, e.g.
     SELECT * FROM sip_digests;
 
 For details of the CQL syntax, see [the CQL documentation](http://cassandra.apache.org/doc/cql3/CQL.html).
+
+Running the server
+==================
+
+To run the server as part of development use:
+
+    make run
 
 Running the tests
 =================
