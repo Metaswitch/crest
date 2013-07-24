@@ -6,7 +6,7 @@ These instructions have been tested on Ubuntu 12.04, using Python version 2.7.3.
 Get the code
 ============
 
-    git clone --recursvive git@github.com:Metaswitch/crest.git
+    git clone --recursive git@github.com:Metaswitch/crest.git
 
 This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
 
