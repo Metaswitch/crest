@@ -95,7 +95,7 @@ command before developing - e.g. for homer:
 
 Next, to actually create the database run the `create_db.py` script:
 
-    sudo bin/python src/metaswitch/crest/tools/create_db.py
+    PYTHONPATH=src bin/python src/metaswitch/crest/tools/create_db.py
 
 The easiest way to examine what is in the database is to use cqlsh, e.g.
 
