@@ -56,7 +56,8 @@ Setting up a virtualenv
 
 The main language of the project is Python. virtualenv is used to create a
 virtual Python environment in a subfolder containing only the required
-dependencies, at the expected versions. To create the virtualenv environment, execute:
+dependencies, at the expected versions. To create the virtualenv environment,
+change to the crest directory you checked out from git earlier and then execute:
 
     make env
 
