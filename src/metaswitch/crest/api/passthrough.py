@@ -38,7 +38,7 @@ import httplib
 
 from cyclone.web import HTTPError
 from telephus.client import CassandraClient
-from telephus.cassandra.ttypes import NotFoundException
+from telephus.cassandra.ttypes import NotFoundException, UnavailableException, ConsistencyLevel
 from twisted.internet import defer
 
 from metaswitch.crest.api._base import BaseHandler
@@ -69,7 +69,7 @@ class PassthroughHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, row):
         try:
-            result = yield self.cass.get(column_family=self.table, key=row, column=self.column)
+            result = yield self.safe_get(column_family=self.table, key=row, column=self.column)
             self.finish(result.column.value)
         except NotFoundException, e:
             raise HTTPError(404)
@@ -89,3 +89,26 @@ class PassthroughHandler(BaseHandler):
         self.set_status(httplib.NO_CONTENT)
         self.finish()
 
+    @defer.inlineCallbacks
+    def safe_get(self, *args, **kwargs):
+        try:
+            result = yield self.safe_get(*args, **kwargs)
+            defer.returnValue(result)
+        except NotFoundException as e:
+            kwargs['consistency'] = ConsistencyLevel.QUORUM
+            try:
+                result = yield self.safe_get(*args, **kwargs)
+                defer.returnValue(result)
+            except (NotFoundException, UnavailableException):
+                raise e
+
+    @defer.inlineCallbacks
+    def safe_get_slice(self, *args, **kwargs):
+        result = yield self.safe_get_slice(*args, **kwargs)
+        if len(result) == 0:
+            kwargs['consistency'] = ConsistencyLevel.QUORUM
+            try:
+                result = yield self.safe_get_slice(*args, **kwargs)
+            except UnavailableException:
+                result = []
+        defer.returnValue(result)
