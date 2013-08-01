@@ -57,7 +57,7 @@ class PrivateCredentialsHandler(PassthroughHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            encrypted_hash = yield self.safe_get(column_family=self.table,
+            encrypted_hash = yield self.reliable_get(column_family=self.table,
                                                  key=private_id,
                                                  column=self.column)
             digest = utils.decrypt_password(encrypted_hash.column.value,
@@ -105,7 +105,7 @@ class AssociatedCredentialsHandler(AssociatedURIsHandler):
     def get(self, private_id, public_id):
         try:
             exists = False
-            db_data = yield self.safe_get_slice(key=private_id,
+            db_data = yield self.reliable_get_slice(key=private_id,
                                                 column_family=config.PUBLIC_IDS_TABLE,
                                                 start=public_id,
                                                 finish=public_id)
@@ -114,7 +114,7 @@ class AssociatedCredentialsHandler(AssociatedURIsHandler):
                     exists = True
             if not exists:
                 raise NotFoundException()
-            encrypted_hash = yield self.safe_get(column_family=self.table,
+            encrypted_hash = yield self.reliable_get(column_family=self.table,
                                                  key=private_id,
                                                  column=self.column)
             digest = utils.decrypt_password(encrypted_hash.column.value,

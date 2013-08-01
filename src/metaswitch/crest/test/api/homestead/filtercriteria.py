@@ -63,8 +63,8 @@ class TestFilterCriteriaHandler(unittest.TestCase):
                                                             column="col")
         self.mock_cass = mock.MagicMock()
         self.handler.cass = self.mock_cass
-        self.handler.safe_get = self.mock_cass.get
-        self.handler.safe_get_slice = self.mock_cass.get_slice
+        self.handler.reliable_get = self.mock_cass.get
+        self.handler.reliable_get_slice = self.mock_cass.get_slice
         
         self.mock_hss = mock.MagicMock()
         self.handler.application.hss_gateway = self.mock_hss
