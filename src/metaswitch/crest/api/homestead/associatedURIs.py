@@ -70,9 +70,9 @@ class AssociatedURIsHandler(PassthroughHandler):
         # status depends on this
         exists = False
         db_data = yield self.ha_get_slice(key=private_id,
-                                            column_family=config.PUBLIC_IDS_TABLE,
-                                            start=public_id,
-                                            finish=public_id)
+                                          column_family=config.PUBLIC_IDS_TABLE,
+                                          start=public_id,
+                                          finish=public_id)
 
         for record in db_data:
             exists = (record.column.name == public_id)
@@ -82,9 +82,9 @@ class AssociatedURIsHandler(PassthroughHandler):
         else:
             # check that neither pri nor public ID is at limit of allowed associations
             d1 = self.ha_get_slice(key=private_id,
-                                     column_family=config.PUBLIC_IDS_TABLE)
+                                   column_family=config.PUBLIC_IDS_TABLE)
             d2 = self.ha_get_slice(key=public_id,
-                                     column_family=config.PRIVATE_IDS_TABLE)
+                                   column_family=config.PRIVATE_IDS_TABLE)
             pub_ids = yield d1
             priv_ids = yield d2
 
@@ -142,7 +142,7 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
         db_data = yield self.ha_get_slice(key=public_id,
-                                            column_family=self.table)
+                                          column_family=self.table)
 
         private_ids = []
         for record in db_data:
@@ -168,7 +168,7 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
 
         # Retrieve the updated full list of public IDs associated with this private ID
         db_data = yield self.ha_get_slice(key=public_id,
-                                            column_family=self.table)
+                                          column_family=self.table)
         private_ids = []
         for record in db_data:
             private_ids.append(record.column.value)
@@ -181,7 +181,7 @@ class AssociatedPrivateHandler(AssociatedURIsHandler):
             yield self.delete_from_both_tables(private_id, public_id)
         else:
             db_data = yield self.ha_get_slice(key=public_id,
-                                                column_family=self.table)
+                                              column_family=self.table)
 
             for record in db_data:
                 yield self.delete_from_both_tables(record.column.value, public_id)
@@ -204,7 +204,7 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
             raise HTTPError(httplib.METHOD_NOT_ALLOWED)
 
         db_data = yield self.ha_get_slice(key=private_id,
-                                            column_family=self.table)
+                                          column_family=self.table)
 
         public_ids = []
         for record in db_data:
@@ -227,7 +227,7 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
 
         # Retrieve the updated full list of public IDs associated with this private ID
         db_data = yield self.ha_get_slice(key=private_id,
-                                            column_family=self.table)
+                                          column_family=self.table)
         public_ids = []
         for record in db_data:
             public_ids.append(record.column.value)
@@ -240,7 +240,7 @@ class AssociatedPublicHandler(AssociatedURIsHandler):
             yield self.delete_from_both_tables(private_id, public_id)
         else:
             db_data = yield self.ha_get_slice(key=private_id,
-                                                column_family=self.table)
+                                              column_family=self.table)
             for record in db_data:
                 yield self.delete_from_both_tables(private_id, record.column.value)
 
@@ -260,7 +260,7 @@ class AssociatedPublicByPublicHandler(AssociatedURIsHandler):
     def get(self, public_id):
 
         db_data = yield self.ha_get_slice(key=public_id,
-                                            column_family=config.PRIVATE_IDS_TABLE)
+                                          column_family=config.PRIVATE_IDS_TABLE)
 
         private_ids = []
         for record in db_data:
@@ -272,7 +272,7 @@ class AssociatedPublicByPublicHandler(AssociatedURIsHandler):
         assert(len(private_ids) == 1)
 
         db_data = yield self.ha_get_slice(key=private_ids[0],
-                                            column_family=config.PUBLIC_IDS_TABLE)
+                                          column_family=config.PUBLIC_IDS_TABLE)
 
         public_ids = []
         for record in db_data:
