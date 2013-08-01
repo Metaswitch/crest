@@ -66,4 +66,3 @@ def cycle():
     if connection != None:
         thread_local.connection = None
         connection.close()
-

@@ -63,7 +63,7 @@ def create_application():
     application = cyclone.web.Application(api.get_routes(), **app_settings)
     application.cassandra_factory = ManagedCassandraClientFactory(settings.CASS_KEYSPACE)
     reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, application.cassandra_factory)
-    
+
     # Initialize all modules
     api.initialize(application)
     return application
@@ -112,9 +112,9 @@ def standalone():
             reactor.spawnProcess(None, executable, [executable, __file__, "--shared-http-fd", str(http_port.fileno())],
                                  childFDs={0: 0, 1: 1, 2: 2, http_port.fileno(): http_port.fileno()},
                                  env = os.environ)
-    
+
     # Kick off the reactor to start listening on configured ports
     reactor.run()
-    
+
 if __name__ == '__main__':
     standalone()

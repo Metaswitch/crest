@@ -235,4 +235,3 @@ class TestAssocCredentialsHandler(unittest.TestCase):
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
-

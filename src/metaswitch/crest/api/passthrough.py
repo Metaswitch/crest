@@ -58,7 +58,7 @@ class PassthroughHandler(BaseHandler):
     def initialize(self, table, column):
         """
         The table and column are set as part of the Application router, see api/__init__.py
-        
+
         The table corresponds to the cassandra table, while the column specifies the cassandra column to operate on
         The row to operate on is passed to each function, while the value is in the request body, if relevant
         """
@@ -73,7 +73,7 @@ class PassthroughHandler(BaseHandler):
             self.finish(result.column.value)
         except NotFoundException, e:
             raise HTTPError(404)
-        
+
     # POST is difficult to generalize as it resource-specific - so force subclasses to implement
     def post(self, *args):
         raise HTTPError(405)
@@ -99,7 +99,7 @@ class PassthroughHandler(BaseHandler):
     # To resolve this issue, these two functions can be used as drop-in
     # replacements for `CassandraClient#get` and `CassandraClient#get_slice`
     # and will attempt a QUORUM read in the event that a ONE read returns
-    # no data.  If the QUORUM read fails due to unreachable nodes, the 
+    # no data.  If the QUORUM read fails due to unreachable nodes, the
     # original result will be returned (i.e. an empty set or NotFound).
     @defer.inlineCallbacks
     def ha_get(self, *args, **kwargs):

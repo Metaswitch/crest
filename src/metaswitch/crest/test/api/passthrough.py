@@ -54,7 +54,7 @@ class TestPassthroughHandler(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
-        self.handler = passthrough.PassthroughHandler(self.app, 
+        self.handler = passthrough.PassthroughHandler(self.app,
                                                       self.request,
                                                       table="table",
                                                       column="col")
@@ -84,7 +84,7 @@ class TestPassthroughHandler(unittest.TestCase):
         self.assertEquals(self.handler.finish.call_args[0][0], "db_result")
 
     def test_get_not_found(self):
-        # As with test_get_mainline above we create a deferred object to mock out the 
+        # As with test_get_mainline above we create a deferred object to mock out the
         # cass.get call
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()

@@ -59,14 +59,14 @@ class TestSimservsHandler(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
-        self.handler = simservs.SimservsHandler(self.app, 
+        self.handler = simservs.SimservsHandler(self.app,
                                                 self.request,
                                                 table="table",
                                                 column="column")
 
     def tearDown(self):
         simservs._parsers = {}
-    
+
     @mock.patch("metaswitch.crest.api.xsd._validate")
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
     def test_put_valid(self, passthrough_put, validate):
@@ -84,21 +84,21 @@ class TestSimservsHandler(unittest.TestCase):
         self.assertRaisesRegexp(HTTPError, "HTTP 400: Bad Request \(XML Error\)",
                                 self.handler.put, "arg1")
         validate.assert_called_once_with("dodgy_xml_body", simservs.SCHEMA_PATH)
-        
+
 class TestSimservsFunctional(unittest.TestCase):
     """
     Functional tests for testing the simservs xml validation
     """
     def setUp(self):
         unittest.TestCase.setUp(self)
-    
+
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
     def assert_valid_simservs(self, file_name, passthrough_put):
         with open(os.path.join(XML_DIR, file_name)) as f:
             xml_doc = f.read()
         result = xsd._validate(xml_doc, simservs.SCHEMA_PATH)
         self.assertTrue(result)
-    
+
     def test_simservs_cb(self):
         self.assert_valid_simservs("simservs_cb.xml")
 
@@ -118,7 +118,7 @@ class TestSimservsFunctional(unittest.TestCase):
         self.assertRaises(etree.XMLSyntaxError,
                           xsd._validate,
                           xml_doc, simservs.SCHEMA_PATH)
-        
+
     def test_simservs_andy_invalid(self):
         self.assert_invalid_simservs("simservs_andy.xml")
 

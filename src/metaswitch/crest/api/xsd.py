@@ -62,7 +62,7 @@ def validate(schema_path):
     then use to decorate a standard cyclone put/post function.
     Note that to call a superclass when using this decorator
     you must explicitly specify it, e.g.
-           
+
         PassthroughHandler.put(self, *args)
 
     If the request passes the schema validation the decorated
@@ -79,4 +79,3 @@ def validate(schema_path):
             func(self, *args, **kwargs)
         return wrapper
     return validate_decorator
-

@@ -838,4 +838,3 @@ class TestAssociatedPublicByPublicHandler(unittest.TestCase):
         self.assertTrue(self.handler.finish.called)
         self.assertEquals(self.handler.get_status(), httplib.OK)
         self.assertEquals(self.handler.finish.call_args[0][0], {"public_ids": ["sip:pub", "sip:pub2", "sip:pub3"]})
-

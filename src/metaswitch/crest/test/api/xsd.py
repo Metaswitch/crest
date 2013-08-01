@@ -56,10 +56,10 @@ class TestXSD(unittest.TestCase):
     """
     def setUp(self):
         unittest.TestCase.setUp(self)
-        
+
     def tearDown(self):
         xsd._parsers = {}
-    
+
     @mock.patch("metaswitch.crest.api.xsd._validate")
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
     def test_decorator(self, passthrough_put, validate):
@@ -72,7 +72,7 @@ class TestXSD(unittest.TestCase):
         decorated(self, "arg1")
         validate.assert_called_once_with("xml_body", "schema_path")
         func.assert_called_once_with(self, "arg1")
-        
+
     @mock.patch("metaswitch.crest.api.xsd._validate")
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
     def test_decorator_error(self, passthrough_put, validate):
@@ -87,7 +87,7 @@ class TestXSD(unittest.TestCase):
                                 self, "arg1")
         validate.assert_called_once_with("dodgy_xml_body", "schema_path")
         self.assertFalse(func.called)
-    
+
     @mock.patch("lxml.etree.fromstring")
     @mock.patch("metaswitch.crest.api.xsd._get_parser")
     def test_validate(self, get_parser, fromstring):
@@ -95,7 +95,7 @@ class TestXSD(unittest.TestCase):
         xsd._validate("xml", "schema_name")
         get_parser.assert_called_once_with("schema_name")
         fromstring.assert_called_once_with("xml", "parser")
-            
+
     @mock.patch("lxml.etree.fromstring")
     @mock.patch("metaswitch.crest.api.xsd._get_parser")
     def test_validate_throw(self, get_parser, fromstring):
@@ -106,7 +106,7 @@ class TestXSD(unittest.TestCase):
                                 "xml", "schema_name")
         get_parser.assert_called_once_with("schema_name")
         fromstring.assert_called_once_with("xml", "parser")
-        
+
     @mock.patch("lxml.etree.parse")
     @mock.patch("lxml.etree.XMLSchema")
     @mock.patch("lxml.etree.XMLParser")

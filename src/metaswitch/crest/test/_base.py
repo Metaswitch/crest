@@ -41,7 +41,7 @@ from metaswitch.crest.main import create_application
 
 class AppTestCase(unittest.TestCase):
     """
-    Base class for FV tests that boot up the whole app (excluding the storage 
+    Base class for FV tests that boot up the whole app (excluding the storage
     layer).
     """
     def get_app(self):
@@ -50,7 +50,7 @@ class AppTestCase(unittest.TestCase):
     def fetch(self, path, expected_status=200, *args, **kwargs):
         """
         Fetches the given path.
-        
+
         :arg string url: URL to fetch
         :arg string method: HTTP method, e.g. "GET" or "POST"
         :arg headers: Additional HTTP headers to pass on the request
@@ -115,4 +115,3 @@ class AppTestCase(unittest.TestCase):
     def get_json_from_response(self, resp, expected_code=200):
         self.assertEqual(resp.code, expected_code)
         return json.loads(resp.body)
-

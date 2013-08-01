@@ -43,7 +43,7 @@ from mock import ANY
 from cyclone.web import HTTPError
 from telephus.cassandra.ttypes import NotFoundException
 from twisted.internet import defer
-from twisted.python.failure import Failure 
+from twisted.python.failure import Failure
 
 from metaswitch.crest import settings
 from metaswitch.crest.api.homestead import filtercriteria
@@ -57,7 +57,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
-        self.handler = filtercriteria.FilterCriteriaHandler(self.app, 
+        self.handler = filtercriteria.FilterCriteriaHandler(self.app,
                                                             self.request,
                                                             table="table",
                                                             column="col")
@@ -65,10 +65,10 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         self.handler.cass = self.mock_cass
         self.handler.ha_get = self.mock_cass.get
         self.handler.ha_get_slice = self.mock_cass.get_slice
-        
+
         self.mock_hss = mock.MagicMock()
         self.handler.application.hss_gateway = self.mock_hss
-        
+
         # Default to not using HSS, will override in tests that require it
         settings.PASSWORD_ENCRYPTION_KEY = "TOPSECRET"
         settings.HSS_ENABLED = False
@@ -82,7 +82,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         result.column.value = "glorious_ifc"
         self.mock_cass.get.return_value.callback(result)
         self.assertEquals(self.handler.finish.call_args[0][0], "glorious_ifc")
-    
+
     @mock.patch("metaswitch.common.utils.sip_public_id_to_private")
     def test_get_from_hss(self, sip_public_id_to_private):
         settings.HSS_ENABLED = True
@@ -104,7 +104,7 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         self.mock_cass.insert.assert_called_once_with(column='col', column_family='table', key='pub', value='barmy_ifc')
         self.mock_cass.insert.return_value.callback(mock.MagicMock())
         self.assertEquals(self.handler.finish.call_args[0][0], "barmy_ifc")
-    
+
     def test_unknown_user(self):
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()
@@ -135,4 +135,3 @@ class TestFilterCriteriaHandler(unittest.TestCase):
         get_deferred.addErrback(get_errback)
         self.mock_hss.get_ifc.return_value.errback(HSSNotFound())
         self.assertEquals(get_errback.call_args[0][0].getErrorMessage(), 'HTTP 404: Not Found')
-    

@@ -60,13 +60,13 @@ def handle_get(response):
         http_client = AsyncHTTPClient()
         to_url = url.replace(args.from_server, args.to_server)
         print "Putting to %s " % to_url
-        http_client.fetch(to_url, handle_put, 
+        http_client.fetch(to_url, handle_put,
                           method='PUT', body=response.body)
     else:
         pending_requests -= 1
         if pending_requests == 0:
             IOLoop.instance().stop()
-        
+
 def handle_put(response):
     global pending_requests
     url = response.request.url
