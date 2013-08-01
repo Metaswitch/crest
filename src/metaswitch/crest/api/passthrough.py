@@ -69,7 +69,7 @@ class PassthroughHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, row):
         try:
-            result = yield self.reliable_get(column_family=self.table, key=row, column=self.column)
+            result = yield self.ha_get(column_family=self.table, key=row, column=self.column)
             self.finish(result.column.value)
         except NotFoundException, e:
             raise HTTPError(404)
@@ -102,7 +102,7 @@ class PassthroughHandler(BaseHandler):
     # no data.  If the QUORUM read fails due to unreachable nodes, the 
     # original result will be returned (i.e. an empty set or NotFound).
     @defer.inlineCallbacks
-    def reliable_get(self, *args, **kwargs):
+    def ha_get(self, *args, **kwargs):
         try:
             result = yield self.cass.get(*args, **kwargs)
             defer.returnValue(result)
@@ -115,7 +115,7 @@ class PassthroughHandler(BaseHandler):
                 raise e
 
     @defer.inlineCallbacks
-    def reliable_get_slice(self, *args, **kwargs):
+    def ha_get_slice(self, *args, **kwargs):
         result = yield self.cass.get_slice(*args, **kwargs)
         if len(result) == 0:
             kwargs['consistency'] = ConsistencyLevel.QUORUM

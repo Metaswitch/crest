@@ -60,10 +60,10 @@ class TestPassthroughHandler(unittest.TestCase):
                                                       column="col")
         self.mock_cass = mock.MagicMock()
         self.handler.cass = self.mock_cass
-        self.handler.reliable_get = self.mock_cass.get
+        self.handler.ha_get = self.mock_cass.get
 
     def test_get_mainline(self):
-        # Create a deferred object that will be used to mock out the yield self.reliable_get
+        # Create a deferred object that will be used to mock out the yield self.ha_get
         # We will later call the callback on it to advance the execcution of the tested function
         self.mock_cass.get.return_value = defer.Deferred()
         self.handler.finish = mock.MagicMock()

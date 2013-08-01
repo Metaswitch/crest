@@ -63,8 +63,8 @@ class TestAssociatedPublicHandler(unittest.TestCase):
                                                               column="col")
         self.mock_cass = mock.MagicMock()
         self.handler.cass = self.mock_cass
-        self.handler.reliable_get = self.mock_cass.get
-        self.handler.reliable_get_slice = self.mock_cass.get_slice
+        self.handler.ha_get = self.mock_cass.get
+        self.handler.ha_get_slice = self.mock_cass.get_slice
 
     def test_public_no_put(self):
         self.assertRaises(HTTPError, self.handler.put, "priv")
@@ -412,8 +412,8 @@ class TestAssociatedPrivateHandler(unittest.TestCase):
                                                                column="col")
         self.mock_cass = mock.MagicMock()
         self.handler.cass = self.mock_cass
-        self.handler.reliable_get = self.mock_cass.get
-        self.handler.reliable_get_slice = self.mock_cass.get_slice
+        self.handler.ha_get = self.mock_cass.get
+        self.handler.ha_get_slice = self.mock_cass.get_slice
 
     def test_private_no_put(self):
         self.assertRaises(HTTPError, self.handler.put, "sip:pub")
@@ -744,8 +744,8 @@ class TestAssociatedPublicByPublicHandler(unittest.TestCase):
                                                                column="col")
         self.mock_cass = mock.MagicMock()
         self.handler.cass = self.mock_cass
-        self.handler.reliable_get = self.mock_cass.get
-        self.handler.reliable_get_slice = self.mock_cass.get_slice
+        self.handler.ha_get = self.mock_cass.get
+        self.handler.ha_get_slice = self.mock_cass.get_slice
 
     def test_pubbypub_no_put(self):
         self.assertRaises(HTTPError, self.handler.put, "sip:pub")
