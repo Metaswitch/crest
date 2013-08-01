@@ -83,7 +83,7 @@ case "$1" in
             echo "Homer database already exists in Cassandra, not configuring"
         else
             echo "Initializing homer Cassandra database"
-            echo "create KEYSPACE homer with strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
+            echo "CREATE KEYSPACE homer WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
 
             cd $HOMER_DIR
             $HOMER_DIR/env/bin/python $HOMER_DIR/src/metaswitch/crest/tools/create_db.py

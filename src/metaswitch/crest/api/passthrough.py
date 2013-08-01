@@ -38,7 +38,7 @@ import httplib
 
 from cyclone.web import HTTPError
 from telephus.client import CassandraClient
-from telephus.cassandra.ttypes import NotFoundException
+from telephus.cassandra.ttypes import NotFoundException, UnavailableException, ConsistencyLevel
 from twisted.internet import defer
 
 from metaswitch.crest.api._base import BaseHandler
@@ -58,7 +58,7 @@ class PassthroughHandler(BaseHandler):
     def initialize(self, table, column):
         """
         The table and column are set as part of the Application router, see api/__init__.py
-        
+
         The table corresponds to the cassandra table, while the column specifies the cassandra column to operate on
         The row to operate on is passed to each function, while the value is in the request body, if relevant
         """
@@ -69,11 +69,11 @@ class PassthroughHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, row):
         try:
-            result = yield self.cass.get(column_family=self.table, key=row, column=self.column)
+            result = yield self.ha_get(column_family=self.table, key=row, column=self.column)
             self.finish(result.column.value)
         except NotFoundException, e:
             raise HTTPError(404)
-        
+
     # POST is difficult to generalize as it resource-specific - so force subclasses to implement
     def post(self, *args):
         raise HTTPError(405)
@@ -89,3 +89,39 @@ class PassthroughHandler(BaseHandler):
         self.set_status(httplib.NO_CONTENT)
         self.finish()
 
+    # After growing a cluster, Cassandra does not pro-actively populate the
+    # new nodes with their data (the nodes are expected to use `nodetool
+    # repair` if they need to get their data).  Combining this with
+    # the fact that we generally use consistency ONE when reading data, the
+    # behaviour on new nodes is to return NotFoundException or empty result
+    # sets to queries, even though the other nodes have a copy of the data.
+    #
+    # To resolve this issue, these two functions can be used as drop-in
+    # replacements for `CassandraClient#get` and `CassandraClient#get_slice`
+    # and will attempt a QUORUM read in the event that a ONE read returns
+    # no data.  If the QUORUM read fails due to unreachable nodes, the
+    # original result will be returned (i.e. an empty set or NotFound).
+    @defer.inlineCallbacks
+    def ha_get(self, *args, **kwargs):
+        try:
+            result = yield self.cass.get(*args, **kwargs)
+            defer.returnValue(result)
+        except NotFoundException as e:
+            kwargs['consistency'] = ConsistencyLevel.QUORUM
+            try:
+                result = yield self.cass.get(*args, **kwargs)
+                defer.returnValue(result)
+            except (NotFoundException, UnavailableException):
+                raise e
+
+    @defer.inlineCallbacks
+    def ha_get_slice(self, *args, **kwargs):
+        result = yield self.cass.get_slice(*args, **kwargs)
+        if len(result) == 0:
+            kwargs['consistency'] = ConsistencyLevel.QUORUM
+            try:
+                qresult = yield self.cass.get_slice(*args, **kwargs)
+                result = qresult
+            except UnavailableException:
+                pass
+        defer.returnValue(result)

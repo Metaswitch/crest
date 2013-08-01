@@ -86,7 +86,7 @@ case "$1" in
             cd -
         else
             echo "Initializing homestead Cassandra database"
-            echo "create KEYSPACE homestead with strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
+            echo "CREATE KEYSPACE homestead WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
             cd $HOMESTEAD_DIR
             $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/create_db.py
             cd -

@@ -73,7 +73,7 @@ PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
 # Ports.
 HTTP_PORT = 8888
 
-# Tornado cookie encryption key.  Tornado instances that share this key will 
+# Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.
 #
 # Homer and Homestead don't set cookies, so this is unnecessary.
@@ -92,7 +92,7 @@ CASS_KEYSPACE = "default"
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
 SPROUT_PORT = 5058
 
-# To avoid deploying with debug turned on, these settings should only ever be 
+# To avoid deploying with debug turned on, these settings should only ever be
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
 

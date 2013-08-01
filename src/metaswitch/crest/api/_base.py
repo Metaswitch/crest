@@ -131,7 +131,7 @@ class BaseHandler(cyclone.web.RequestHandler):
         """
         Sends an error response to the client, finishing the request in the
         process.
-        
+
         If the client has requested an error redirect rather than a status
         code then the error is formatted into URL parameters and sent on the
         redirect instead.
@@ -142,7 +142,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             if isinstance(e, HTTPError):
                 reason = e.log_message or "unknown"
         if redirect_url:
-            # The client (likely a webpage) has requested that we signal 
+            # The client (likely a webpage) has requested that we signal
             # failure by redirecting to a specific URL.
             redirect_url = utils.append_url_params(redirect_url,
                                                    error="true",

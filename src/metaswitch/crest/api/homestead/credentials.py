@@ -57,9 +57,9 @@ class PrivateCredentialsHandler(PassthroughHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            encrypted_hash = yield self.cass.get(column_family=self.table,
-                                                 key=private_id,
-                                                 column=self.column)
+            encrypted_hash = yield self.ha_get(column_family=self.table,
+                                               key=private_id,
+                                               column=self.column)
             digest = utils.decrypt_password(encrypted_hash.column.value,
                                             settings.PASSWORD_ENCRYPTION_KEY)
         except NotFoundException, e:
@@ -105,18 +105,18 @@ class AssociatedCredentialsHandler(AssociatedURIsHandler):
     def get(self, private_id, public_id):
         try:
             exists = False
-            db_data = yield self.cass.get_slice(key=private_id,
-                                                column_family=config.PUBLIC_IDS_TABLE,
-                                                start=public_id,
-                                                finish=public_id)
+            db_data = yield self.ha_get_slice(key=private_id,
+                                              column_family=config.PUBLIC_IDS_TABLE,
+                                              start=public_id,
+                                              finish=public_id)
             for column in db_data:
                 if column.column.name == public_id:
                     exists = True
             if not exists:
                 raise NotFoundException()
-            encrypted_hash = yield self.cass.get(column_family=self.table,
-                                                 key=private_id,
-                                                 column=self.column)
+            encrypted_hash = yield self.ha_get(column_family=self.table,
+                                               key=private_id,
+                                               column=self.column)
             digest = utils.decrypt_password(encrypted_hash.column.value,
                                             settings.PASSWORD_ENCRYPTION_KEY)
         except NotFoundException, e:

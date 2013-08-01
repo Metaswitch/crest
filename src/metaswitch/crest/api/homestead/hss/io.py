@@ -112,4 +112,3 @@ class HSSPeerIO(peer.PeerIOCallbacks):
 
     def close(self, peer):
         pass
-

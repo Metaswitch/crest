@@ -38,7 +38,7 @@ import httplib
 
 from cyclone.web import HTTPError
 from telephus.cassandra.ttypes import NotFoundException
-from twisted.internet import defer 
+from twisted.internet import defer
 
 from metaswitch.common import utils
 from metaswitch.crest import settings
@@ -54,12 +54,12 @@ class FilterCriteriaHandler(PassthroughHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         try:
-            result = yield self.cass.get(column_family=self.table, 
-                                         key=public_id, 
+            result = yield self.cass.get(column_family=self.table,
+                                         key=public_id,
                                          column=self.column)
             ifc = result.column.value
         except NotFoundException, e:
-            if not settings.HSS_ENABLED: 
+            if not settings.HSS_ENABLED:
                 # No HSS
                 raise HTTPError(404)
             # IFC not in Cassandra, attempt to fetch from HSS
@@ -70,9 +70,8 @@ class FilterCriteriaHandler(PassthroughHandler):
             except HSSNotFound:
                 raise HTTPError(404)
             # Have result from HSS, store in Cassandra
-            yield self.cass.insert(column_family=self.table, 
-                                   key=public_id, 
-                                   column=self.column, 
+            yield self.cass.insert(column_family=self.table,
+                                   key=public_id,
+                                   column=self.column,
                                    value=ifc)
         self.finish(ifc)
-
