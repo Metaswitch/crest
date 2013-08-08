@@ -72,6 +72,11 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 do_start()
 {
+        # Reduce Cassandra memory usage on all-in-one systems
+        if [ -e /usr/share/clearwater/bin/bono ] && grep '"1024"' /etc/cassandra/cassandra-env.sh > /dev/null; then
+          sed -i 's/"1024"/"256"/' /etc/cassandra/cassandra-env.sh;
+          service cassandra restart;
+        fi
 	# Return
 	#   0 if daemon has been started
 	#   1 if daemon was already running
