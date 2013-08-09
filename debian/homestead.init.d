@@ -72,6 +72,14 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 do_start()
 {
+        # Reduce Cassandra memory usage on all-in-one systems
+        # This change makes the calculation max(min(ram/2, 256MB), min(ram/4, 8GB)) instead of max(min(ram/2, 1GB), min(ram/4, 8GB)) - so Cassandra will use about a quarter of the system memory rather than half
+        if [ $(dpkg-query -W -f='${PackageSpec}\n' | egrep '^(bono|ellis|homer|homestead|sprout)$' | wc -l) -eq 5 ] && grep 'half_system_memory_in_mb="1024"' /etc/cassandra/cassandra-env.sh > /dev/null
+          then
+          sed -i 's/"$half_system_memory_in_mb" -gt "1024"/"$half_system_memory_in_mb" -gt "256"/' /etc/cassandra/cassandra-env.sh
+          sed -i 's/half_system_memory_in_mb="1024"/half_system_memory_in_mb="256"/' /etc/cassandra/cassandra-env.sh
+          service cassandra restart
+        fi
 	# Return
 	#   0 if daemon has been started
 	#   1 if daemon was already running
