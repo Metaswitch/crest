@@ -54,7 +54,7 @@ If you have a CSV file with fewer columns, you can autocomplete the remaining
 columns using the bulk_autocomplete.py script.
 """
 
-import sys, string, csv
+import sys, string, csv, uuid
 from metaswitch.crest import settings
 from metaswitch.common import utils
 from metaswitch.common import ifcs
@@ -69,37 +69,42 @@ def standalone():
         return
     csv_filename = sys.argv[1]
     csv_filename_prefix = string.replace(csv_filename, ".csv", "")
-    homestead_filename = "%s.create_homestead.sh" % (csv_filename_prefix,)
-    homestead_casscli_filename = "%s.create_homestead.casscli" % (csv_filename_prefix,)
-    xdm_filename = "%s.create_xdm.sh" % (csv_filename_prefix,)
-    xdm_cqlsh_filename = "%s.create_xdm.cqlsh" % (csv_filename_prefix,)
-    print "Generating bulk provisioning scripts for users in %s..." % (csv_filename,)
+    homestead_filename = "%s.create_homestead.sh" % (csv_filename_prefix)
+    homestead_prov_casscli_filename = "%s.create_homestead_provisioning.casscli" % (csv_filename_prefix)
+    homestead_cache_casscli_filename = "%s.create_homestead_cache.casscli" % (csv_filename_prefix)
+    xdm_filename = "%s.create_xdm.sh" % (csv_filename_prefix)
+    xdm_cqlsh_filename = "%s.create_xdm.cqlsh" % (csv_filename_prefix)
+    print "Generating bulk provisioning scripts for users in %s..." % (csv_filename)
     try:
         with open(csv_filename, 'rb') as csv_file, \
              open(homestead_filename, 'w') as homestead_file, \
-             open(homestead_casscli_filename, 'w') as homestead_casscli_file, \
+             open(homestead_cache_casscli_filename, 'w') as homestead_cache_casscli_file, \
+             open(homestead_prov_casscli_filename, 'w') as homestead_prov_casscli_file, \
              open(xdm_filename, 'w') as xdm_file, \
              open(xdm_cqlsh_filename, 'w') as xdm_cqlsh_file:
             # Write Homestead/CQL header
             homestead_file.write("#!/bin/bash\n")
-            homestead_file.write("# Homestead bulk provisioning script for users in %s\n" % (csv_filename,))
+            homestead_file.write("# Homestead bulk provisioning script for users in %s\n" % (csv_filename))
             homestead_file.write("# Run this script on any node in your Homestead deployment to create the users\n")
-            homestead_file.write("# The %s file must also be present on this system\n" % (homestead_casscli_filename,))
-            homestead_file.write("# You must also run %s on any node in your Homer deployment\n" % (xdm_filename,))
+            homestead_file.write("# The %s and %s files must also be present on this system\n" % (homestead_cache_casscli_filename, homestead_prov_casscli_filename))
+            homestead_file.write("# You must also run %s on any node in your Homer deployment\n" % (xdm_filename))
             homestead_file.write("\n")
-            homestead_file.write("[ -f %s ] || echo \"The %s file must be present on this system.\"\n" % (homestead_casscli_filename, homestead_casscli_filename))
-            homestead_file.write("cassandra-cli -B -f %s\n" % (homestead_casscli_filename,))
-            homestead_casscli_file.write("USE homestead;\n");
+            homestead_file.write("[ -f %s ] || echo \"The %s file must be present on this system.\"\n" % (homestead_cache_casscli_filename, homestead_cache_casscli_filename))
+            homestead_file.write("[ -f %s ] || echo \"The %s file must be present on this system.\"\n" % (homestead_prov_casscli_filename, homestead_prov_casscli_filename))
+            homestead_file.write("cassandra-cli -B -f %s\n" % (homestead_cache_casscli_filename))
+            homestead_file.write("cassandra-cli -B -f %s\n" % (homestead_prov_casscli_filename))
+            homestead_cache_casscli_file.write("USE homestead_cache;\n");
+            homestead_prov_casscli_file.write("USE homestead_provisioning;\n");
 
             # Write Homer/CQL header
             xdm_file.write("#!/bin/bash\n")
-            xdm_file.write("# Homer bulk provisioning script for users in %s\n" % (csv_filename,))
+            xdm_file.write("# Homer bulk provisioning script for users in %s\n" % (csv_filename))
             xdm_file.write("# Run this script on any node in your Homer deployment to create the users\n")
-            xdm_file.write("# The %s file must also be present on this system\n" % (xdm_cqlsh_filename,))
-            xdm_file.write("# You must also run %s on any node in your Homestead deployment\n" % (homestead_filename,))
+            xdm_file.write("# The %s file must also be present on this system\n" % (xdm_cqlsh_filename))
+            xdm_file.write("# You must also run %s on any node in your Homestead deployment\n" % (homestead_filename))
             xdm_file.write("\n")
             xdm_file.write("[ -f %s ] || echo \"The %s file must be present on this system.\"\n" % (xdm_cqlsh_filename, xdm_cqlsh_filename))
-            xdm_file.write("cqlsh -3 -f %s\n" % (xdm_cqlsh_filename,))
+            xdm_file.write("cqlsh -3 -f %s\n" % (xdm_cqlsh_filename))
             xdm_cqlsh_file.write("USE homer;\n")
 
             reader = csv.reader(csv_file)
@@ -107,30 +112,42 @@ def standalone():
                 if len(row) >= 4:
                     [public_id, private_id, realm, password] = row[0:4]
 
-                    # Hash and then encrypt the password.
+                    # Generate the user-specific data
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
-                    encrypted_hash = utils.encrypt_password(hash, settings.PASSWORD_ENCRYPTION_KEY)
+                    ims_subscription_xml = '<IMSSubscriptionXML xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity>%s</ServiceProfile></IMSSubscriptionXML>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
+                    irs_uuid = str(uuid.uuid4());
 
-                    # Add the user to the SIP digest, associated IDs and filter criteria tables on Homestead.
-                    homestead_casscli_file.write("SET sip_digests['%s']['private_id'] = '%s';\n" % (private_id, private_id))
-                    homestead_casscli_file.write("SET sip_digests['%s']['digest'] = '%s';\n" % (private_id, encrypted_hash))
-                    homestead_casscli_file.write("SET public_ids['%s']['%s'] = '%s';\n" % (private_id, public_id, public_id))
-                    homestead_casscli_file.write("SET private_ids['%s']['%s'] = '%s';\n" % (public_id, private_id, private_id))
-                    homestead_casscli_file.write("SET filter_criteria['%s']['public_id'] = '%s';\n" % (public_id, public_id))
-                    homestead_casscli_file.write("SET filter_criteria['%s']['value'] = '%s';\n" % (public_id, INITIAL_FILTER_CRITERIA))
+                    # Add the user to the optimized cassandra cache.
+                    homestead_cache_casscli_file.write("SET impi['%s']['private_id'] = '%s';\n" % (private_id, private_id))
+                    homestead_cache_casscli_file.write("SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
+                    homestead_cache_casscli_file.write("SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id, public_id, public_id))
+                    homestead_cache_casscli_file.write("SET impu['%s']['public_id'] = '%s';\n" % (public_id, public_id))
+                    homestead_cache_casscli_file.write("SET impu['%s']['IMSSubscriptionXML'] = '%s';\n" % (public_id, ims_subscription_xml))
+                    homestead_cache_casscli_file.write("SET impu['%s']['InitialFilterCriteriaXML'] = '%s';\n" % (public_id, INITIAL_FILTER_CRITERIA))
 
-                    # Add the simservs document for the user to the documents table  on Homer
+                    # Populate the provisioning tables for the user.
+                    homestead_prov_casscli_file.write("SET irs['%s']['irs_id'] = '%s';\n" % (irs_uuid, irs_uuid))
+                    homestead_prov_casscli_file.write("SET irs['%s']['IMSSubscriptionXML'] = '%s';\n" % (irs_uuid, ims_subscription_xml))
+                    homestead_prov_casscli_file.write("SET irs['%s']['private_id_%s'] = '%s';\n" % (irs_uuid, private_id, private_id))
+                    homestead_prov_casscli_file.write("SET public['%s']['public_id'] = '%s';\n" % (public_id, public_id))
+                    homestead_prov_casscli_file.write("SET public['%s']['associated_irs'] = '%s';\n" % (public_id, irs_uuid))
+                    homestead_prov_casscli_file.write("SET private['%s']['private_id'] = '%s';\n" % (private_id, private_id))
+                    homestead_prov_casscli_file.write("SET private['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
+                    homestead_prov_casscli_file.write("SET private['%s']['irs_uuid_%s'] = '%s';\n" % (private_id, irs_uuid, irs_uuid))
+
+                    # Add the simservs document for the user to the documents table on Homer
                     xdm_cqlsh_file.write("INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id, SIMSERVS))
                 else:
                     print 'Error: row "%s" contains <4 entries - ignoring'
 
         print "Generated bulk provisioning scripts written to"
-        print "- %-46s - run this script on Homestead" % (homestead_filename,)
-        print "- %-46s - copy this file onto Homestead" % (homestead_casscli_filename,)
-        print "- %-46s - run this script on Homer" % (xdm_filename,)
-        print "- %-46s - copy this file onto Homer" % (xdm_cqlsh_filename,)
+        print "- %-46s - run this script on Homestead" % (homestead_filename)
+        print "- %-46s - copy this file onto Homestead" % (homestead_cache_casscli_filename)
+        print "- %-46s - copy this file onto Homestead" % (homestead_prov_casscli_filename)
+        print "- %-46s - run this script on Homer" % (xdm_filename)
+        print "- %-46s - copy this file onto Homer" % (xdm_cqlsh_filename)
     except IOError as e:
-        print "Failed to read/write to %s:" % (e.filename,)
+        print "Failed to read/write to %s:" % (e.filename)
         traceback.print_exc();
 
 if __name__ == '__main__':
