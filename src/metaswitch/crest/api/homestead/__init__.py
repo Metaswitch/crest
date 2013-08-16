@@ -38,10 +38,8 @@ import cyclone.web
 
 from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.credentials import PrivateCredentialsHandler, AssociatedCredentialsHandler
-from metaswitch.crest.api.homestead.associatedURIs import AssociatedPrivateHandler, AssociatedPublicHandler, AssociatedPublicByPublicHandler
-from metaswitch.crest.api.homestead.filtercriteria import FilterCriteriaHandler
-from metaswitch.crest.api.homestead.hss import gateway
+from metaswitch.crest.api.homestead.cache.handlers import DigestHandler
+#from metaswitch.crest.api.homestead.hss import gateway
 from metaswitch.crest.api.homestead import config
 
 # TODO More precise regexes
@@ -57,49 +55,43 @@ PUBLIC_ID = r'[^/]+'
 #     - table: the table to store the values in
 #     - column: name of the column to store against in Cassandra. The value stored is the request body
 ROUTES = [
-    # PrivateCredentials: the API for setting/getting/deleting credentials for a private ID.
-    # /privatecredentials/<private ID>/digest
-    (PATH_PREFIX + r'privatecredentials/(' + PRIVATE_ID + r')/digest/?$',
-     PrivateCredentialsHandler,
-     {"table": config.SIP_DIGESTS_TABLE, "column": "digest"}),
+    # IMPI: the API for creating/deleting a private ID.
 
-    # Credentials: Only get is supported.  Behaves like PrivateCredentials while also
-    # checking that the private & public IDs are associated.
-    # /credentials/<private ID>/<public ID>/digest
-    (PATH_PREFIX + r'credentials/(' + PRIVATE_ID + r')/(' + PUBLIC_ID + r')/digest/?$',
-     AssociatedCredentialsHandler,
-     {"table": config.SIP_DIGESTS_TABLE, "column": "digest"}),
+    # IMPI Digest: the API for getting/updating the digest of a private ID. Can optionally validate whether a public ID is associated.
+    # /privatecredentials/<private ID>/digest?public_id=xxx
+    (PATH_PREFIX + r'impi/(' + PRIVATE_ID + r')/digest?$',
+     DigestHandler)
 
-    # Associated URIs
-    # /associatedprivate/<public ID>/<private ID>
-    (PATH_PREFIX + r'associatedprivate/(' + PUBLIC_ID + r')/?(' + PRIVATE_ID + r')?/?$',
-     AssociatedPrivateHandler,
-     {"table": config.PRIVATE_IDS_TABLE, "column": "private_id"}),
+    # IMPI associated registration sets: the API for getting/bulk updating the implicit registration sets associated with a private ID
+    # /privatecredentials/<private ID>/digest?public_id=xxx
+    #(PATH_PREFIX + r'impi/(' + PRIVATE_ID + r')/associated_implicit_registration_sets/?$',
+     #PrivateCredentialsHandler,
+     #{"table": config.IMPI_TABLE, "column": "digest"})
 
-    # /associatedpublic/<private ID>/<public ID>
-    (PATH_PREFIX + r'associatedpublic/(' + PRIVATE_ID + r')/?(' + PUBLIC_ID + r')?/?$',
-     AssociatedPublicHandler,
-     {"table": config.PUBLIC_IDS_TABLE, "column": "public_id"}),
+    # IMPI specific associated registration set: the API for associating/disassociating an implicit registration set with a private ID
+    # /privatecredentials/<private ID>/digest?public_id=xxx
+    #(PATH_PREFIX + r'impi/(' + PRIVATE_ID + r')/associated_implicit_registration_sets/(' + UUID + ')?$',
+     #PrivateCredentialsHandler,
+     #{"table": config.IMPI_TABLE, "column": "digest"})
 
-    # /associatedpublicbypublic/<public ID>
-    (PATH_PREFIX + r'associatedpublicbypublic/(' + PUBLIC_ID + r')/?$',
-     AssociatedPublicByPublicHandler,
-     {"table": config.PUBLIC_IDS_TABLE, "column": "public_id"}),
+    # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID
+    # /privatecredentials/<private ID>/digest?public_id=xxx
+    #(PATH_PREFIX + r'impu/(' + PUBLIC_ID + r')?$',
+     #PrivateCredentialsHandler,
+     #{"table": config.IMPI_TABLE, "column": "digest"})
 
-    # IFC
-    # /filtercriteria/<public ID>
-    (PATH_PREFIX + r'filtercriteria/(' + PUBLIC_ID + r')/?$',
-     FilterCriteriaHandler,
-     {"table": config.FILTER_CRITERIA_TABLE, "column": "value"}),
+    # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID
+    # /privatecredentials/<private ID>/digest?public_id=xxx
+    #(PATH_PREFIX + r'impu/(' + PUBLIC_ID + r')/service_profile/filter_criteria?$',
+     #PrivateCredentialsHandler,
+     #{"table": config.IMPI_TABLE, "column": "digest"})
 ]
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
-CREATE_SIP_DIGESTS = "CREATE TABLE "+config.SIP_DIGESTS_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
-CREATE_PUBLIC_IDS = "CREATE TABLE "+config.PUBLIC_IDS_TABLE+" (private_id text PRIMARY KEY) WITH read_repair_chance = 1.0;"
-CREATE_PRIVATE_IDS = "CREATE TABLE "+config.PRIVATE_IDS_TABLE+" (public_id text PRIMARY KEY) WITH read_repair_chance = 1.0;"
-CREATE_IFCS = "CREATE TABLE "+config.FILTER_CRITERIA_TABLE+" (public_id text PRIMARY KEY, value text) WITH read_repair_chance = 1.0;"
-CREATE_STATEMENTS = [CREATE_SIP_DIGESTS, CREATE_PUBLIC_IDS, CREATE_PRIVATE_IDS, CREATE_IFCS]
+CREATE_IMPI = "CREATE TABLE "+config.SIP_DIGESTS_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
+CREATE_IMPU = "CREATE TABLE "+config.SIP_DIGESTS_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text, InitialFilterCriteria text) WITH read_repair_chance = 1.0;"
+CREATE_STATEMENTS = []
 
 # Module initialization
 def initialize(application):
