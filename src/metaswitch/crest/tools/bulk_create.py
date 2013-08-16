@@ -118,20 +118,15 @@ def standalone():
                     irs_uuid = str(uuid.uuid4());
 
                     # Add the user to the optimized cassandra cache.
-                    homestead_cache_casscli_file.write("SET impi['%s']['private_id'] = '%s';\n" % (private_id, private_id))
                     homestead_cache_casscli_file.write("SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_cache_casscli_file.write("SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id, public_id, public_id))
-                    homestead_cache_casscli_file.write("SET impu['%s']['public_id'] = '%s';\n" % (public_id, public_id))
                     homestead_cache_casscli_file.write("SET impu['%s']['IMSSubscriptionXML'] = '%s';\n" % (public_id, ims_subscription_xml))
                     homestead_cache_casscli_file.write("SET impu['%s']['InitialFilterCriteriaXML'] = '%s';\n" % (public_id, INITIAL_FILTER_CRITERIA))
 
                     # Populate the provisioning tables for the user.
-                    homestead_prov_casscli_file.write("SET irs['%s']['irs_id'] = '%s';\n" % (irs_uuid, irs_uuid))
                     homestead_prov_casscli_file.write("SET irs['%s']['IMSSubscriptionXML'] = '%s';\n" % (irs_uuid, ims_subscription_xml))
                     homestead_prov_casscli_file.write("SET irs['%s']['private_id_%s'] = '%s';\n" % (irs_uuid, private_id, private_id))
-                    homestead_prov_casscli_file.write("SET public['%s']['public_id'] = '%s';\n" % (public_id, public_id))
                     homestead_prov_casscli_file.write("SET public['%s']['associated_irs'] = '%s';\n" % (public_id, irs_uuid))
-                    homestead_prov_casscli_file.write("SET private['%s']['private_id'] = '%s';\n" % (private_id, private_id))
                     homestead_prov_casscli_file.write("SET private['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_prov_casscli_file.write("SET private['%s']['irs_uuid_%s'] = '%s';\n" % (private_id, irs_uuid, irs_uuid))
 
