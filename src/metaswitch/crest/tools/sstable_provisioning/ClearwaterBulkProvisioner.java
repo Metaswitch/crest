@@ -16,6 +16,7 @@
  */
 import java.nio.ByteBuffer;
 import java.io.*;
+import java.util.UUID;
 
 import org.apache.cassandra.db.marshal.*;
 import org.apache.cassandra.io.sstable.SSTableSimpleUnsortedWriter;
@@ -84,110 +85,151 @@ public class ClearwaterBulkProvisioner
         }
         // Don't forget to close!
         simservsWriter.close();
-        System.exit(0);
     }
 
     private static void provision_homestead(BufferedReader reader, String csvfile) throws IOException
     {
-        String keyspace = "homestead";
-        File ks_directory = new File(keyspace);
-        if (!ks_directory.exists())
-            ks_directory.mkdir();
+        /*
+         * Create the directories to hold the two keyspaces.
+         */
+        String cache_keyspace = "homestead_cache";
+        File cache_ks_directory = new File(cache_keyspace);
+        if (!cache_ks_directory.exists())
+            cache_ks_directory.mkdir();
 
-        String digest_table = "sip_digests";
-        File digest_directory = new File(keyspace + "/" + digest_table);
-        if (!digest_directory.exists())
-            digest_directory.mkdir();
+        String prov_keyspace = "homestead_provisioning";
+        File prov_ks_directory = new File(prov_keyspace);
+        if (!prov_ks_directory.exists())
+            prov_ks_directory.mkdir();
 
-        SSTableSimpleUnsortedWriter digestWriter = new SSTableSimpleUnsortedWriter(
-                digest_directory,
+        /*
+         * Create SSTable writes for each table in the keyspaces.
+         */
+        String impi_table = "impi";
+        File impi_directory = new File(cache_keyspace + "/" + impi_table);
+        if (!impi_directory.exists())
+            impi_directory.mkdir();
+
+        SSTableSimpleUnsortedWriter impiWriter = new SSTableSimpleUnsortedWriter(
+                impi_directory,
                 new RandomPartitioner(),
-                keyspace,
-                digest_table,
+                cache_keyspace,
+                impi_table,
                 AsciiType.instance,
                 null,
                 64);
 
-        String public_ids_table = "public_ids";
-        File public_ids_directory = new File(keyspace + "/" + public_ids_table);
-        if (!public_ids_directory.exists())
-            public_ids_directory.mkdir();
+        String impu_table = "impu";
+        File impu_directory = new File(cache_keyspace + "/" + impu_table);
+        if (!impu_directory.exists())
+            impu_directory.mkdir();
 
-        SSTableSimpleUnsortedWriter publicIdsWriter = new SSTableSimpleUnsortedWriter(
-                public_ids_directory,
+        SSTableSimpleUnsortedWriter impuWriter = new SSTableSimpleUnsortedWriter(
+                impu_directory,
                 new RandomPartitioner(),
-                keyspace,
-                public_ids_table,
+                cache_keyspace,
+                impu_table,
                 AsciiType.instance,
                 null,
                 64);
 
-        String private_ids_table = "private_ids";
-        File private_ids_directory = new File(keyspace + "/" + private_ids_table);
-        if (!private_ids_directory.exists())
-            private_ids_directory.mkdir();
+        String irs_table = "irs";
+        File irs_directory = new File(prov_keyspace + "/" + irs_table);
+        if (!irs_directory.exists())
+            irs_directory.mkdir();
 
-        SSTableSimpleUnsortedWriter privateIdsWriter = new SSTableSimpleUnsortedWriter(
-                private_ids_directory,
+        SSTableSimpleUnsortedWriter irsWriter = new SSTableSimpleUnsortedWriter(
+                irs_directory,
                 new RandomPartitioner(),
-                keyspace,
-                private_ids_table,
+                prov_keyspace,
+                irs_table,
+                UUIDType.instance,
+                null,
+                64);
+
+        String public_table = "public";
+        File public_directory = new File(prov_keyspace + "/" + public_table);
+        if (!public_directory.exists())
+            public_directory.mkdir();
+
+        SSTableSimpleUnsortedWriter publicWriter = new SSTableSimpleUnsortedWriter(
+                public_directory,
+                new RandomPartitioner(),
+                prov_keyspace,
+                public_table,
                 AsciiType.instance,
                 null,
                 64);
 
-        String ifc_table = "filter_criteria";
-        File ifc_directory = new File(keyspace + "/" + ifc_table);
-        if (!ifc_directory.exists())
-            ifc_directory.mkdir();
+        String private_table = "private";
+        File private_directory = new File(prov_keyspace + "/" + private_table);
+        if (!private_directory.exists())
+            private_directory.mkdir();
 
-        SSTableSimpleUnsortedWriter ifcWriter = new SSTableSimpleUnsortedWriter(
-                ifc_directory,
+        SSTableSimpleUnsortedWriter privateWriter = new SSTableSimpleUnsortedWriter(
+                private_directory,
                 new RandomPartitioner(),
-                keyspace,
-                ifc_table,
+                prov_keyspace,
+                private_table,
                 AsciiType.instance,
                 null,
                 64);
 
+        /*
+         * Walk through the supplied CSV, inserting rows in the keyspaces for each entry.
+         */
         String line;
         int lineNumber = 1;
         CsvEntry entry = new CsvEntry();
-        // There is no reason not to use the same timestamp for every column in that example.
+
+        // There is no reason not to use the same timestamp for every column.
         long timestamp = System.currentTimeMillis() * 1000;
+
         while ((line = reader.readLine()) != null)
         {
             if (entry.parse(line, lineNumber, csvfile))
             {
-                digestWriter.newRow(bytes(entry.private_id));
-                digestWriter.addColumn(bytes("digest"), bytes(entry.digest), timestamp);
-                publicIdsWriter.newRow(bytes(entry.private_id));
-                publicIdsWriter.addColumn(bytes(entry.public_id), bytes(entry.public_id), timestamp);
-                privateIdsWriter.newRow(bytes(entry.public_id));
-                privateIdsWriter.addColumn(bytes(entry.private_id), bytes(entry.private_id), timestamp);
-                ifcWriter.newRow(bytes(entry.public_id));
-                ifcWriter.addColumn(bytes("value"), bytes(entry.ifc), timestamp);
+                impiWriter.newRow(bytes(entry.private_id));
+                impiWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
+                impiWriter.addColumn(bytes("public_id_" + entry.public_id), bytes(entry.public_id), timestamp);
+
+                impuWriter.newRow(bytes(entry.public_id));
+                impuWriter.addColumn(bytes("IMSSubscriptionXML"), bytes(entry.imssubscription), timestamp);
+                impuWriter.addColumn(bytes("InitialFilterCriteriaXML"), bytes(entry.ifc), timestamp);
+
+                irsWriter.newRow(entry.irs_uuid);
+                irsWriter.addColumn(bytes("IMSSubscriptionXML"), bytes(entry.imssubscription), timestamp);
+                irsWriter.addColumn(bytes("private_id_" + entry.private_id), bytes(entry.private_id), timestamp);
+
+                publicWriter.newRow(bytes(entry.public_id));
+                publicWriter.addColumn(bytes("associated_irs"), entry.irs_uuid, timestamp);
+
+                privateWriter.newRow(bytes(entry.private_id));
+                privateWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
+                privateWriter.addColumn(bytes("irs_uuid_" + entry.irs_uuid_str), entry.irs_uuid, timestamp);
             }
             lineNumber++;
         }
+
         // Don't forget to close!
-        digestWriter.close();
-        publicIdsWriter.close();
-        privateIdsWriter.close();
-        ifcWriter.close();
-        System.exit(0);
+        impiWriter.close();
+        impuWriter.close();
+        irsWriter.close();
+        publicWriter.close();
+        privateWriter.close();
     }
 
     static class CsvEntry
     {
-        String public_id, private_id, digest, simservs, ifc;
+        String public_id, private_id, digest, simservs, ifc, imssubscription, irs_uuid_str;
+        ByteBuffer irs_uuid;
 
         boolean parse(String line, int lineNumber, String csvfile)
         {
             // Ghetto csv parsing, will break if any entries contain commas.  This is fine at the moment because
             // neither the default simservs, nor the default IFC contain commas.
             String[] columns = line.split(",");
-            if (columns.length != 5)
+            if (columns.length != 7)
             {
                 System.out.println(String.format("Invalid input '%s' at line %d of %s", line, lineNumber, csvfile));
                 return false;
@@ -197,6 +239,15 @@ public class ClearwaterBulkProvisioner
             digest = columns[2].trim();
             simservs = columns[3].trim();
             ifc = columns[4].trim();
+            imssubscription = columns[5].trim();
+            irs_uuid_str = columns[6].trim();
+
+            // Convert the string representation of UUID to a byte array.  Apache Commons' UUID class has this
+            // as built in function (as getRawBytes) but we don't have access to that class here, so we roll our
+            // own.
+            UUID uuid = UUID.fromString(irs_uuid_str);
+            irs_uuid = ByteBuffer.wrap(decompose(uuid));
+
             return true;
         }
     }

@@ -36,7 +36,7 @@
 
 #
 
-import sys, string, csv
+import sys, string, csv, traceback, uuid
 from metaswitch.crest import settings
 from metaswitch.common import utils
 from metaswitch.common import ifcs
@@ -73,11 +73,13 @@ def standalone():
                 if len(row) >= 4:
                     [public_id, private_id, realm, password] = row[0:4]
 
-                    # Hash and then encrypt the password.
+                    # Hash the password and generate the IMSSubscriptionXML.
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
-                    encrypted_hash = utils.encrypt_password(hash, settings.PASSWORD_ENCRYPTION_KEY)
-
-                    output_file.write("%s,%s,%s,%s,%s\n" % (public_id, private_id, encrypted_hash, SIMSERVS, INITIAL_FILTER_CRITERIA))
+                    ims_subscription_xml = '<IMSSubscriptionXML xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity>%s</ServiceProfile></IMSSubscriptionXML>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
+                    irs_uuid = uuid.uuid4();
+                    
+                    # Print a line for the user
+                    output_file.write("%s,%s,%s,%s,%s,%s,%s\n" % (public_id, private_id, hash, SIMSERVS, INITIAL_FILTER_CRITERIA, ims_subscription_xml, irs_uuid))
                 else:
                     print 'Error: row "%s" contains <4 entries - ignoring'
 
