@@ -38,8 +38,7 @@ import cyclone.web
 
 from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.cache.handlers import DigestHandler
-#from metaswitch.crest.api.homestead.hss import gateway
+from metaswitch.crest.api.homestead.cache.handlers import Cache, DigestHandler, IMSSubscriptionHandler, iFCHandler
 from metaswitch.crest.api.homestead import config
 
 # TODO More precise regexes
@@ -48,43 +47,19 @@ PUBLIC_ID = r'[^/]+'
 
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be passed to the the Handler
-# - The Handler to process the request. If no validation is required, use the PassthroughHandler.
-#   To validate requests, subclass PassthroughHandler and validate before passing onto PassthroughHandler
-# - Cassandra information. This hash contains the information required by PassthroughHandler to store
-#   the data in the underlying database. Namely:
-#     - table: the table to store the values in
-#     - column: name of the column to store against in Cassandra. The value stored is the request body
+# - The Handler to process the request.
 ROUTES = [
-    # IMPI: the API for creating/deleting a private ID.
-
     # IMPI Digest: the API for getting/updating the digest of a private ID. Can optionally validate whether a public ID is associated.
-    # /privatecredentials/<private ID>/digest?public_id=xxx
-    (PATH_PREFIX + r'impi/(' + PRIVATE_ID + r')/digest?$',
-     DigestHandler)
+    # /impi/<private ID>/digest?public_id=xxx
+    (r'/impi/([^/]+)/digest',  DigestHandler),
 
-    # IMPI associated registration sets: the API for getting/bulk updating the implicit registration sets associated with a private ID
-    # /privatecredentials/<private ID>/digest?public_id=xxx
-    #(PATH_PREFIX + r'impi/(' + PRIVATE_ID + r')/associated_implicit_registration_sets/?$',
-     #PrivateCredentialsHandler,
-     #{"table": config.IMPI_TABLE, "column": "digest"})
+    # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID.
+    # /impu/<public ID>?private_id=xxx
+    (r'/impu/([^/]+)',  IMSSubscriptionHandler),
 
-    # IMPI specific associated registration set: the API for associating/disassociating an implicit registration set with a private ID
-    # /privatecredentials/<private ID>/digest?public_id=xxx
-    #(PATH_PREFIX + r'impi/(' + PRIVATE_ID + r')/associated_implicit_registration_sets/(' + UUID + ')?$',
-     #PrivateCredentialsHandler,
-     #{"table": config.IMPI_TABLE, "column": "digest"})
-
-    # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID
-    # /privatecredentials/<private ID>/digest?public_id=xxx
-    #(PATH_PREFIX + r'impu/(' + PUBLIC_ID + r')?$',
-     #PrivateCredentialsHandler,
-     #{"table": config.IMPI_TABLE, "column": "digest"})
-
-    # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID
-    # /privatecredentials/<private ID>/digest?public_id=xxx
-    #(PATH_PREFIX + r'impu/(' + PUBLIC_ID + r')/service_profile/filter_criteria?$',
-     #PrivateCredentialsHandler,
-     #{"table": config.IMPI_TABLE, "column": "digest"})
+    # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID.
+    # /impu/<public ID>/service_profile/filter_criteria?private_id=xxx
+    (r'/impu/([^/]+)/service_profile/filter_criteria',  iFCHandler),
 ]
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
@@ -95,5 +70,8 @@ CREATE_STATEMENTS = []
 
 # Module initialization
 def initialize(application):
+    application.cache = Cache()
     if settings.HSS_ENABLED:
-        application.hss_gateway = gateway.HSSGateway()
+        application.backend = None
+    else:
+        application.backend = None
