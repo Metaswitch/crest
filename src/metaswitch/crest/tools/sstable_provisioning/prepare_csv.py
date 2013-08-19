@@ -75,14 +75,14 @@ def standalone():
 
                     # Hash the password and generate the IMSSubscriptionXML.
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
-                    ims_subscription_xml = '<?xml version="1.0" encoding="UTF-8"?><IMSSubscriptionXML xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity>%s</ServiceProfile></IMSSubscriptionXML>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
+                    ims_subscription_xml = '<?xml version="1.0" encoding="UTF-8"?><IMSSubscription xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity>%s</ServiceProfile></IMSSubscription>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
                     initial_filter_xml = '<?xml version="1.0" encoding="UTF-8"?>%s' % (INITIAL_FILTER_CRITERIA)
                     irs_uuid = uuid.uuid4();
                     
                     # Print a line for the user
                     output_file.write("%s,%s,%s,%s,%s,%s,%s\n" % (public_id, private_id, hash, SIMSERVS, initial_filter_xml, ims_subscription_xml, irs_uuid))
                 else:
-                    print 'Error: row "%s" contains <7 entries - ignoring'
+                    print 'Error: row "%s" contains <4 entries - ignoring'
 
         print "Bulk provisioning input created"
         print "- BulkProvision %s homer" % (output_filename)

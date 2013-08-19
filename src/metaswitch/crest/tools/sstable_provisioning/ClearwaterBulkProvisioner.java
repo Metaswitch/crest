@@ -55,19 +55,7 @@ public class ClearwaterBulkProvisioner
         if (!ks_directory.exists())
             ks_directory.mkdir();
 
-        String table = "simservs";
-        File directory = new File(keyspace + "/" + table);
-        if (!directory.exists())
-            directory.mkdir();
-
-        SSTableSimpleUnsortedWriter simservsWriter = new SSTableSimpleUnsortedWriter(
-                directory,
-                new RandomPartitioner(),
-                keyspace,
-                "simservs",
-                AsciiType.instance,
-                null,
-                64);
+        SSTableSimpleUnsortedWriter simservsWriter = createWriter(keyspace, "simservs");
 
         String line;
         int lineNumber = 1;
@@ -105,75 +93,11 @@ public class ClearwaterBulkProvisioner
         /*
          * Create SSTable writes for each table in the keyspaces.
          */
-        String impi_table = "impi";
-        File impi_directory = new File(cache_keyspace + "/" + impi_table);
-        if (!impi_directory.exists())
-            impi_directory.mkdir();
-
-        SSTableSimpleUnsortedWriter impiWriter = new SSTableSimpleUnsortedWriter(
-                impi_directory,
-                new RandomPartitioner(),
-                cache_keyspace,
-                impi_table,
-                AsciiType.instance,
-                null,
-                64);
-
-        String impu_table = "impu";
-        File impu_directory = new File(cache_keyspace + "/" + impu_table);
-        if (!impu_directory.exists())
-            impu_directory.mkdir();
-
-        SSTableSimpleUnsortedWriter impuWriter = new SSTableSimpleUnsortedWriter(
-                impu_directory,
-                new RandomPartitioner(),
-                cache_keyspace,
-                impu_table,
-                AsciiType.instance,
-                null,
-                64);
-
-        String irs_table = "irs";
-        File irs_directory = new File(prov_keyspace + "/" + irs_table);
-        if (!irs_directory.exists())
-            irs_directory.mkdir();
-
-        SSTableSimpleUnsortedWriter irsWriter = new SSTableSimpleUnsortedWriter(
-                irs_directory,
-                new RandomPartitioner(),
-                prov_keyspace,
-                irs_table,
-                UUIDType.instance,
-                null,
-                64);
-
-        String public_table = "public";
-        File public_directory = new File(prov_keyspace + "/" + public_table);
-        if (!public_directory.exists())
-            public_directory.mkdir();
-
-        SSTableSimpleUnsortedWriter publicWriter = new SSTableSimpleUnsortedWriter(
-                public_directory,
-                new RandomPartitioner(),
-                prov_keyspace,
-                public_table,
-                AsciiType.instance,
-                null,
-                64);
-
-        String private_table = "private";
-        File private_directory = new File(prov_keyspace + "/" + private_table);
-        if (!private_directory.exists())
-            private_directory.mkdir();
-
-        SSTableSimpleUnsortedWriter privateWriter = new SSTableSimpleUnsortedWriter(
-                private_directory,
-                new RandomPartitioner(),
-                prov_keyspace,
-                private_table,
-                AsciiType.instance,
-                null,
-                64);
+        SSTableSimpleUnsortedWriter impiWriter = createWriter(cache_keyspace, "impi");
+        SSTableSimpleUnsortedWriter impuWriter = createWriter(cache_keyspace, "impu");
+        SSTableSimpleUnsortedWriter irsWriter = createWriter(prov_keyspace, "irs", UUIDType.instance);
+        SSTableSimpleUnsortedWriter publicWriter = createWriter(prov_keyspace, "public");
+        SSTableSimpleUnsortedWriter privateWriter = createWriter(prov_keyspace, "private");
 
         /*
          * Walk through the supplied CSV, inserting rows in the keyspaces for each entry.
@@ -217,6 +141,26 @@ public class ClearwaterBulkProvisioner
         irsWriter.close();
         publicWriter.close();
         privateWriter.close();
+    }
+
+    private static SSTableSimpleUnsortedWriter createWriter(String keyspace_name, String table_name) throws IOException
+    {
+        return createWriter(keyspace_name, table_name, AsciiType.instance);
+    }
+
+    private static SSTableSimpleUnsortedWriter createWriter(String keyspace_name, String table_name, AbstractType comparator) throws IOException
+    {
+        File directory = new File(keyspace_name + "/" + table_name);
+        if (!directory.exists())
+            directory.mkdir();
+
+        return new SSTableSimpleUnsortedWriter(directory,
+                                               new RandomPartitioner(),         
+                                               keyspace_name,
+                                               table_name,
+                                               comparator,
+                                               null,
+                                               64);
     }
 
     static class CsvEntry
