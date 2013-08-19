@@ -37,7 +37,7 @@ from twisted.internet import defer
 
 PUBLIC_ID_PREFIX = "public_id_"
 CASS_DIGEST_HA1 = "digest_ha1"
-IMSSUBSCRIPTION = "ims_subscription_xml".
+IMSSUBSCRIPTION = "ims_subscription_xml"
 IFC = "initial_filter_criteria_xml"
 
 
