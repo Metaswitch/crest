@@ -32,13 +32,9 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
-from cyclone.web import RequestHandler
-import cyclone.web
-
-from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.cache.handlers import Cache, DigestHandler, IMSSubscriptionHandler, iFCHandler
+from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, IMSSubscriptionHandler, iFCHandler
+from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead import config
 
 # TODO More precise regexes
@@ -64,8 +60,8 @@ ROUTES = [
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
-CREATE_IMPI = "CREATE TABLE "+config.SIP_DIGESTS_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
-CREATE_IMPU = "CREATE TABLE "+config.SIP_DIGESTS_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text, InitialFilterCriteria text) WITH read_repair_chance = 1.0;"
+CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
+CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text, InitialFilterCriteria text) WITH read_repair_chance = 1.0;"
 CREATE_STATEMENTS = []
 
 # Module initialization

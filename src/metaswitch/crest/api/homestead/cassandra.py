@@ -35,25 +35,26 @@
 from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
-from telephus.client import CassandraClient
+from telephus.client import CassandraClient, ConsistencyLevel
+from telephus.cassandra.ttypes import NotFoundException, UnavailableException
+
 
 class CassandraModel(object):
     """Simple representation of a Cassandra keyspace"""
     def __init__(self, keyspace):
         factory = ManagedCassandraClientFactory(keyspace)
         reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, factory)
-        self.cass = CassandraClient(factory)
+        self.client = CassandraClient(factory)
 
-    def cf(self, cf):
-        return CassandraCF(self.cass, cf)
 
 class CassandraCF(object):
     """Simple representation of a Cassandra column family"""
-    def __init__(self, client, cf):
-        self.client, self.cf = client, cf
+    def __init__(self, model, cf):
+        self.client, self.cf = model.client, cf
 
-    def row(self, row_key):
-       return CassandraRow(self.client, self.cf, row_key)
+    def get_row(self, row_key):
+        return CassandraRow(self.client, self.cf, row_key)
+
 
 class CassandraRow(object):
     """Simple representation of a Cassandra row"""
@@ -62,29 +63,44 @@ class CassandraRow(object):
 
     @defer.inlineCallbacks
     def get_columns(self, columns=None):
-    	"""Gets the named columns from this row (or all columns if it is not specified). Returns the columns formatted as a dictionary. Does not support super columns."""
-        columns = yield self.ha_get_slice(key=self.row_key, column_family=self.cf, names=columns)
-        columns_as_dictionary = {col.column.name: col.column.value for col in columns}
+        """Gets the named columns from this row (or all columns if it is not
+specified). Returns the columns formatted as a dictionary.
+Does not support super columns."""
+        columns = yield self.ha_get_slice(key=self.row_key,
+                                          column_family=self.cf,
+                                          names=columns)
+        columns_as_dictionary = {col.column.name: col.column.value
+                                 for col in columns}
         defer.returnValue(columns_as_dictionary)
 
     @defer.inlineCallbacks
     def get_columns_with_prefix(self, prefix):
-    	"""Gets all columns with the given prefix from this row. Returns the columns formatted as a dictionary. Does not support super columns."""
+        """Gets all columns with the given prefix from this row.
+Returns the columns formatted as a dictionary.
+Does not support super columns."""
         columns = yield self.ha_get(key=self.row_key, column_family=self.cf)
-        desired_pairs = {k: v for k,v in columns if k.startswith(prefix)}
+        desired_pairs = {k: v for k, v in columns if k.startswith(prefix)}
         defer.returnValue(desired_pairs)
 
     @defer.inlineCallbacks
     def get_columns_with_prefix_stripped(self, prefix):
-    	"""Gets all columns with the given prefix from this row. Returns the columns formatted as a dictionary, with the prefix stripped off the keys. Does not support super columns."""
-        mapping = yield get_columns_with_prefix(prefix)
-        new_mapping = {key.lstrip(prefix): value for key, value in mapping.iteritems()}
+        """Gets all columns with the given prefix from this row.
+Returns the columns formatted as a dictionary,
+with the prefix stripped off the keys.
+Does not support super columns."""
+        mapping = yield self.get_columns_with_prefix(prefix)
+        new_mapping = {key.lstrip(prefix): value
+                       for key, value in mapping.iteritems()}
         defer.returnValue(new_mapping)
-    
+
     @defer.inlineCallbacks
     def modify_columns(self, mapping, ttl=None):
-    	"""Updates this row to give the columns specified by the keys of mapping their respective values."""
-        yield self.client.batch_insert(key=self.row_key, column_family=self.cf, mapping=mapping, ttl=ttl)
+        """Updates this row to give the columns specified by the keys of
+`mapping` their respective values."""
+        yield self.client.batch_insert(key=self.row_key,
+                                       column_family=self.cf,
+                                       mapping=mapping,
+                                       ttl=ttl)
 
     # After growing a cluster, Cassandra does not pro-actively populate the
     # new nodes with their data (the nodes are expected to use `nodetool

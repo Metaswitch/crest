@@ -33,9 +33,5 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-PUBLIC_IDS_TABLE = "public_ids"
-PRIVATE_IDS_TABLE = "private_ids"
-FILTER_CRITERIA_TABLE = "filter_criteria"
-SIP_DIGESTS_TABLE = "sip_digests"
-MAX_ASSOCIATED_PRI_IDS = 1
-MAX_ASSOCIATED_PUB_IDS = 5
+IMPI_TABLE = "impi"
+IMPU_TABLE = "impu"

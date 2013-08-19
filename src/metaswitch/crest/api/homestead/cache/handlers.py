@@ -33,95 +33,57 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
-import httplib
-import urllib
 import json
 
 from cyclone.web import HTTPError
-from telephus.cassandra.ttypes import NotFoundException
 from twisted.internet import defer
 
-from metaswitch.crest.api.homestead import config
 from metaswitch.crest.api._base import BaseHandler
-from metaswitch.crest.api.homestead.cassandra import CassandraModel
-_log = logging.getLogger("crest.api.homestead")
+_log = logging.getLogger("crest.api.homestead.cache")
 
-PUBLIC_ID_PREFIX="public_id_"
-DIGEST_HA1="digest_ha1"
-IMSSUBSCRIPTION="IMSSubscriptionXML"
-IFC="InitialFilterCriteriaXML"
+JSON_DIGEST_HA1 = "digest_ha1"
 
-class Cache(object):
-    def __init__(self):
-        cass = CassandraModel("homestead_cache")
-        self.impi = cass.cf("IMPI")
-        self.impu = cass.cf("IMPU")
-
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
-        public_id_column = PUBLIC_ID_PREFIX+str(public_id)
-        row = self.impi.row(private_id)
-        columns = yield row.get_columns([DIGEST_HA1, public_id_column])
-        if columns and DIGEST_HA1 in columns and (public_id_column in columns or not public_id):
-            digest_ha1 = columns[DIGEST_HA1]
-        else:
-            #try:
-            #    digest_ha1 = self.backend.get_digest(private_id, public_id)
-            #    self.put_digest_ha1(digest_ha1, private_id)
-            #except NotFoundException:
-                defer.returnValue(HTTPError(404))
-        defer.returnValue({'digest_ha1': digest_ha1})
-
-    @defer.inlineCallbacks
-    def get_XML_column(self, colname, public_id, private_id=None):
-        row = self.impu.row(public_id)
-        columns = yield row.get_columns([colname])
-        if columns and colname in columns:
-            defer.returnValue(columns[colname])
-        else:
-            defer.returnValue(HTTPError(404))
-
-    def get_IMSSubscription(self, public_id, private_id=None):
-        return self.get_XML_column(IMSSUBSCRIPTION, public_id, private_id)
-
-    def get_iFC(self, public_id, private_id=None):
-        return self.get_XML_column(IFC, public_id, private_id)
 
 class DigestHandler(BaseHandler):
-    def initialize(self):
-        pass
-
     @defer.inlineCallbacks
     def get(self, private_id):
-       public_id = self.get_argument("public_id", default=None)
-       retval = yield self.application.cache.get_digest(private_id, public_id)
-       self.send_error_or_response(retval)
-       
+        public_id = self.get_argument("public_id", default=None)
+        retval = yield self.application.cache.get_digest(private_id,
+                                                         public_id)
+        retval = {JSON_DIGEST_HA1: retval} if retval else None
+        self.send_error_or_response(retval)
+
     @defer.inlineCallbacks
     def put(self, private_id):
-       try:
-           digest = json.dumps(self.request.body)['digest_ha1']
-           retval = yield self.application.cache.put_digest(digest, private_id)
-           self.send_error_or_response(retval)
-       except:
-           raise HTTPError(400, "Body must be JSON containing a digest_ha1 key")
+        try:
+            digest = json.dumps(self.request.body)[JSON_DIGEST_HA1]
+            yield self.application.cache.put_digest(digest, private_id)
+            self.finish()
+        except:
+            reason = "Body must be JSON containing a %s key" % JSON_DIGEST_HA1
+            raise HTTPError(400, reason)
 
     def send_error_or_response(self, retval):
-       if isinstance(retval, HTTPError):
-           self.send_error(retval.status_code)
-       else:
-           self.finish(retval)
+        if retval is None:
+            self.send_error(404)
+        elif isinstance(retval, HTTPError):
+            self.send_error(retval.status_code)
+        else:
+            self.finish(retval)
+
 
 class IMSSubscriptionHandler(DigestHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
-       private_id = self.get_argument("private_id", default=None)
-       retval = yield self.application.cache.get_IMSSubscription(public_id, private_id)
-       self.send_error_or_response(retval)
+        private_id = self.get_argument("private_id", default=None)
+        retval = yield self.application.cache.get_IMSSubscription(public_id,
+                                                                  private_id)
+        self.send_error_or_response(retval)
+
 
 class iFCHandler(DigestHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
-       private_id = self.get_argument("private_id", default=None)
-       retval = yield self.application.cache.get_iFC(public_id, private_id)
-       self.send_error_or_response(retval) 
+        private_id = self.get_argument("private_id", default=None)
+        retval = yield self.application.cache.get_iFC(public_id, private_id)
+        self.send_error_or_response(retval)
