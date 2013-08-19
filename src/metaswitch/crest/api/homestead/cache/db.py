@@ -37,8 +37,8 @@ from twisted.internet import defer
 
 PUBLIC_ID_PREFIX = "public_id_"
 CASS_DIGEST_HA1 = "digest_ha1"
-IMSSUBSCRIPTION = "IMSSubscriptionXML"
-IFC = "InitialFilterCriteriaXML"
+IMSSUBSCRIPTION = "ims_subscription_xml".
+IFC = "initial_filter_criteria_xml"
 
 
 class IMPI(CassandraCF):
@@ -52,7 +52,7 @@ class IMPIRow(CassandraRow):
         public_id_column = PUBLIC_ID_PREFIX+str(public_id)
         columns = yield self.get_columns([CASS_DIGEST_HA1, public_id_column])
         if (CASS_DIGEST_HA1 in columns) and \
-           (public_id is not None and public_id_column in columns):
+           (public_id is None or public_id_column in columns):
             defer.returnValue(columns[CASS_DIGEST_HA1])
 
 
