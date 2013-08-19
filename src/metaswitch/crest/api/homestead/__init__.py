@@ -47,15 +47,15 @@ PUBLIC_ID = r'[^/]+'
 ROUTES = [
     # IMPI Digest: the API for getting/updating the digest of a private ID. Can optionally validate whether a public ID is associated.
     # /impi/<private ID>/digest?public_id=xxx
-    (r'/impi/([^/]+)/digest',  DigestHandler),
+    (r'/impi/([^/]+)/digest/?',  DigestHandler),
 
     # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID.
     # /impu/<public ID>?private_id=xxx
-    (r'/impu/([^/]+)',  IMSSubscriptionHandler),
+    (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
 
     # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID.
     # /impu/<public ID>/service_profile/filter_criteria?private_id=xxx
-    (r'/impu/([^/]+)/service_profile/filter_criteria',  iFCHandler),
+    (r'/impu/([^/]+)/service_profile/filter_criteria/?',  iFCHandler),
 ]
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
