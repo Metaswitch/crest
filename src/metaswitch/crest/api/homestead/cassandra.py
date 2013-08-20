@@ -64,8 +64,8 @@ class CassandraRow(object):
     @defer.inlineCallbacks
     def get_columns(self, columns=None):
         """Gets the named columns from this row (or all columns if it is not
-specified). Returns the columns formatted as a dictionary.
-Does not support super columns."""
+        specified). Returns the columns formatted as a dictionary.
+        Does not support super columns."""
         columns = yield self.ha_get_slice(key=self.row_key,
                                           column_family=self.cf,
                                           names=columns)
