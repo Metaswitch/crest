@@ -52,7 +52,7 @@ class CassandraCF(object):
     def __init__(self, model, cf):
         self.client, self.cf = model.client, cf
 
-    def get_row(self, row_key):
+    def row(self, row_key):
         return CassandraRow(self.client, self.cf, row_key)
 
 
@@ -76,8 +76,8 @@ Does not support super columns."""
     @defer.inlineCallbacks
     def get_columns_with_prefix(self, prefix):
         """Gets all columns with the given prefix from this row.
-Returns the columns formatted as a dictionary.
-Does not support super columns."""
+        Returns the columns formatted as a dictionary.
+        Does not support super columns."""
         columns = yield self.ha_get(key=self.row_key, column_family=self.cf)
         desired_pairs = {k: v for k, v in columns if k.startswith(prefix)}
         defer.returnValue(desired_pairs)
@@ -85,9 +85,9 @@ Does not support super columns."""
     @defer.inlineCallbacks
     def get_columns_with_prefix_stripped(self, prefix):
         """Gets all columns with the given prefix from this row.
-Returns the columns formatted as a dictionary,
-with the prefix stripped off the keys.
-Does not support super columns."""
+        Returns the columns formatted as a dictionary,
+        with the prefix stripped off the keys.
+        Does not support super columns."""
         mapping = yield self.get_columns_with_prefix(prefix)
         new_mapping = {key.lstrip(prefix): value
                        for key, value in mapping.iteritems()}
@@ -96,7 +96,7 @@ Does not support super columns."""
     @defer.inlineCallbacks
     def modify_columns(self, mapping, ttl=None):
         """Updates this row to give the columns specified by the keys of
-`mapping` their respective values."""
+        `mapping` their respective values."""
         yield self.client.batch_insert(key=self.row_key,
                                        column_family=self.cf,
                                        mapping=mapping,

@@ -42,7 +42,7 @@ IFC = "initial_filter_criteria_xml"
 
 
 class IMPI(CassandraCF):
-    def get_row(self, row_key):
+    def row(self, row_key):
         return IMPIRow(self.client, self.cf, row_key)
 
 
@@ -57,7 +57,7 @@ class IMPIRow(CassandraRow):
 
 
 class IMPU(CassandraCF):
-    def get_row(self, row_key):
+    def row(self, row_key):
         return IMPURow(self.client, self.cf, row_key)
 
 

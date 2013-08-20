@@ -50,7 +50,7 @@ class Cache(object):
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
-        row = self.impi.get_row(private_id)
+        row = self.impi.row(private_id)
         digest_ha1 = yield row.get_digest_ha1(public_id)
 
         # Could query a backend if digest_ha1 is None
@@ -59,10 +59,10 @@ class Cache(object):
 
     @defer.inlineCallbacks
     def get_IMSSubscription(self, public_id, private_id=None):
-        xml = yield self.impu.get_row(public_id).get_IMSSubscriptionXML()
+        xml = yield self.impu.row(public_id).get_IMSSubscriptionXML()
         defer.returnValue(xml)
 
     @defer.inlineCallbacks
     def get_iFC(self, public_id, private_id=None):
-        xml = yield self.impu.get_row(public_id).get_iFCXML()
+        xml = yield self.impu.row(public_id).get_iFCXML()
         defer.returnValue(xml)

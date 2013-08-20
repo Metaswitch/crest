@@ -53,16 +53,6 @@ class DigestHandler(BaseHandler):
         retval = {JSON_DIGEST_HA1: retval} if retval else None
         self.send_error_or_response(retval)
 
-    @defer.inlineCallbacks
-    def put(self, private_id):
-        try:
-            digest = json.dumps(self.request.body)[JSON_DIGEST_HA1]
-            yield self.application.cache.put_digest(digest, private_id)
-            self.finish()
-        except:
-            reason = "Body must be JSON containing a %s key" % JSON_DIGEST_HA1
-            raise HTTPError(400, reason)
-
     def send_error_or_response(self, retval):
         if retval is None:
             self.send_error(404)
