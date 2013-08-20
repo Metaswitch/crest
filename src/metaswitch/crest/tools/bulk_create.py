@@ -122,11 +122,11 @@ def standalone():
                     # Add the user to the optimized cassandra cache.
                     homestead_cache_casscli_file.write("SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_cache_casscli_file.write("SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id, public_id, public_id))
-                    homestead_cache_casscli_file.write("SET impu['%s']['IMSSubscriptionXML'] = '%s';\n" % (public_id, ims_subscription_xml))
-                    homestead_cache_casscli_file.write("SET impu['%s']['InitialFilterCriteriaXML'] = '%s';\n" % (public_id, initial_filter_xml))
+                    homestead_cache_casscli_file.write("SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (public_id, ims_subscription_xml))
+                    homestead_cache_casscli_file.write("SET impu['%s']['initial_filter_criteria_xml'] = '%s';\n" % (public_id, initial_filter_xml))
 
                     # Populate the provisioning tables for the user.
-                    homestead_prov_casscli_file.write("SET irs['%s']['IMSSubscriptionXML'] = '%s';\n" % (irs_uuid, ims_subscription_xml))
+                    homestead_prov_casscli_file.write("SET irs['%s']['ims_subscription_xml'] = '%s';\n" % (irs_uuid, ims_subscription_xml))
                     homestead_prov_casscli_file.write("SET irs['%s']['private_id_%s'] = '%s';\n" % (irs_uuid, private_id, private_id))
                     homestead_prov_casscli_file.write("SET public['%s']['associated_irs'] = '%s';\n" % (public_id, irs_uuid))
                     homestead_prov_casscli_file.write("SET private['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))

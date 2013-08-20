@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file handlers.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,42 +32,37 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, IMSSubscriptionHandler, iFCHandler
-from metaswitch.crest.api.homestead.cache.cache import Cache
+import logging
+
+from twisted.internet import defer
+
 from metaswitch.crest.api.homestead import config
+from .db import IMPI, IMPU
+from metaswitch.crest.api.homestead.cassandra import CassandraModel
+_log = logging.getLogger("crest.api.homestead.cache")
 
-# TODO More precise regexes
-PRIVATE_ID = r'[^/]+'
-PUBLIC_ID = r'[^/]+'
 
-# Routes for application. Each route consists of:
-# - The actual route regex, with capture groups for parameters that will be passed to the the Handler
-# - The Handler to process the request.
-ROUTES = [
-    # IMPI Digest: the API for getting/updating the digest of a private ID. Can optionally validate whether a public ID is associated.
-    # /impi/<private ID>/digest?public_id=xxx
-    (r'/impi/([^/]+)/digest/?',  DigestHandler),
+class Cache(object):
+    def __init__(self):
+        cass = CassandraModel("homestead_cache")
+        self.impi = IMPI(cass, config.IMPI_TABLE)
+        self.impu = IMPU(cass, config.IMPU_TABLE)
 
-    # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID.
-    # /impu/<public ID>?private_id=xxx
-    (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
+    @defer.inlineCallbacks
+    def get_digest(self, private_id, public_id=None):
+        row = self.impi.row(private_id)
+        digest_ha1 = yield row.get_digest_ha1(public_id)
 
-    # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID.
-    # /impu/<public ID>/service_profile/filter_criteria?private_id=xxx
-    (r'/impu/([^/]+)/service_profile/filter_criteria/?',  iFCHandler),
-]
+        # Could query a backend if digest_ha1 is None
 
-# Initial Cassandra table creation. Whenever you add a route to the URLS above, add
-# a CQL CREATE statement below
-CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
-CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text, InitialFilterCriteria text) WITH read_repair_chance = 1.0;"
-CREATE_STATEMENTS = []
+        defer.returnValue(digest_ha1)
 
-# Module initialization
-def initialize(application):
-    application.cache = Cache()
-    if settings.HSS_ENABLED:
-        application.backend = None
-    else:
-        application.backend = None
+    @defer.inlineCallbacks
+    def get_IMSSubscription(self, public_id, private_id=None):
+        xml = yield self.impu.row(public_id).get_IMSSubscriptionXML()
+        defer.returnValue(xml)
+
+    @defer.inlineCallbacks
+    def get_iFC(self, public_id, private_id=None):
+        xml = yield self.impu.row(public_id).get_iFCXML()
+        defer.returnValue(xml)

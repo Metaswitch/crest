@@ -118,11 +118,11 @@ public class ClearwaterBulkProvisioner
                 impiWriter.addColumn(bytes("public_id_" + entry.public_id), bytes(entry.public_id), timestamp);
 
                 impuWriter.newRow(bytes(entry.public_id));
-                impuWriter.addColumn(bytes("IMSSubscriptionXML"), bytes(entry.imssubscription), timestamp);
-                impuWriter.addColumn(bytes("InitialFilterCriteriaXML"), bytes(entry.ifc), timestamp);
+                impuWriter.addColumn(bytes("ims_subscription_xml"), bytes(entry.imssubscription), timestamp);
+                impuWriter.addColumn(bytes("initial_filter_criteria_xml"), bytes(entry.ifc), timestamp);
 
                 irsWriter.newRow(entry.irs_uuid);
-                irsWriter.addColumn(bytes("IMSSubscriptionXML"), bytes(entry.imssubscription), timestamp);
+                irsWriter.addColumn(bytes("ims_subscription_xml"), bytes(entry.imssubscription), timestamp);
                 irsWriter.addColumn(bytes("private_id_" + entry.private_id), bytes(entry.private_id), timestamp);
 
                 publicWriter.newRow(bytes(entry.public_id));
