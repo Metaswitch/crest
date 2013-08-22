@@ -41,6 +41,7 @@ import httplib
 import msgpack
 import cyclone.web
 from cyclone.web import HTTPError
+from twisted.python.failure import Failure
 
 from metaswitch.common import utils
 from metaswitch.crest import settings
@@ -128,17 +129,17 @@ class LoadMonitor:
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
-            if err > DECREASE_THRESHOLD:
+            if err > self.DECREASE_THRESHOLD:
                 # latency is above where we want it to be, so adjust the rate
                 # downwards by a multiplicative factor
-                new_rate = self.bucket.rate / DECREASE_FACTOR
+                new_rate = self.bucket.rate / self.DECREASE_FACTOR
                 _log.debug("Accepted %f requests, latency error = %f, decrease rate %f to %f" %
                                  (accepted_percent, err, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
-            elif err < INCREASE_THRESHOLD:
+            elif err < self.INCREASE_THRESHOLD:
                 # latency is sufficiently below the target, so we can increase by an additive
                 # factor - weighted by how far below target we are.
-                new_rate = self.bucket.rate + (-err) * self.bucket.max_size * INCREASE_FACTOR
+                new_rate = self.bucket.rate + (-err) * self.bucket.max_size * self.INCREASE_FACTOR
                 _log.debug("Accepted %f%% of requests, latency error = %f, increase rate %f to %f" %
                                 (accepted_percent, err, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
