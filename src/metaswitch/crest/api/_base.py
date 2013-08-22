@@ -51,7 +51,6 @@ _log = logging.getLogger("crest.api")
 
 class LeakyBucket:
     def __init__(self, max_size, rate):
-        _log.debug("Creating leaky bucket")
         self.max_size = max_size
         self.tokens = max_size
         self.rate = rate
@@ -77,12 +76,19 @@ class LeakyBucket:
         self.replenish_time = replenish_time
         if self.tokens > self.max_size:
             self.tokens = self.max_size
-        _log.debug("%f tokens in bucket" % self.tokens)
 
 class LoadMonitor:
+    # Number of request processed between each adjustment of the leaky bucket rate
     ADJUST_PERIOD = 20
 
+    # Adjustment parameters for
+    DECREASE_THRESHOLD = 0.0
+    DECREASE_FACTOR = 1.2
+    INCREASE_THRESHOLD = -0.005
+    INCREASE_FACTOR = 0.5
+
     def __init__(self, target_latency, max_bucket_size, init_token_rate):
+        _log = logging.getLogger("crest.api.loadmonitor")
         _log.debug("Creating load monitor")
         self.accepted = 0
         self.rejected = 0
@@ -117,25 +123,28 @@ class LoadMonitor:
             # mean latency, rather than the 90th percentile as per the paper.
             # Also, the additive increase is scaled as a proportion of the maximum
             # bucket size, rather than an absolute number as per the paper.
-            _log.debug("Accepted %f%% requests" % (100 * (float(self.accepted) / float(self.accepted + self.rejected))))
+            accepted_percent = 100 * (float(self.accepted) / float(self.accepted + self.rejected))
             self.accepted = 0
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
-            if err > 0:
+            if err > DECREASE_THRESHOLD:
                 # latency is above where we want it to be, so adjust the rate
                 # downwards by a multiplicative factor
-                new_rate = self.bucket.rate / 1.2
-                _log.debug("Latency error = %f (%f vs %f), adjusting rate downwards from %f to %f" % (err, self.smoothed_latency, self.target_latency, self.bucket.rate, new_rate))
+                new_rate = self.bucket.rate / DECREASE_FACTOR
+                _log.debug("Accepted %f requests, latency error = %f, decrease rate %f to %f" %
+                                 (accepted_percent, err, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
-            elif err < -0.005:
-                # latency more than 0.5% below target, so we can increase by an additive
+            elif err < INCREASE_THRESHOLD:
+                # latency is sufficiently below the target, so we can increase by an additive
                 # factor - weighted by how far below target we are.
-                new_rate = self.bucket.rate + (-err) * self.bucket.max_size * 0.5
-                _log.debug("Latency error = %f (%f vs %f), adjusting rate upwards from %f to %f" % (err, self.smoothed_latency, self.target_latency, self.bucket.rate, new_rate))
+                new_rate = self.bucket.rate + (-err) * self.bucket.max_size * INCREASE_FACTOR
+                _log.debug("Accepted %f%% of requests, latency error = %f, increase rate %f to %f" %
+                                (accepted_percent, err, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
             else:
-                _log.debug("Latency error = %f (%f vs %f), no change to rate %f" % (err, self.smoothed_latency, self.target_latency, self.bucket.rate))
+                _log.debug("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
+                                (accepted_percent, err, self.bucket.rate))
 
 # Create load monitor with target latency of 100ms, maximum bucket size of
 # 20 requests and initial token rate of 10 per second
@@ -170,7 +179,7 @@ class BaseHandler(cyclone.web.RequestHandler):
                    (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri))
         if not _loadmonitor.admit_request():
             _log.debug("Rejecting request because of overload")
-            raise HTTPError(httplib.SERVICE_UNAVAILABLE)
+            return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
         latency = time.time() - self._start;
