@@ -115,8 +115,8 @@ def standalone():
                     # Generate the user-specific data
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
 
-                    ims_subscription_xml = '<?xml version="1.0" encoding="UTF-8"><IMSSubscriptionXML xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity>%s</ServiceProfile></IMSSubscriptionXML>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
-                    initial_filter_xml = '<?xml version="1.0" encoding="UTF-8">%s' % (INITIAL_FILTER_CRITERIA)
+                    ims_subscription_xml = '<?xml version="1.0" encoding="UTF-8"?><IMSSubscription xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity></PublicIdentity>%s</ServiceProfile></IMSSubscription>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
+                    initial_filter_xml = '<?xml version="1.0" encoding="UTF-8"?>%s' % (INITIAL_FILTER_CRITERIA)
                     irs_uuid = str(uuid.uuid4());
 
                     # Add the user to the optimized cassandra cache.
