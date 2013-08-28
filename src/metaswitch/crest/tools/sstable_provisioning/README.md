@@ -25,7 +25,7 @@ _For example, on AWS, instances have ony ~4Gb free so we can only provision appr
 
 ## RAM
 
-The [Preparing the sstables](#Preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop cassandra` and to restart it run `sudo monit start cassandra`.
+The [Preparing the sstables](#preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop cassandra` and to restart it run `sudo monit start cassandra`.
 
 ## Binary compilation
 
