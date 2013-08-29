@@ -36,7 +36,7 @@ Pre-requisites
 2. Lib-curl
 
     ```
-    sudo apt-get install libcurl4-gnutls-dev
+    sudo apt-get install libcurl4-openssl-dev
     ```
 
 3. Building debian packages
