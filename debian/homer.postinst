@@ -97,6 +97,9 @@ case "$1" in
         # significant lag.)
         # Don't fail if it's already stopped.
         service homer stop || /bin/true
+
+        # Apply secure connection rules if enabled.
+        [ ! -x /etc/init.d/clearwater-secure-connections ] || /etc/init.d/clearwater-secure-connections reload
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
