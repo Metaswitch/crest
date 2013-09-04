@@ -54,7 +54,7 @@ class FilterCriteriaHandler(PassthroughHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         try:
-            result = yield self.cass.get(column_family=self.table,
+            result = yield self.ha_get(column_family=self.table,
                                          key=public_id,
                                          column=self.column)
             ifc = result.column.value
