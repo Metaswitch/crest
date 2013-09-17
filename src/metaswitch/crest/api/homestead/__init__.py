@@ -52,16 +52,12 @@ ROUTES = [
     # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID.
     # /impu/<public ID>?private_id=xxx
     (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
-
-    # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID.
-    # /impu/<public ID>/service_profile/filter_criteria?private_id=xxx
-    (r'/impu/([^/]+)/service_profile/filter_criteria/?',  iFCHandler),
 ]
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
 CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
-CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text, InitialFilterCriteria text) WITH read_repair_chance = 1.0;"
+CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text) WITH read_repair_chance = 1.0;"
 CREATE_STATEMENTS = []
 
 # Module initialization
