@@ -42,20 +42,24 @@ PRIVATE_ID = r'[^/]+'
 PUBLIC_ID = r'[^/]+'
 
 # Routes for application. Each route consists of:
-# - The actual route regex, with capture groups for parameters that will be passed to the the Handler
+# - The actual route regex, with capture groups for parameters that will be
+# passed to the the Handler. 
 # - The Handler to process the request.
 ROUTES = [
-    # IMPI Digest: the API for getting/updating the digest of a private ID. Can optionally validate whether a public ID is associated.
+    # IMPI Digest: the API for getting/updating the digest of a private ID. Can
+    # optionally validate whether a public ID is associated.
+    # 
     # /impi/<private ID>/digest?public_id=xxx
     (r'/impi/([^/]+)/digest/?',  DigestHandler),
 
-    # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID.
+    # IMPU: the read-only API for accessing the XMLSubscription associated with
+    # a particular public ID.
+    #
     # /impu/<public ID>?private_id=xxx
     (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
 ]
 
-# Initial Cassandra table creation. Whenever you add a route to the URLS above, add
-# a CQL CREATE statement below
+# Initial Cassandra table creation. 
 CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
 CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text) WITH read_repair_chance = 1.0;"
 CREATE_STATEMENTS = []
