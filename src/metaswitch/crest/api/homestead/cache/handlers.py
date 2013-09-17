@@ -59,6 +59,10 @@ class DigestHandler(CacheApiHandler):
         public_id = self.get_argument("public_id", default=None)
         retval = yield self.application.cache.get_digest(private_id,
                                                          public_id)
+        if not retval:
+            retval = yield self.application.backend.get_digest(private_id,
+                                                               public_id)
+
         retval = {JSON_DIGEST_HA1: retval} if retval else None
         self.send_error_or_response(retval)
 
@@ -67,6 +71,10 @@ class IMSSubscriptionHandler(CacheApiHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
-        retval = yield self.application.cache.get_IMSSubscription(public_id,
-                                                                  private_id)
+        retval = yield self.application.cache.get_ims_subscription(public_id,
+                                                                   private_id)
+        if not retval:
+            retval = yield self.application.backend. \
+                                     get_ims_subscription(public_id, private_id)
+
         self.send_error_or_response(retval)

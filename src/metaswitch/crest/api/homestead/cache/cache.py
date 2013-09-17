@@ -52,12 +52,22 @@ class Cache(object):
     def get_digest(self, private_id, public_id=None):
         row = self.impi.row(private_id)
         digest_ha1 = yield row.get_digest_ha1(public_id)
-
-        # Could query a backend if digest_ha1 is None
-
         defer.returnValue(digest_ha1)
 
     @defer.inlineCallbacks
-    def get_IMSSubscription(self, public_id, private_id=None):
-        xml = yield self.impu.row(public_id).get_IMSSubscriptionXML()
+    def get_ims_subscription(self, public_id, private_id=None):
+        xml = yield self.impu.row(public_id).get_ims_subscription()
         defer.returnValue(xml)
+
+    @defer.inlineCallbacks
+    def put_digest(self, private_id, digest):
+        yield self.impi.row(private_id).put_digest(digest)
+
+    @defer.inlineCallbacks
+    def put_associated_public_id(self, private_id, public_id):
+        yield self.impi.row(private_id).put_associated_public_id(public_id)
+
+    @defer.inlineCallbacks
+    def put_ims_subscription(public_id, xml):
+        yield self.impu.row(public_id).put_ims_subscription(xml)
+

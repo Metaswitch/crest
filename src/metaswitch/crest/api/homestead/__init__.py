@@ -36,6 +36,7 @@ from metaswitch.crest.api import settings
 from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, IMSSubscriptionHandler, iFCHandler
 from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead import config
+from metaswitch.crest.api.homestead.backends.hss.gateway import HSSBackend
 
 # TODO More precise regexes
 PRIVATE_ID = r'[^/]+'
@@ -62,12 +63,12 @@ ROUTES = [
 # Initial Cassandra table creation. 
 CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
 CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text) WITH read_repair_chance = 1.0;"
-CREATE_STATEMENTS = []
+CREATE_STATEMENTS = [CREATE_IMPI, CREATE_IMPU]
 
 # Module initialization
 def initialize(application):
     application.cache = Cache()
     if settings.HSS_ENABLED:
-        application.backend = None
+        application.backend = HSSBackend(application.cache)
     else:
         application.backend = None

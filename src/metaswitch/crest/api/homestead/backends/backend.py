@@ -1,4 +1,4 @@
-# @file handlers.py
+# @file backend.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,50 +32,20 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from metaswitch.crest.api.homestead.cassandra import CassandraCF, CassandraRow
-from twisted.internet import defer
+import abc
 
-PUBLIC_ID_PREFIX = "public_id_"
-CASS_DIGEST_HA1 = "digest_ha1"
-IMS_SUBSCRIPTION = "ims_subscription_xml"
+class Backend(object):
+    """
+    Abstract base class for all backends that can be used in homestead to
+    retrieve subscriber data. 
+    """
 
+    __metaclass__ = abc.ABCMeta
 
-class IMPI(CassandraCF):
-    def row(self, row_key):
-        return IMPIRow(self.client, self.cf, row_key)
+    @abc.abstractmethod
+    def get_digest(self, private_id, public_id):
+        pass
 
-
-class IMPIRow(CassandraRow):
-    @defer.inlineCallbacks
-    def get_digest_ha1(self, public_id):
-        public_id_column = PUBLIC_ID_PREFIX+str(public_id)
-        columns = yield self.get_columns([CASS_DIGEST_HA1, public_id_column])
-        if (CASS_DIGEST_HA1 in columns) and \
-           (public_id is None or public_id_column in columns):
-            defer.returnValue(columns[CASS_DIGEST_HA1])
-
-    @defer.inlineCallbacks
-    def put_digest_ha1(digest):
-        yield self.modify_columns({CASS_DIGEST_HA1: digest})
-
-    @defer.inlineCallbacks
-    def put_associated_public_id(public_id):
-        public_id_column = PUBLIC_ID_PREFIX + public_id
-        yield self.modify_columns({public_id_column: None})
-
-
-class IMPU(CassandraCF):
-    def row(self, row_key):
-        return IMPURow(self.client, self.cf, row_key)
-
-
-class IMPURow(CassandraRow):
-    @defer.inlineCallbacks
-    def get_ims_subscription(self):
-        columns = yield self.get_columns([IMS_SUBSCRIPTION])
-        if columns:
-            defer.returnValue(columns[IMS_SUBSCRIPTION])
-
-    @defer.inlineCallbacks
-    def put_ims_subscription(ims_subscription):
-        yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription})
+    @abc.abstractmethod
+    def get_ims_subscription(self, public_id, private_id):
+        pass

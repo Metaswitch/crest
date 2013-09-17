@@ -43,6 +43,7 @@ from xml.etree import ElementTree
 
 from metaswitch.crest import settings
 from metaswitch.crest.api.homestead.hss.io import HSSPeerIO
+from metaswitch.crest.api.homestead.backends.backend import Backend
 
 _log = logging.getLogger("crest.api.homestead.hss")
 
@@ -58,10 +59,57 @@ class HSSNotFound(Exception):
     """Exception to throw if a request cannot be completed because a resource is not found"""
     pass
 
+
+class HSSBackend(Backend):
+    """
+    A backend that gets it's data from a real HSS.
+
+    This class is responsible for querying the HSS and updating the cache with
+    the returned results.  The actual communication with the HSS is handled by
+    the HSSGateway class.
+    """
+
+    def __init__(self, cache):
+        self._cache = cache
+        self._hss_gateway = HSSGateway()
+
+    @defer.inlineCallbacks
+    def get_digest(self, private_id, public_id=None):
+        if not public_id:
+            # We can't query the HSS without a public ID.
+            _log.info("Cannot get digest for private ID '%s' " % private_id +
+                      "as no public ID has been supplied")
+            defer.returnValue(None)
+        else:
+            digest = yield self._hss_gateway.get_digest(private_id,
+                                                        public_id)
+            if digest:
+                yield self._cache.put_digest(private_id, digest)
+                yield self._cache.put_associated_public_id(private_id,
+                                                           public_id)
+            defer.returnValue(digest)
+
+    @defer.inlineCallbacks
+    def get_ims_subscription(self, public_id, private_id=None):
+        if not private_id:
+            _log.debug("Build private ID from public ID: " + public_id)
+            private_id = public_id.lstrip("sip:")
+
+        # Note that _get_ims_subscription_ on the gateway has the public and
+        # private IDs in a different order from this method.
+        ims_subscription = yield self._hss_gateway.get_ims_subscription(
+                                                                     private_id,
+                                                                     public_id)
+        if ims_subscription:
+            yield self.cache.put_ims_subscription(public_id, ims_subscription)
+
+        defer.returnValue(ims_subscription)
+
+
 class HSSGateway(stack.ApplicationListener):
     """
-    Gateway to real HSS. Abstracts away the underlying details of the Cx interface
-    to enable fetching of data in a more HTTP-like fashion
+    Gateway to real HSS. Abstracts away the underlying details of the Cx
+    interface to enable fetching of data in a more HTTP-like fashion
     """
     def __init__(self):
         if not settings.HSS_ENABLED:
@@ -92,27 +140,25 @@ class HSSGateway(stack.ApplicationListener):
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id):
         _log.debug("Getting auth for priv:%s pub:%s"  % (private_id, public_id))
-        result = yield self.peer_listener.fetch_multimedia_auth(private_id, public_id)
+        result = yield self.peer_listener.fetch_multimedia_auth(private_id,
+                                                                public_id)
         defer.returnValue(result)
 
     @defer.inlineCallbacks
-    def get_ifc(self, private_id, public_id):
-        _log.debug("Getting IFC for priv:%s pub:%s"  % (private_id, public_id))
-        (public_ids, ifc) = yield self.peer_listener.fetch_server_assignment(private_id, public_id)
-        defer.returnValue(ifc)
+    def get_ims_subscription(self, private_id, public_id):
+        _log.debug("Getting IMS subscription for priv:%s, pub:%s" %
+                   (private_id, public_id))
+        result = yield self.peer_listener.fetch_server_assignment(private_id,
+                                                                  public_id)
+        defer.returnValue(result)
 
-    @defer.inlineCallbacks
-    def get_public_ids(self, private_id, public_id):
-        _log.debug("Getting Public Identities for priv:%s pub:%s"  % (private_id, public_id))
-        (public_ids, ifc) = yield self.peer_listener.fetch_server_assignment(private_id, public_id)
-        defer.returnValue(public_ids)
 
 class HSSAppListener(stack.ApplicationListener):
     """
-    The HSSAppListener maintains a list of pending requests outstanding on the HSS
-    (stored as deferreds), and listens for responses from the HSS. When a response
-    arrives, it correlates it with a pending request and injects the response into
-    the pending request
+    The HSSAppListener maintains a list of pending requests outstanding on the
+    HSS (stored as deferreds), and listens for responses from the HSS. When a
+    response arrives, it correlates it with a pending request and injects the
+    response into the pending request
     """
     def __init__(self, stack):
         self._pending_responses = {}
@@ -125,8 +171,9 @@ class HSSAppListener(stack.ApplicationListener):
         existing_responses.append(deferred)
 
     def request_hash(self, request):
-        # To ensure we can correlate requests with this callback, key off the request
-        # in a identifiable way. eTe is the request's end-to-end identifier
+        # To ensure we can correlate requests with this callback, key off the
+        # request in a identifiable way. eTe is the request's end-to-end
+        # identifier
         return (request.application_id, request.command_code, request.eTe)
 
     def onAnswer(self, peer, answer):
@@ -204,21 +251,8 @@ class HSSPeerListener(stack.PeerListener):
         if not user_data:
             _log.info("HSS returned error code %d", self.get_diameter_error_code(answer))
             raise HSSNotFound()
-        xml = ElementTree.fromstring(user_data.getOctetString())
-        # Iterate over all nodes in xml, returning the one matching the correct
-        # public id
-        for sp in xml.iterfind('./ServiceProfile'):
-            for returned_public_id in sp.iterfind('./PublicIdentity/Identity'):
-                if returned_public_id.text == public_id:
-                    # Note that returnValue is the standard method of returning from
-                    # defer.inlineCallbacks decorated generators, so that once a public
-                    # id is returned the generator will terminate
-                    ifc = ElementTree.tostring(sp)
-                    public_ids = [p.text for p in sp.iterfind('./PublicIdentity/Identity')]
-                    defer.returnValue((public_ids, ifc))
-        # If none match, throw.
-        _log.info("No matching IFCs found for public id %s" % public_id)
-        raise HSSNotFound()
+
+        defer.returnValue(user_data)
 
     def disconnected(self, peer):
         _log.debug("Peer %s disconnected" % peer.identity)
