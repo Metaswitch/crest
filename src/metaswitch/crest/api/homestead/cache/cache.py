@@ -61,8 +61,3 @@ class Cache(object):
     def get_IMSSubscription(self, public_id, private_id=None):
         xml = yield self.impu.row(public_id).get_IMSSubscriptionXML()
         defer.returnValue(xml)
-
-    @defer.inlineCallbacks
-    def get_iFC(self, public_id, private_id=None):
-        xml = yield self.impu.row(public_id).get_iFCXML()
-        defer.returnValue(xml)

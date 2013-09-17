@@ -43,8 +43,17 @@ _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
 
+class CacheApiHandler(BaseHandler):
+    def send_error_or_response(self, retval):
+        if retval is None:
+            self.send_error(404)
+        elif isinstance(retval, HTTPError):
+            self.send_error(retval.status_code)
+        else:
+            self.finish(retval)
+        
 
-class DigestHandler(BaseHandler):
+class DigestHandler(CacheApiHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
@@ -53,27 +62,11 @@ class DigestHandler(BaseHandler):
         retval = {JSON_DIGEST_HA1: retval} if retval else None
         self.send_error_or_response(retval)
 
-    def send_error_or_response(self, retval):
-        if retval is None:
-            self.send_error(404)
-        elif isinstance(retval, HTTPError):
-            self.send_error(retval.status_code)
-        else:
-            self.finish(retval)
 
-
-class IMSSubscriptionHandler(DigestHandler):
+class IMSSubscriptionHandler(CacheApiHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
         retval = yield self.application.cache.get_IMSSubscription(public_id,
                                                                   private_id)
-        self.send_error_or_response(retval)
-
-
-class iFCHandler(DigestHandler):
-    @defer.inlineCallbacks
-    def get(self, public_id):
-        private_id = self.get_argument("private_id", default=None)
-        retval = yield self.application.cache.get_iFC(public_id, private_id)
         self.send_error_or_response(retval)
