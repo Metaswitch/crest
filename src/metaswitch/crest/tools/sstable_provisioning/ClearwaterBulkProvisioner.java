@@ -146,7 +146,7 @@ public class ClearwaterBulkProvisioner
         impiWriter.close();
         impuWriter.close();
         irsWriter.close();
-        spWriter.close()
+        spWriter.close();
         publicWriter.close();
         privateWriter.close();
     }
@@ -190,7 +190,7 @@ public class ClearwaterBulkProvisioner
             private_id = columns[1].trim();
             digest = columns[2].trim();
             simservs = columns[3].trim();
-            publicidentity_xml = columns[4].trim()
+            publicidentity_xml = columns[4].trim();
             ifc = columns[5].trim();
             imssubscription = columns[6].trim();
             irs_uuid_str = columns[7].trim();
