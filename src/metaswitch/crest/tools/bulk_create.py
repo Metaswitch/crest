@@ -54,7 +54,7 @@ If you have a CSV file with fewer columns, you can autocomplete the remaining
 columns using the bulk_autocomplete.py script.
 """
 
-import sys, string, csv
+import sys, string, csv, os, stat
 from metaswitch.crest import settings
 from metaswitch.common import utils
 from metaswitch.common import ifcs
@@ -123,6 +123,10 @@ def standalone():
                     xdm_cqlsh_file.write("INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id, SIMSERVS))
                 else:
                     print 'Error: row "%s" contains <4 entries - ignoring'
+
+        # Make the created .sh files executable
+        os.chmod(homestead_filename, stat.S_IEXEC)
+        os.chmod(xdm_filename, stat.S_IEXEC)
 
         print "Generated bulk provisioning scripts written to"
         print "- %-46s - run this script on Homestead" % (homestead_filename,)
