@@ -61,13 +61,13 @@ class Cache(object):
 
     @defer.inlineCallbacks
     def put_digest(self, private_id, digest):
-        yield self.impi.row(private_id).put_digest(digest)
+        yield self.impi.row(private_id).put_digest_ha1(digest)
 
     @defer.inlineCallbacks
     def put_associated_public_id(self, private_id, public_id):
         yield self.impi.row(private_id).put_associated_public_id(public_id)
 
     @defer.inlineCallbacks
-    def put_ims_subscription(public_id, xml):
+    def put_ims_subscription(self, public_id, xml):
         yield self.impu.row(public_id).put_ims_subscription(xml)
 

@@ -337,24 +337,22 @@ class TestHSSPeerListener(unittest.TestCase):
 class HSSBackendFixture(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.gateway_class_patcher = mock.patch("metaswitch.crest.api.homestead.backends.hss.gateway.HSSGateway")
-        self.gateway_class = self.gateway_class_patcher.start()
-
-    def tearDown(self):
-        self.gateway_class_patcher.stop()
+        patcher = mock.patch("metaswitch.crest.api.homestead.backends.hss.gateway.HSSGateway")
+        self.HSSGateway = patcher.start()
+        self.addCleanup(patcher.stop)
 
 class TestHSSBackendInitialization(HSSBackendFixture):
     def test_backend_creates_gateway(self):
         self.cache = mock.MagicMock()
         self.backend = HSSBackend(self.cache)
-        self.gateway_class.assert_called_once_with()
+        self.HSSGateway.assert_called_once_with()
 
 class TestHSSBackend(HSSBackendFixture):
     def setUp(self):
         super(TestHSSBackend, self).setUp()
         self.cache = mock.MagicMock()
         self.gateway = mock.MagicMock()
-        self.gateway_class.return_value = self.gateway
+        self.HSSGateway.return_value = self.gateway
         self.backend = HSSBackend(self.cache)
 
     def test_get_digest_nothing_returned(self):
