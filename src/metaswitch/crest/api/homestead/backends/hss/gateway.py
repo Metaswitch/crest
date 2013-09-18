@@ -42,7 +42,7 @@ from twisted.internet.task import LoopingCall
 from xml.etree import ElementTree
 
 from metaswitch.crest import settings
-from metaswitch.crest.api.homestead.hss.io import HSSPeerIO
+from metaswitch.crest.api.homestead.backends.hss.io import HSSPeerIO
 
 _log = logging.getLogger("crest.api.homestead.hss")
 

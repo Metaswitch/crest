@@ -44,14 +44,14 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from metaswitch.crest import settings
-from metaswitch.crest.api.homestead.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener
+from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener
 
 class TestHSSGateway(unittest.TestCase):
     """
     Detailed, isolated unit tests of the HSSGateway class.
     """
-    @mock.patch("metaswitch.crest.api.homestead.hss.gateway.HSSAppListener")
-    @mock.patch("metaswitch.crest.api.homestead.hss.gateway.HSSPeerListener")
+    @mock.patch("metaswitch.crest.api.homestead.backends.hss.gateway.HSSAppListener")
+    @mock.patch("metaswitch.crest.api.homestead.backends.hss.gateway.HSSPeerListener")
     @mock.patch("diameter.stack")
     def setUp(self, stack, HSSPeerListener, HSSAppListener):
         unittest.TestCase.setUp(self)
