@@ -200,6 +200,13 @@ class HSSPeerListener(stack.PeerListener):
             return None
         return exp_result.getGroup()[1].getInteger32()
 
+    def log_diameter_error(self, msg):
+        err_code = self.get_diameter_error_code(msg)
+        if err_code:
+            _log.info("HSS returned error code %d", err_code)
+        else:
+            _log.info("HSS returned error (code unknown)")
+
     @defer.inlineCallbacks
     def fetch_multimedia_auth(self, private_id, public_id):
         _log.debug("Sending Multimedia-Auth request for %s/%s" % (private_id, public_id))
@@ -222,7 +229,7 @@ class HSSPeerListener(stack.PeerListener):
         if digest:
             defer.returnValue(digest.getOctetString())
         else:
-            _log.info("HSS returned error code %d", self.get_diameter_error_code(answer))
+            self.log_diameter_error(answer)
             raise HSSNotFound()
 
     @defer.inlineCallbacks
@@ -249,10 +256,10 @@ class HSSPeerListener(stack.PeerListener):
         _log.debug("Received Server-Assignment response for %s:" % private_id)
         user_data = self.cx.findFirstAVP(answer, "User-Data")
         if not user_data:
-            _log.info("HSS returned error code %d", self.get_diameter_error_code(answer))
+            self.log_diameter_error(answer)
             raise HSSNotFound()
 
-        defer.returnValue(user_data)
+        defer.returnValue(user_data.getOctetString())
 
     def disconnected(self, peer):
         _log.debug("Peer %s disconnected" % peer.identity)
