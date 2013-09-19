@@ -1,4 +1,4 @@
-# @file handlers.py
+# @file __init__.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -31,51 +31,3 @@
 # "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
-
-import logging
-
-from twisted.internet import defer
-
-from metaswitch.crest.api.homestead import config
-from .db import IMPI, IMPU
-from metaswitch.crest.api.homestead.cassandra import CassandraModel
-_log = logging.getLogger("crest.api.homestead.cache")
-
-
-class Cache(object):
-    def __init__(self):
-        cass = CassandraModel("homestead_cache")
-        self.impi = IMPI(cass, config.IMPI_TABLE)
-        self.impu = IMPU(cass, config.IMPU_TABLE)
-
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
-        row = self.impi.row(private_id)
-        digest_ha1 = yield row.get_digest_ha1(public_id)
-        defer.returnValue(digest_ha1)
-
-    @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id=None):
-        xml = yield self.impu.row(public_id).get_ims_subscription()
-        defer.returnValue(xml)
-
-    @defer.inlineCallbacks
-    def put_digest(self, private_id, digest):
-        yield self.impi.row(private_id).put_digest_ha1(digest)
-
-    @defer.inlineCallbacks
-    def put_associated_public_id(self, private_id, public_id):
-        yield self.impi.row(private_id).put_associated_public_id(public_id)
-
-    @defer.inlineCallbacks
-    def put_ims_subscription(self, public_id, xml):
-        yield self.impu.row(public_id).put_ims_subscription(xml)
-
-    @defer.inlineCallbacks
-    def delete_private_id(self, private_id):
-        yield self.impi.row(private_id).delete()
-
-    @defer.inlineCallbacks
-    def delete_public_id(self, public_id):
-        yield self.impu.row(public_id).delete()
-

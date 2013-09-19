@@ -60,9 +60,55 @@ ROUTES = [
     (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
 ]
 
+#
 # Initial Cassandra table creation.
-CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
-CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text) WITH read_repair_chance = 1.0;"
+#
+
+# Tables used by the cache.
+CREATE_IMPI = (
+    "CREATE TABLE "+config.IMPI_TABLE+" ("
+        "private_id text PRIMARY KEY, "
+        "digest text"
+    ") WITH read_repair_chance = 1.0;"
+)
+
+CREATE_IMPU = (
+    "CREATE TABLE "+config.IMPU_TABLE+" ("
+        "public_id text PRIMARY KEY, "
+        "IMSSubscription text"
+    ") WITH read_repair_chance = 1.0;"
+)
+
+# Tables used by provisioning.
+CREATE_PRIVATE = (
+    "CREATE TABLE "+config.PRIVATE_TABLE+" ("
+        "private_id text PRIMARY KEY, "
+        "digest_ha1 text"
+    ") WITH read_repair_chance = 1.0;"
+)
+
+CREATE_IRS = (
+    "CREATE TABLE "+config.IRS_TABLE+" ("
+        "id uuid PRIMARY KEY"
+    ") WITH read_repair_chance = 1.0;"
+)
+
+CREATE_SP = (
+    "CREATE TABLE "+config.SP_TABLE+" ("
+        "id uuid PRIMARY KEY, "
+        "irs uuid, "
+        "initialfiltercriteria_xml text"
+    ") WITH read_repair_chance = 1.0;"
+)
+
+CREATE_PUBLIC = (
+    "CREATE TABLE "+config.PUBLIC_TABLE+" ("
+        "public_id text PRIMARY KEY, "
+        "publicidentity_xml text, "
+        "service_profile uuid"
+    ") WITH read_repair_chance = 1.0;"
+)
+
 CREATE_STATEMENTS = [CREATE_IMPI, CREATE_IMPU]
 
 # Module initialization

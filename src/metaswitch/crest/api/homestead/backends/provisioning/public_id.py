@@ -1,4 +1,4 @@
-# @file handlers.py
+# @file public_id.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,50 +32,49 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import logging
+from metaswitch.crest.api.homestead.cassandra import CassandraCF, CassandraModel
 
-from twisted.internet import defer
+class PublicID(object):
+    """Model representing a provisioned public identity"""
 
-from metaswitch.crest.api.homestead import config
-from .db import IMPI, IMPU
-from metaswitch.crest.api.homestead.cassandra import CassandraModel
-_log = logging.getLogger("crest.api.homestead.cache")
+    def __init__(self, public_id):
+        self._public_id = public_id
 
+        model = CassandraModel("homestead_provisioning")
+        self._row = CassandraCF(model, config.PUBLIC_TABLE).row(public_id)
 
-class Cache(object):
-    def __init__(self):
-        cass = CassandraModel("homestead_cache")
-        self.impi = IMPI(cass, config.IMPI_TABLE)
-        self.impu = IMPU(cass, config.IMPU_TABLE)
-
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
-        row = self.impi.row(private_id)
-        digest_ha1 = yield row.get_digest_ha1(public_id)
-        defer.returnValue(digest_ha1)
+   @defer.inlineCallbacks
+   def get_sp(self):
+       sp_uuid = yield self._row.get_columns(["service_profile"])
+       defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id=None):
-        xml = yield self.impu.row(public_id).get_ims_subscription()
-        defer.returnValue(xml)
+    def put_publicidentity(self, xml):
+        yield self._row.modify_columns({"publicidentity": xml})
 
     @defer.inlineCallbacks
-    def put_digest(self, private_id, digest):
-        yield self.impi.row(private_id).put_digest_ha1(digest)
+    def get_irs(self):
+        sp_uuid = yield self._row.get_sp()
+        irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
+        defer.returnValue(irs_uuid)
 
     @defer.inlineCallbacks
-    def put_associated_public_id(self, private_id, public_id):
-        yield self.impi.row(private_id).put_associated_public_id(public_id)
+    def get_private_ids(self):
+        irs_uuid = yield self.get_irs()
+        private_ids = yield IRS(irs_uuid).get_private_ids()
+        defer.returnValue(private_ids)
 
     @defer.inlineCallbacks
-    def put_ims_subscription(self, public_id, xml):
-        yield self.impu.row(public_id).put_ims_subscription(xml)
+    def delete(self):
+        irs_uuid = yield self.get_irs()
+        sp_uuid = yield self.get_sp()
 
-    @defer.inlineCallbacks
-    def delete_private_id(self, private_id):
-        yield self.impi.row(private_id).delete()
+        yield ServiceProfile(sp_uuid).dissociate_public_id(self._public_id)
+        yield self._row.delete()
+        yield self._cache.delete_public_id(self._public_id)
 
-    @defer.inlineCallbacks
-    def delete_public_id(self, public_id):
-        yield self.impu.row(public_id).delete()
+        yield IRS(irs_uuid).rebuild()
+
+
+
 

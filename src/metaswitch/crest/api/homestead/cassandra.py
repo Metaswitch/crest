@@ -102,6 +102,19 @@ class CassandraRow(object):
                                        mapping=mapping,
                                        ttl=ttl)
 
+    @defer.inlineCallbacks
+    def delete(self):
+        """Delete this entire row"""
+        yield self.client.remove(key=self.row_key,
+                                 column_family=self.cf)
+
+    @defer.inlineCallbacks
+    def delete_column(self, column_name):
+        """Delete a single column from the row"""
+        yield self.client.remove(key=row_key,
+                                 column_family=self.cf,
+                                 column=column_name)
+
     # After growing a cluster, Cassandra does not pro-actively populate the
     # new nodes with their data (the nodes are expected to use `nodetool
     # repair` if they need to get their data).  Combining this with

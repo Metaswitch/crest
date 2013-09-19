@@ -32,6 +32,13 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
+# Cache tables.
 IMPI_TABLE = "impi"
 IMPU_TABLE = "impu"
+
+# Provisioning tables.
+PRIVATE_TABLE = "private"
+IRS_TABLE     = "implicit_registration_sets"
+SP_TABLE      = "service_profiles"
+PUBLIC_TABLE  = "public"
+
