@@ -51,17 +51,25 @@ class CacheApiHandler(BaseHandler):
             self.send_error(retval.status_code)
         else:
             self.finish(retval)
-        
+
+    def sequential_getter(*funcs):
+        @defer.inlineCallbacks
+        def getter(*pos_args, **kwd_args):
+            for f in funcs:
+                retval = yield f(*pos_args, **kwd_args)
+                if retval:
+                    defer.returnValue(retval)
+        return getter
+
 
 class DigestHandler(CacheApiHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
-        retval = yield self.application.cache.get_digest(private_id,
-                                                         public_id)
-        if not retval:
-            retval = yield self.application.backend.get_digest(private_id,
-                                                               public_id)
+
+        getter = self.sequential_getter(self.application.cache.get_digest,
+                                        self.application.backend.get_digest)
+        retval = yield getter(private_id, public_id)
 
         retval = {JSON_DIGEST_HA1: retval} if retval else None
         self.send_error_or_response(retval)
@@ -71,10 +79,9 @@ class IMSSubscriptionHandler(CacheApiHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
-        retval = yield self.application.cache.get_ims_subscription(public_id,
-                                                                   private_id)
-        if not retval:
-            retval = yield self.application.backend. \
-                                     get_ims_subscription(public_id, private_id)
 
+        getter = self.sequential_getter(
+                                  self.application.cache.get_ims_subscription,
+                                  self.application.backend.get_ims_subscription)
+        retval = yield getter(public_id, private_id)
         self.send_error_or_response(retval)
