@@ -38,7 +38,6 @@ from .. import config
 from ..cassandra import CassandraModel, CassandraConnection
 
 DIGEST_HA1 = "digest_ha1"
-IMS_SUBSCRIPTION = "ims_subscription_xml"
 PUBLIC_ID_PREFIX = "public_id_"
 
 class CacheModel(CassandraModel):
@@ -46,6 +45,13 @@ class CacheModel(CassandraModel):
 
 class IMPI(CacheModel):
     cass_table = config.IMPI_TABLE
+
+    cass_create_statement = (
+        "CREATE TABLE "+cass_table+" (" +
+            "private_id text PRIMARY KEY, " +
+            DIGEST_HA1+" text" +
+        ") WITH read_repair_chance = 1.0;"
+    )
 
     @defer.inlineCallbacks
     def get_digest_ha1(self, public_id):
@@ -69,8 +75,18 @@ class IMPI(CacheModel):
         public_id_column = PUBLIC_ID_PREFIX + public_id
         yield self.modify_columns({public_id_column: None}, timestamp=timestamp)
 
+
+IMS_SUBSCRIPTION = "ims_subscription_xml"
+
 class IMPU(CacheModel):
     cass_table = config.IMPU_TABLE
+
+    cass_create_statement = (
+        "CREATE TABLE "+cass_table+" (" +
+            "public_id text PRIMARY KEY, " +
+            IMS_SUBSCRIPTION+" text" +
+        ") WITH read_repair_chance = 1.0;"
+    )
 
     @defer.inlineCallbacks
     def get_ims_subscription(self):

@@ -1,4 +1,4 @@
-# @file connection.py
+# @file db.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -33,29 +33,30 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-import logging
-import threading
-from metaswitch.crest import settings
-import cql
+from metaswitch.crest.tools import connection
+from metaswitch.crest.api import get_create_statements
 
-_log = logging.getLogger("crest.connection")
+def create_tables(logger):
+    create_statements = get_create_statements()
 
-thread_local = threading.local()
-thread_local.connections = {}
+    # Print out the statements we will execute.
+    for keyspace, statements in create_statements:
+        print keyspace+":"
+        for s in statements:
+            print "  "+s
 
-def get_or_create(keyspace):
-    connection = thread_local.connection.get(keyspace)
+    # Now execute the statements in the correct keyspace.
+    for keyspace, statements in create_statements:
+        c = connection.cursor(keyspace)
 
-    if not connection:
-        _log.info("Connecting to Cassandra on %s", settings.CASS_HOST)
-        connection = cql.connect(settings.CASS_HOST,
-                                 settings.CASS_PORT,
-                                 keyspace,
-                                 cql_version='2.0.0')
-        assert connection
-        thread_local.connections[keyspace] = connection
-    return connection
+        for s in statements:
+            try:
+                print "Executing %s" % s
+                c.execute(s)
+            except Exception, ex:
+                print ex
+                logger.exception("Failed to create table")
 
-def cursor(keyspace, *args, **kwargs):
-    connection = get_or_create(keyspace)
-    return connection.cursor(*args, **kwargs)
+            print "Done."
+
+        c.close()

@@ -32,12 +32,19 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import collections
 from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, IMSSubscriptionHandler
-from metaswitch.crest.api.homestead.cache.cache import Cache
-from metaswitch.crest.api.homestead import config
-from metaswitch.crest.api.homestead.backends.hss.gateway import HSSBackend
-from metaswitch.crest.api.homestead.backends.provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
+from .cache.handlers import DigestHandler, IMSSubscriptionHandler
+from .cache.cache import Cache
+from . import config
+from .backends.hss.gateway import HSSBackend
+from .backends.provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
+
+from .cache.db import IMPI, IMPU
+from .backends.provisioning.private_id import PrivateID
+from .backends.provisioning.irs import IRS
+from .backends.provisioning.service_profile import ServiceProfile
+from .backends.provisioning.public_id import PublicID
 
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be
@@ -63,63 +70,14 @@ ROUTES = [
     (r'/private/([^/]+)/associated_public_ids/?', PrivateAllPublicIdsHandler),
 ]
 
-#
-# Initial Cassandra table creation.
-#
+# List of all the tables used by homestead.
+TABLES = [IMPI, IMPU, PrivateID, IRS, ServiceProfile, PublicID]
 
-# Tables used by the cache.
-CREATE_IMPI = (
-    "CREATE TABLE "+config.IMPI_TABLE+" ("
-        "private_id text PRIMARY KEY, "
-        "digest text"
-    ") WITH read_repair_chance = 1.0;"
-)
-
-CREATE_IMPU = (
-    "CREATE TABLE "+config.IMPU_TABLE+" ("
-        "public_id text PRIMARY KEY, "
-        "IMSSubscription text"
-    ") WITH read_repair_chance = 1.0;"
-)
-
-# Tables used by provisioning.
-CREATE_PRIVATE = (
-    "CREATE TABLE "+config.PRIVATE_TABLE+" ("
-        "private_id text PRIMARY KEY, "
-        "digest_ha1 text"
-    ") WITH read_repair_chance = 1.0;"
-)
-
-CREATE_IRS = (
-    "CREATE TABLE "+config.IRS_TABLE+" ("
-        "id uuid PRIMARY KEY"
-    ") WITH read_repair_chance = 1.0;"
-)
-
-CREATE_SP = (
-    "CREATE TABLE "+config.SP_TABLE+" ("
-        "id uuid PRIMARY KEY, "
-        "irs uuid, "
-        "initialfiltercriteria_xml text"
-    ") WITH read_repair_chance = 1.0;"
-)
-
-CREATE_PUBLIC = (
-    "CREATE TABLE "+config.PUBLIC_TABLE+" ("
-        "public_id text PRIMARY KEY, "
-        "publicidentity_xml text, "
-        "service_profile uuid"
-    ") WITH read_repair_chance = 1.0;"
-)
-
-CREATE_STATEMENTS = [
-    CREATE_IMPI,
-    CREATE_IMPU,
-    CREATE_PRIVATE,
-    CREATE_IRS,
-    CREATE_SP,
-    CREATE_PUBLIC,
-]
+# CREATE_STATEMENTS is a dictionary that maps keyspaces to a list of tables in
+# that keyspace. Generate this now.
+CREATE_STATEMENTS = collections.defaultdict(list)
+for table in TABLES:
+    CREATE_STATEMENTS[table.cass_keyspace].append(table.cass_create_statement)
 
 # Module initialization
 def initialize(application):

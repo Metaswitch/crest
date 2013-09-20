@@ -32,9 +32,12 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+from twisted.internet import defer
+
 from .db import ProvisioningModel
 from .irs import IRS
 from .service_profile import ServiceProfile
+from ... import config
 
 SERVICE_PROFILE = "service_profile"
 PUBLICIDENTITY = "publicidentity"
@@ -44,10 +47,18 @@ class PublicID(ProvisioningModel):
 
     cass_table = config.PUBLIC_TABLE
 
-   @defer.inlineCallbacks
-   def get_sp(self):
-       sp_uuid = yield self.get_column_value(SERVICE_PROFILE)
-       defer.returnValue(sp_uuid)
+    cass_create_statement = (
+        "CREATE TABLE "+cass_table+" (" +
+            "public_id text PRIMARY KEY, " +
+            PUBLICIDENTITY+" text, " +
+            SERVICE_PROFILE+" uuid" +
+        ") WITH read_repair_chance = 1.0;"
+    )
+
+    @defer.inlineCallbacks
+    def get_sp(self):
+        sp_uuid = yield self.get_column_value(SERVICE_PROFILE)
+        defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
     def put_publicidentity(self, xml):

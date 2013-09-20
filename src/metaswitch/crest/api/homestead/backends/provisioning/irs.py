@@ -34,8 +34,12 @@
 
 import xml.etree.ElementTree as ET
 import StringIO
+
+from twisted.internet import defer
+
 from metaswitch.crest.api import utils
 from .db import ProvisioningModel
+from ... import config
 
 ASSOC_PRIVATE_PREFIX = "associated_private_"
 SERVICE_PROFILE_PREFIX = "service_profile_"
@@ -44,6 +48,12 @@ class IRS(ProvisioningModel):
     """Model representing an implicit registration set"""
 
     cass_table = config.IRS_TABLE
+
+    cass_create_statement = (
+        "CREATE TABLE "+cass_table+" (" +
+            "id uuid PRIMARY KEY" +
+        ") WITH read_repair_chance = 1.0;"
+    )
 
     @defer.inlineCallbacks
     def get_associated_privates(self):
@@ -58,8 +68,9 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def get_associated_publics(self):
         sp_uuids = yield self.get_associated_service_profiles()
-        public_ids = utils.flatten(yield ServiceProfile(uuid).get_public_ids()
-                                                           for uuid in sp_uuids)
+
+        public_ids = [(yield ServiceProfile(uuid).get_public_ids())
+                                                           for uuid in sp_uuids]
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks

@@ -32,6 +32,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import collections
 
 from cyclone.web import RequestHandler
 import cyclone.web
@@ -49,7 +50,20 @@ def get_routes():
     return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
 
 def get_create_statements():
-    return sum([load_module(m).CREATE_STATEMENTS for m in settings.INSTALLED_HANDLERS], [])
+    """
+    Get all the statements for creating the necessary database tables.
+
+    Each application must define a CREATE_STATEMENTS module attribute that is a
+    dictionary mapping keyspaces to a list of statements creating tables in that
+    keyspace.  This function merges these into one dictionary.
+    """
+    statement_dict = collections.defaultdict(list)
+
+    for m in settings.INSTALLED_HANDLERS:
+        for keyspace, statements in load_module(m).CREATE_STATEMENTS.items():
+            statement_dict[keyspace] += statements
+
+    return statement_dict
 
 def initialize(application):
     for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:

@@ -86,7 +86,6 @@ SIP_DIGEST_REALM = 'example.com'
 # Cassandra configuration
 CASS_HOST = "localhost"
 CASS_PORT = 9160
-CASS_KEYSPACE = "default"
 
 # Debian install will pick this up from /etc/clearwater/config
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM

@@ -35,6 +35,7 @@
 
 from cyclone.web import RequestHandler
 import cyclone.web
+from twisted.internet import reactor
 
 from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api.homer.simservs import SimservsHandler
@@ -65,5 +66,13 @@ ROUTES = [
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
 # a CQL CREATE statement below
+KEYSPACE="homer"
 CREATE_SIMSERVS = "CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH read_repair_chance = 1.0;"
-CREATE_STATEMENTS = [CREATE_SIMSERVS]
+CREATE_STATEMENTS = {KEYSPACE: [CREATE_SIMSERVS]}
+
+# Module initialization
+def initialize(application):
+    application.cassandra_factory = ManagedCassandraClientFactory(KEYSPACE)
+    reactor.connectTCP(settings.CASS_HOST,
+                       settings.CASS_PORT,
+                       application.cassandra_factory)

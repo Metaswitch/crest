@@ -35,27 +35,26 @@
 LOGS_DIR = "/var/log/homestead"
 PID_FILE = "/var/run/homestead.pid"
 LOG_FILE_PREFIX = "homestead"
-CASS_KEYSPACE = "homestead"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8888
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
 
-# Debian install will pick this up from /etc/clearwater/config 
+# Debian install will pick this up from /etc/clearwater/config
 CASS_HOST = "localhost"
 
 # HSS configuration (by default, synchronization with the HSS is disabled)
-# Debian install will pick this up from /etc/clearwater/config 
+# Debian install will pick this up from /etc/clearwater/config
 HSS_IP = "0.0.0.0"
 HSS_PORT = 3868
 HSS_ENABLED = HSS_IP not in ["", "0.0.0.0"]
 
-# Debian install will pick this up from /etc/clearwater/config 
+# Debian install will pick this up from /etc/clearwater/config
 SIP_DIGEST_REALM = MUST_BE_CONFIGURED
 SPROUT_HOSTNAME = MUST_BE_CONFIGURED
 
 # We use this key to encrypt sensitive fields in the database that we can't
 # avoid storing.  In general, we'd like to store passwords as bcrypt hashes
-# but we can only do that if the password is sent to us by the user in the 
+# but we can only do that if the password is sent to us by the user in the
 # clear.  Encrypting the password in the DB at least mitigates DB injection
 # attacks and prevents accidental exposure to staff.
 #

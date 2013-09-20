@@ -32,8 +32,11 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+from twisted.internet import defer
+
 from .db import ProvisioningModel
 from .irs import IRS
+from ... import config
 from metaswitch.crest.api import utils
 
 DIGEST_HA1 = "digest_ha1"
@@ -43,6 +46,13 @@ class PrivateID(ProvisioningModel):
     """Model representing a provisioned private ID"""
 
     cass_table = config.PRIVATE_TABLE
+
+    cass_create_statement = (
+        "CREATE TABLE "+cass_table+" (" +
+            "private_id text PRIMARY KEY, " +
+            DIGEST_HA1+" text" +
+        ") WITH read_repair_chance = 1.0;"
+    )
 
     @defer.inlineCallbacks
     def get_digest(self):
@@ -57,7 +67,7 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def get_public_ids(self):
         irs_uuids = yield self.get_irses()
-        public_ids = utils.flatten(yield IRS(uuid).get_public_ids()
+        public_ids = utils.flatten((yield IRS(uuid).get_public_ids())
                                                           for uuid in irs_uuids)
         defer.returnValue(public_ids)
 
@@ -96,8 +106,8 @@ class PrivateID(ProvisioningModel):
         digest = yield self.get_digest()
 
         public_ids = []
-        for irs in yield self.get_irses():
-            for pub_id in yield IRS(irs).get_public_ids():
+        for irs in (yield self.get_irses()):
+            for pub_id in (yield IRS(irs).get_public_ids()):
                 public_ids.append(pub_id)
 
         timestamp = self._cache.generate_timestamp()

@@ -37,25 +37,13 @@
 
 import logging
 
+import db
 from metaswitch.crest import logging_config
-from metaswitch.crest.tools import connection
-from metaswitch.crest.api import get_create_statements
 
 _log = logging.getLogger("crest.create_db")
 
 def standalone():
-    c = connection.cursor()
-    create_statements = get_create_statements()
-    print "Create statements: ", create_statements
-    for cs in create_statements:
-        try:
-            print "executing %s" % cs
-            c.execute(cs)
-        except Exception:
-            _log.exception("Failed to create table")
-            pass
-        print "Done."
-    c.close()
+    db.create_tables(_log)
 
 if __name__ == '__main__':
     logging_config.configure_logging("create_db")
