@@ -33,18 +33,21 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import collections
-from metaswitch.crest.api import settings
-from .cache.handlers import DigestHandler, IMSSubscriptionHandler
-from .cache.cache import Cache
+
+from .. import settings
 from . import config
+
+from .cache.cache import Cache
 from .backends.hss.gateway import HSSBackend
-from .backends.provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
+
+from .cache.handlers import DigestHandler, IMSSubscriptionHandler
+from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 
 from .cache.db import IMPI, IMPU
-from .backends.provisioning.private_id import PrivateID
-from .backends.provisioning.irs import IRS
-from .backends.provisioning.service_profile import ServiceProfile
-from .backends.provisioning.public_id import PublicID
+from .provisioning.models.private_id import PrivateID
+from .provisioning.models.irs import IRS
+from .provisioning.models.service_profile import ServiceProfile
+from .provisioning.models.public_id import PublicID
 
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be
