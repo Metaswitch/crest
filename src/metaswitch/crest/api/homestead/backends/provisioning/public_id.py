@@ -75,8 +75,8 @@ class PublicID(ProvisioningModel):
         irs_uuid = yield self.get_irs()
         sp_uuid = yield self.get_sp()
 
-        yield ServiceProfile(sp_uuid).dissociate_public_id(self._public_id)
+        yield ServiceProfile(sp_uuid).dissociate_public_id(self.row_key)
         yield self.delete_row()
-        yield self._cache.delete_public_id(self._public_id)
+        yield self._cache.delete_public_id(self.row_key)
 
         yield IRS(irs_uuid).rebuild()

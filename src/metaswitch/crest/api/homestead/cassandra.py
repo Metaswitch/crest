@@ -54,11 +54,10 @@ class CassandraModel(object):
     @classmethod
     def start_connection(cls):
         cls.cass_connection = CassandraConnection(cls.cass_keyspace)
+        cls.client = cls.cass_connection.client
 
     """Simple representation of a Cassandra row"""
     def __init__(self, row_key):
-        self.client = self.cass_connection.client
-        self.cf = self.cass_table
         self.row_key = row_key
 
     @defer.inlineCallbacks
@@ -67,7 +66,7 @@ class CassandraModel(object):
         specified). Returns the columns formatted as a dictionary.
         Does not support super columns."""
         columns = yield self.ha_get_slice(key=self.row_key,
-                                          column_family=self.cf,
+                                          column_family=self.cass_table,
                                           names=columns)
         columns_as_dictionary = {col.column.name: col.column.value
                                  for col in columns}
@@ -84,7 +83,7 @@ class CassandraModel(object):
         """Gets all columns with the given prefix from this row.
         Returns the columns formatted as a dictionary.
         Does not support super columns."""
-        columns = yield self.ha_get(key=self.row_key, column_family=self.cf)
+        columns = yield self.ha_get(key=self.row_key, column_family=self.cass_table)
         desired_pairs = {k: v for k, v in columns if k.startswith(prefix)}
         defer.returnValue(desired_pairs)
 
@@ -104,7 +103,7 @@ class CassandraModel(object):
         """Updates this row to give the columns specified by the keys of
         `mapping` their respective values."""
         yield self.client.batch_insert(key=self.row_key,
-                                       column_family=self.cf,
+                                       column_family=self.cass_table,
                                        mapping=mapping,
                                        ttl=ttl,
                                        timestamp=timestamp)
@@ -113,14 +112,31 @@ class CassandraModel(object):
     def delete_row(self):
         """Delete this entire row"""
         yield self.client.remove(key=self.row_key,
-                                 column_family=self.cf)
+                                 column_family=self.cass_table)
 
     @defer.inlineCallbacks
     def delete_column(self, column_name):
         """Delete a single column from the row"""
         yield self.client.remove(key=row_key,
-                                 column_family=self.cf,
+                                 column_family=self.cass_table,
                                  column=column_name)
+
+    @defer.inlineCallbacks
+    @classmethod
+    def row_exists(self, row_key):
+        """
+        Returns whether a row exists with the specified key
+
+        This is determined by issuing a get on all columns and checking for
+        NotFoundException.
+        """
+        try:
+            columns = yield self.get_columns()
+            exists = True
+        except NotFoundException:
+            exists = False
+
+        defer.returnValue(exists)
 
     # After growing a cluster, Cassandra does not pro-actively populate the
     # new nodes with their data (the nodes are expected to use `nodetool

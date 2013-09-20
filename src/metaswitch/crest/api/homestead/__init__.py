@@ -38,10 +38,6 @@ from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead import config
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSBackend
 
-# TODO More precise regexes
-PRIVATE_ID = r'[^/]+'
-PUBLIC_ID = r'[^/]+'
-
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be
 # passed to the the Handler.
@@ -58,6 +54,12 @@ ROUTES = [
     #
     # /impu/<public ID>?private_id=xxx
     (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
+
+    # Private ID provisioning.
+    (r'/private/([^/]+)/?', PrivateHandler),
+    (r'/private/([^/]+)/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
+    (r'/private/([^/]+)/associated_implicit_registration_sets/([^/])/?', PrivateOneIrsHandler),
+    (r'/private/([^/]+)/associated_public_ids/?', PrivateAllPublicIdsHandler),
 ]
 
 #
@@ -109,14 +111,27 @@ CREATE_PUBLIC = (
     ") WITH read_repair_chance = 1.0;"
 )
 
-CREATE_STATEMENTS = [CREATE_IMPI, CREATE_IMPU]
+CREATE_STATEMENTS = [
+    CREATE_IMPI,
+    CREATE_IMPU,
+    CREATE_PRIVATE,
+    CREATE_IRS,
+    CREATE_SP,
+    CREATE_PUBLIC,
+]
 
 # Module initialization
 def initialize(application):
+    # Create a cache and register it with the provisioning models (so they keep
+    # the denormalized tables in sync with the normalized ones).
     application.cache = Cache()
-    ProvisioingModel.register_cache(application.cache)
+    ProvisioningModel.register_cache(application.cache)
 
     if settings.HSS_ENABLED:
         application.backend = HSSBackend(application.cache)
     else:
         application.backend = None
+
+    # Connect to the cache and provisioning databases.
+    ProvisioningModel.start_connection()
+    CacheModel.start_connection()

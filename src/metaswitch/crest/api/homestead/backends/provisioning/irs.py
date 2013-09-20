@@ -88,7 +88,7 @@ class IRS(ProvisioningModel):
 
         private_ids = yield self.get_associated_privates()
         for priv in private_ids:
-            yield PrivateID(priv).dissociate_irs(self._uuid)
+            yield PrivateID(priv).dissociate_irs(self.row_key)
 
         self.delete_row()
 
