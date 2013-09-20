@@ -100,15 +100,7 @@ class PrivateID(ProvisioningModel):
             for pub_id in yield IRS(irs).get_public_ids():
                 public_ids.append(pub_id)
 
-        # About to update the cache.  Another cache update operation could be
-        # happening in parallel. Since cache updates involve writing to multiple
-        # rows this could leave the cache inconsistent (if some the database
-        # ended upwith some rows from update A and other from update B).  To
-        # alleviate this we use the same timestamp for _all_ our updates.  This
-        # ensures the database ends up with all the rows from either update A or
-        # update B (though we can't tell which), meaning the cache is
-        # consistent, even if it isn't completely up-to-date.
-        timestamp = self.generate_timestamp()
+        timestamp = self._cache.generate_timestamp()
 
         # Delete the existing cache entry then write back the digest and the
         # associated public IDs.

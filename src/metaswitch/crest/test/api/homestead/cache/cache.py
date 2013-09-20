@@ -73,37 +73,47 @@ class TestCache(unittest.TestCase):
         CacheModel.start_connection()
         self.cache = Cache()
 
+        # Dummy timestamp used for cache puts.
+        self.timestamp = 1234
+
     def test_put_digest(self):
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
-        res = Result(self.cache.put_digest("priv", "digest"))
+        res = Result(self.cache.put_digest("priv", "digest", self.timestamp))
         self.cass_client.batch_insert.assert_called_once_with(
                                                key="priv",
                                                column_family="impi",
                                                mapping={"digest_ha1": "digest"},
-                                               ttl=None)
+                                               ttl=None,
+                                               timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
 
     def test_put_associated_public_id(self):
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
-        res = Result(self.cache.put_associated_public_id("priv", "kermit"))
+        res = Result(self.cache.put_associated_public_id("priv",
+                                                         "kermit",
+                                                         self.timestamp))
         self.cass_client.batch_insert.assert_called_once_with(
                                              key="priv",
                                              column_family="impi",
                                              mapping={"public_id_kermit": None},
-                                             ttl=None)
+                                             ttl=None,
+                                             timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
     def test_put_ims_subscription(self):
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
-        res = Result(self.cache.put_ims_subscription("pub", "xml"))
+        res = Result(self.cache.put_ims_subscription("pub",
+                                                     "xml",
+                                                     self.timestamp))
         self.cass_client.batch_insert.assert_called_once_with(
                                         key="pub",
                                         column_family="impu",
                                         mapping={"ims_subscription_xml": "xml"},
-                                        ttl=None)
+                                        ttl=None,
+                                        timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 

@@ -42,6 +42,22 @@ _log = logging.getLogger("crest.api.homestead.cache")
 
 class Cache(object):
 
+    @staticmethod
+    def generate_timestamp():
+        """
+        Return a timestamp (in ms) suitable for supplying to cache updates.
+
+        Cache update operation can happen in parallel and involve writes to
+        multiple rows. This could leave the cache inconsistent (if some of the
+        database ended upwith some rows from update A and other from update B).
+
+        To alleviate this the cache user must use the same timestamp for _all_
+        related updates. This ensures the database ends up with all the rows
+        from either update A or update B (though we can't tell which), meaning
+        the cache is consistent, even if it isn't completely up-to-date.
+        """
+        return time.time() * 1000000
+
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
         digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)

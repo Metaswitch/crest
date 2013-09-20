@@ -101,7 +101,7 @@ class CassandraModel(object):
                                        column_family=self.cf,
                                        mapping=mapping,
                                        ttl=ttl,
-                                       timestamp=None)
+                                       timestamp=timestamp)
 
     @defer.inlineCallbacks
     def delete_row(self):
@@ -152,9 +152,3 @@ class CassandraModel(object):
             except UnavailableException:
                 pass
         defer.returnValue(result)
-
-    @staticmethod
-    def generate_timestamp():
-        """Return a timestamp suitable for using in a cassandra row update
-        The timestamp is in ms"""
-        return time.time() * 1000000

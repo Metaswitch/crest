@@ -84,9 +84,13 @@ class HSSBackend(Backend):
             digest = yield self._hss_gateway.get_digest(private_id,
                                                         public_id)
             if digest:
-                yield self._cache.put_digest(private_id, digest)
+                timestamp = self._cache.generate_timestamp()
+                yield self._cache.put_digest(private_id,
+                                             digest,
+                                             timestamp)
                 yield self._cache.put_associated_public_id(private_id,
-                                                           public_id)
+                                                           public_id,
+                                                           timestamp)
             defer.returnValue(digest)
 
     @defer.inlineCallbacks
@@ -106,7 +110,10 @@ class HSSBackend(Backend):
                                                                      private_id,
                                                                      public_id)
         if ims_subscription:
-            yield self._cache.put_ims_subscription(public_id, ims_subscription)
+            timestamp = self._cache.generate_timestamp()
+            yield self._cache.put_ims_subscription(public_id,
+                                                   ims_subscription,
+                                                   timestamp)
 
         defer.returnValue(ims_subscription)
 

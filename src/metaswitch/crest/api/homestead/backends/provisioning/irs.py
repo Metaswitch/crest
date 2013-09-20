@@ -138,15 +138,7 @@ class IRS(ProvisioningModel):
         tree.write(output)
         xml = output.getvalue()
 
-        # About to update the cache.  Another cache update operation could be
-        # happening in parallel. Since cache updates involve writing to multiple
-        # rows this could leave the cache inconsistent (if some the database
-        # ended upwith some rows from update A and other from update B).  To
-        # alleviate this we use the same timestamp for _all_ our updates.  This
-        # ensures the database ends up with all the rows from either update A or
-        # update B (though we can't tell which), meaning the cache is
-        # consistent, even if it isn't completely up-to-date.
-        timestamp = self.generate_timestamp()
+        timestamp = self._cache.generate_timestamp()
 
         for pub_id in all_public_ids:
             yield self._cache.put_ims_subscription(pub_id, xml, timestamp)
