@@ -32,57 +32,52 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from metaswitch.crest.api.homestead.cassandra import CassandraCF, CassandraModel
+import xml.etree.ElementTree as ET
+import StringIO
+from metaswitch.crest.api import utils
+from .db import ProvisioningModel
 
-class IRS(object):
+ASSOC_PRIVATE_PREFIX = "associated_private_"
+SERVICE_PROFILE_PREFIX = "service_profile_"
+
+class IRS(ProvisioningModel):
     """Model representing an implicit registration set"""
 
-    def __init__(self, uuid, cache):
-        self._uuid = uuid
-        self._cache = cache
-
-        model = CassandraModel("homestead_provisioning")
-        self._row = CassandraCF(model, config.IRS_TABLE).row(uuid)
-
-    @staticmethod
-    def flatten(list_of_lists):
-        """Flatten a list of lists into a single list, e.g:
-        flatten([[A, B], [C, D]]) -> [A, B, C, D] """
-        return list(itertools.chain.from_iterable(list_of_lists))
+    cass_table = config.IRS_TABLE
 
     @defer.inlineCallbacks
     def get_associated_privates(self):
-        retval = yield self._row.get_columns_with_prefix_stripped("associated_private_")
+        retval = yield self.get_columns_with_prefix_stripped(ASSOC_PRIVATE_PREFIX)
         defer.returnValue(retval)
 
     @defer.inlineCallbacks
     def get_associated_service_profiles(self):
-        retval = yield self._row.get_columns_with_prefix_stripped("service_profile_")
+        retval = yield self.get_columns_with_prefix_stripped(SERVICE_PROFILE_PREFIX)
         defer.returnValue(retval)
 
     @defer.inlineCallbacks
     def get_associated_publics(self):
         sp_uuids = yield self.get_associated_service_profiles()
-        public_ids = self.flatten(yield ServiceProfile(uuid).get_public_ids()
+        public_ids = utils.flatten(yield ServiceProfile(uuid).get_public_ids()
                                                            for uuid in sp_uuids)
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
     def associate_private_id(self, private_id):
-        yield self._row.modify_columns({"associated_private_%s" % private_id: None})
+        yield self.modify_columns({ASSOC_PRIVATE_PREFIX + private_id: None})
 
     @defer.inlineCallbacks
     def dissociate_private_id(self):
-        yield self._row.delete_columns(["associated_private_%s" % private_id])
+        yield self.delete_columns([ASSOC_PRIVATE_PREFIX + private_id])
 
     @defer.inlineCallbacks
     def associate_service_profile(self, sp_uuid):
-        yield self._row.modify_columns({"service_profile_%s" % sp_uuid: None})
+        yield self.modify_columns({ASSOC_PRIVATE_PREFIX + str(sp_uuid): None})
         yield self.rebuild()
 
     @defer.inlineCallbacks
-    def dissociate_Service_profile(self, sp_uuid):
-        yield self._row.delete_columns(["service_profile_%s" % sp_uuid])
+    def dissociate_service_profile(self, sp_uuid):
+        yield self.delete_columns([ASSOC_PRIVATE_PREFIX + str(sp_uuid)])
         yield self.rebuild()
 
     @defer.inlineCallbacks
@@ -95,15 +90,63 @@ class IRS(object):
         for priv in private_ids:
             yield PrivateID(priv).dissociate_irs(self._uuid)
 
-        self._row.delete()
+        self.delete_row()
 
     @defer.inlineCallbacks
     def rebuild(self):
-        # TODO
-        service_profiles = yield self.get_associated_service_profiles()
-        public_ids = yield self.get_associated_publics()
-        private_ids = yield self.get_associated_privates()
+        """
+        Rebuild the IMPU tables in the cache when the IRS (or it's children are
+        modified).
+        """
 
+        # Keep a record off all the public IDs that need to be updated.
+        all_public_ids = []
 
+        # Create an IMS subscription mode with a dummy private ID node.
+        root = ET.Element("IMSSubscription")
+        root.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
+        root.set("xsi:noNamespaceSchemaLocation", "CxDataType.xsd")
 
+        priv_elem = ET.SubElement(root, "PrivateID")
+        priv_elem.text = "Unspecified"
 
+        # Add a ServiceProfile node for each profile in this IRS.
+        sp_uuids = yield self.get_associated_service_profiles()
+        for sp_uuid in service_profiles:
+            sp_elem = ET.SubElement(root, "ServiceProfile")
+
+            # Add the Initial Filer Criteria node for this profile.
+            ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
+            ifc_xml_elem = ET.fromstring(ifc_xml)
+            sp_elem.append(ifc_xml_elem)
+
+            # Add a PublicIdentity node for each ID in this service profile. The
+            # contents of this node are stored in the database.
+            public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
+            for pub_id in public_ids:
+                pub_id_xml = yield PublicID(pub_id).get_publicidentity()
+                pub_id_xml_elem = ET.fromstring(pub_id_xml)
+                sp_elem.append(pub_id_xml_element)
+
+                # Record that this cache for this identity needs updating with
+                # the new XML.
+                all_public_ids.append(pub_id)
+
+        # Generate the new IMS subscription XML document.
+        output = StringIO.StringIO()
+        tree = ET.ElementTree(root)
+        tree.write(output)
+        xml = output.getvalue()
+
+        # About to update the cache.  Another cache update operation could be
+        # happening in parallel. Since cache updates involve writing to multiple
+        # rows this could leave the cache inconsistent (if some the database
+        # ended upwith some rows from update A and other from update B).  To
+        # alleviate this we use the same timestamp for _all_ our updates.  This
+        # ensures the database ends up with all the rows from either update A or
+        # update B (though we can't tell which), meaning the cache is
+        # consistent, even if it isn't completely up-to-date.
+        timestamp = self.generate_timestamp()
+
+        for pub_id in all_public_ids:
+            yield self._cache.put_ims_subscription(pub_id, xml, timestamp)

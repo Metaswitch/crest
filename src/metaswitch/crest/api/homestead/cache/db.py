@@ -32,49 +32,46 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from metaswitch.crest.api.homestead.cassandra import CassandraCF, CassandraRow
 from twisted.internet import defer
 
-PUBLIC_ID_PREFIX = "public_id_"
-CASS_DIGEST_HA1 = "digest_ha1"
+from .. import config
+from ..cassandra import CassandraModel, CassandraConnection
+
+DIGEST_HA1 = "digest_ha1"
 IMS_SUBSCRIPTION = "ims_subscription_xml"
+PUBLIC_ID_PREFIX = "public_id_"
 
+class CacheModel(CassandraModel):
+    cass_keyspace = config.PROVISIONING_KEYSPACE
 
-class IMPI(CassandraCF):
-    def row(self, row_key):
-        return IMPIRow(self.client, self.cf, row_key)
+class IMPI(CacheModel):
+    cass_table = config.IMPI_TABLE
 
-
-class IMPIRow(CassandraRow):
     @defer.inlineCallbacks
     def get_digest_ha1(self, public_id):
-        query_columns = [CASS_DIGEST_HA1]
+        query_columns = [DIGEST_HA1]
         if public_id:
             public_id_column = PUBLIC_ID_PREFIX+str(public_id)
             query_columns.append(public_id_column)
 
         columns = yield self.get_columns(query_columns)
 
-        if (CASS_DIGEST_HA1 in columns) and \
+        if (DIGEST_HA1 in columns) and \
            (public_id is None or public_id_column in columns):
-            defer.returnValue(columns[CASS_DIGEST_HA1])
+            defer.returnValue(columns[DIGEST_HA1])
 
     @defer.inlineCallbacks
-    def put_digest_ha1(self, digest):
-        yield self.modify_columns({CASS_DIGEST_HA1: digest})
+    def put_digest_ha1(self, digest, timestamp=None):
+        yield self.modify_columns({DIGEST_HA1: digest}, timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def put_associated_public_id(self, public_id):
+    def put_associated_public_id(self, public_id, timestamp=None):
         public_id_column = PUBLIC_ID_PREFIX + public_id
-        yield self.modify_columns({public_id_column: None})
+        yield self.modify_columns({public_id_column: None}, timestamp=timestamp)
 
+class IMPU(CacheModel):
+    cass_table = config.IMPU_TABLE
 
-class IMPU(CassandraCF):
-    def row(self, row_key):
-        return IMPURow(self.client, self.cf, row_key)
-
-
-class IMPURow(CassandraRow):
     @defer.inlineCallbacks
     def get_ims_subscription(self):
         columns = yield self.get_columns([IMS_SUBSCRIPTION])
@@ -82,5 +79,6 @@ class IMPURow(CassandraRow):
             defer.returnValue(columns[IMS_SUBSCRIPTION])
 
     @defer.inlineCallbacks
-    def put_ims_subscription(self, ims_subscription):
-        yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription})
+    def put_ims_subscription(self, ims_subscription, timestamp=None):
+        yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription},
+                                  timestamp=timestamp)

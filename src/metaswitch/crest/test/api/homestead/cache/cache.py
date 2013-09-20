@@ -43,6 +43,7 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from metaswitch.crest.api.homestead.cache.cache import Cache
+from metaswitch.crest.api.homestead.cache.db import CacheModel
 
 def MockColumn(name, val):
     m = mock.MagicMock()
@@ -69,6 +70,7 @@ class TestCache(unittest.TestCase):
         self.cass_client = mock.MagicMock()
         self.CassandraClient.return_value = self.cass_client
 
+        CacheModel.start_connection()
         self.cache = Cache()
 
     def test_put_digest(self):

@@ -32,29 +32,35 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from metaswitch.crest.api.homestead.cassandra import CassandraCF, CassandraModel
+from .db import ProvisioningModel
+from .irs import IRS
+from .service_profile import ServiceProfile
 
-class PublicID(object):
+SERVICE_PROFILE = "service_profile"
+PUBLICIDENTITY = "publicidentity"
+
+class PublicID(ProvisioningModel):
     """Model representing a provisioned public identity"""
 
-    def __init__(self, public_id):
-        self._public_id = public_id
-
-        model = CassandraModel("homestead_provisioning")
-        self._row = CassandraCF(model, config.PUBLIC_TABLE).row(public_id)
+    cass_table = config.PUBLIC_TABLE
 
    @defer.inlineCallbacks
    def get_sp(self):
-       sp_uuid = yield self._row.get_columns(["service_profile"])
+       sp_uuid = yield self.get_columns([SERVICE_PROFILE])
        defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
     def put_publicidentity(self, xml):
-        yield self._row.modify_columns({"publicidentity": xml})
+        yield self.modify_columns({PUBLICIDENTITY: xml})
+
+    @defer.inlineCallbacks
+    def get_publicidentity(self):
+        xml = yield self.get_columns([PUBLICIDENTITY])
+        defer.returnValue(xml)
 
     @defer.inlineCallbacks
     def get_irs(self):
-        sp_uuid = yield self._row.get_sp()
+        sp_uuid = yield self.get_sp()
         irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
         defer.returnValue(irs_uuid)
 
@@ -70,11 +76,7 @@ class PublicID(object):
         sp_uuid = yield self.get_sp()
 
         yield ServiceProfile(sp_uuid).dissociate_public_id(self._public_id)
-        yield self._row.delete()
+        yield self.delete_row()
         yield self._cache.delete_public_id(self._public_id)
 
         yield IRS(irs_uuid).rebuild()
-
-
-
-

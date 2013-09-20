@@ -1,4 +1,4 @@
-# @file handlers.py
+# @file utils.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,43 +32,10 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import logging
+import itertools
 
-from twisted.internet import defer
-from .db import IMPI, IMPU
-
-_log = logging.getLogger("crest.api.homestead.cache")
-
-
-class Cache(object):
-
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
-        digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)
-        defer.returnValue(digest_ha1)
-
-    @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id=None):
-        xml = yield IMPU(public_id).get_ims_subscription()
-        defer.returnValue(xml)
-
-    @defer.inlineCallbacks
-    def put_digest(self, private_id, digest, timestamp):
-        yield IMPI(private_id).put_digest_ha1(digest, timestamp)
-
-    @defer.inlineCallbacks
-    def put_associated_public_id(self, private_id, public_id, timestamp):
-        yield IMPI(private_id).put_associated_public_id(public_id, timestamp)
-
-    @defer.inlineCallbacks
-    def put_ims_subscription(self, public_id, xml, timestamp):
-        yield IMPU(public_id).put_ims_subscription(xml, timestamp)
-
-    @defer.inlineCallbacks
-    def delete_private_id(self, private_id):
-        yield IMPI(private_id).delete()
-
-    @defer.inlineCallbacks
-    def delete_public_id(self, public_id):
-        yield IMPU(public_id).delete()
+def flatten(list_of_lists):
+    """Flatten a list of lists into a single list, e.g:
+    flatten([[A, B], [C, D]]) -> [A, B, C, D] """
+    return list(itertools.chain.from_iterable(list_of_lists))
 

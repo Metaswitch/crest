@@ -32,6 +32,10 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+# Keyspaces
+CACHE_KEYSPACE = "homestead_cache"
+PROVISIONING_KEYSPACE = "homestead_provisioning"
+
 # Cache tables.
 IMPI_TABLE = "impi"
 IMPU_TABLE = "impu"

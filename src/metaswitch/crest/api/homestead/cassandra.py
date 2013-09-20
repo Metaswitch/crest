@@ -32,6 +32,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import time
 from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
@@ -39,27 +40,26 @@ from telephus.client import CassandraClient, ConsistencyLevel
 from telephus.cassandra.ttypes import NotFoundException, UnavailableException
 
 
-class CassandraModel(object):
-    """Simple representation of a Cassandra keyspace"""
+class CassandraConnection(object):
+    """Simple representation of a connection to a Cassandra keyspace"""
     def __init__(self, keyspace):
+        self._keyspace = keyspace
+
         factory = ManagedCassandraClientFactory(keyspace)
         reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, factory)
         self.client = CassandraClient(factory)
 
 
-class CassandraCF(object):
-    """Simple representation of a Cassandra column family"""
-    def __init__(self, model, cf):
-        self.client, self.cf = model.client, cf
+class CassandraModel(object):
+    @classmethod
+    def start_connection(cls):
+        cls.cass_connection = CassandraConnection(cls.cass_keyspace)
 
-    def row(self, row_key):
-        return CassandraRow(self.client, self.cf, row_key)
-
-
-class CassandraRow(object):
     """Simple representation of a Cassandra row"""
-    def __init__(self, client, cf, row_key):
-        self.client, self.cf, self.row_key = client, cf, row_key
+    def __init__(self, row_key):
+        self.client = self.cass_connection.client
+        self.cf = self.cass_table
+        self.row_key = row_key
 
     @defer.inlineCallbacks
     def get_columns(self, columns=None):
@@ -94,16 +94,17 @@ class CassandraRow(object):
         defer.returnValue(new_mapping)
 
     @defer.inlineCallbacks
-    def modify_columns(self, mapping, ttl=None):
+    def modify_columns(self, mapping, ttl=None, timestamp=None):
         """Updates this row to give the columns specified by the keys of
         `mapping` their respective values."""
         yield self.client.batch_insert(key=self.row_key,
                                        column_family=self.cf,
                                        mapping=mapping,
-                                       ttl=ttl)
+                                       ttl=ttl,
+                                       timestamp=None)
 
     @defer.inlineCallbacks
-    def delete(self):
+    def delete_row(self):
         """Delete this entire row"""
         yield self.client.remove(key=self.row_key,
                                  column_family=self.cf)
@@ -151,3 +152,9 @@ class CassandraRow(object):
             except UnavailableException:
                 pass
         defer.returnValue(result)
+
+    @staticmethod
+    def generate_timestamp():
+        """Return a timestamp suitable for using in a cassandra row update
+        The timestamp is in ms"""
+        return time.time() * 1000000

@@ -1,4 +1,4 @@
-# @file handlers.py
+# @file service_profile.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,43 +32,61 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import logging
+from .db import ProvisioningModel
 
-from twisted.internet import defer
-from .db import IMPI, IMPU
+PUBLIC_ID_COLUMN_PREFIX = "public_id_"
+IFC_COLUMN = "initialfiltercriteria"
+IRS_COLUMN = "irs"
 
-_log = logging.getLogger("crest.api.homestead.cache")
+class ServiceProfile(ProvisioningModel):
+    """Model representing a provisioned service profile"""
 
-
-class Cache(object):
-
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
-        digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)
-        defer.returnValue(digest_ha1)
+    cass_table = config.SP_TABLE
 
     @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id=None):
-        xml = yield IMPU(public_id).get_ims_subscription()
-        defer.returnValue(xml)
+    def get_public_ids(self):
+        retval = yield self.get_columns_with_prefix_stripped(
+                                                        PUBLIC_ID_COLUMN_PREFIX)
+        defer.returnValue(retval)
 
     @defer.inlineCallbacks
-    def put_digest(self, private_id, digest, timestamp):
-        yield IMPI(private_id).put_digest_ha1(digest, timestamp)
+    def get_ifc(self):
+        retval = yield self.get_columns([IFC_COLUMN])
+        defer.returnValue(retval)
 
     @defer.inlineCallbacks
-    def put_associated_public_id(self, private_id, public_id, timestamp):
-        yield IMPI(private_id).put_associated_public_id(public_id, timestamp)
+    def get_irs(self):
+        retval = yield self.get_columns([IRS_COLUMN])
+        defer.returnValue(retval)
 
     @defer.inlineCallbacks
-    def put_ims_subscription(self, public_id, xml, timestamp):
-        yield IMPU(public_id).put_ims_subscription(xml, timestamp)
+    def associate_public_id(self, public_id):
+        yield self.modify_columns({PUBLIC_ID_COLUMN_PREFIX + public_id: None})
+        yield self.rebuild()
 
     @defer.inlineCallbacks
-    def delete_private_id(self, private_id):
-        yield IMPI(private_id).delete()
+    def dissociate_public_id(self, public_id):
+        yield self.delete_column(PUBLIC_ID_COLUMN_PREFIX + public_id)
+        yield self.rebuild()
 
     @defer.inlineCallbacks
-    def delete_public_id(self, public_id):
-        yield IMPU(public_id).delete()
+    def update_ifc(self, ifc):
+        yield self.modify_columns({IFC_COLUMN: ifc})
+        yield self.rebuild()
+
+    @defer.inlineCallbacks
+    def delete(self):
+        public_ids = yield self.get_public_ids()
+        for pub_id in public_ids:
+            yield PublicID(pub_id).delete()
+
+        irs_uuid = yield self.get_irs()
+        IRS(irs_uuid).dissociate_service_profile(self.row_key)
+
+        self.delete_row()
+
+    @defer.inlineCallbacks
+    def rebuild(self):
+        irs_uuid = yield self.get_irs()
+        yield IRS(irs_uuid).rebuild()
 

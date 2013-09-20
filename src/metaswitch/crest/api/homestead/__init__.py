@@ -114,6 +114,8 @@ CREATE_STATEMENTS = [CREATE_IMPI, CREATE_IMPU]
 # Module initialization
 def initialize(application):
     application.cache = Cache()
+    ProvisioingModel.register_cache(application.cache)
+
     if settings.HSS_ENABLED:
         application.backend = HSSBackend(application.cache)
     else:

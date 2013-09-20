@@ -32,46 +32,38 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import itertools
-from metaswitch.crest.api.homestead.cassandra import CassandraCF, CassandraModel
-from metaswitch.crest.api.homestead.backends.provisioning.irs import IRS
+from .db import ProvisioningModel
+from .irs import IRS
+from metaswitch.crest.api import utils
 
-class PrivateID(object):
+DIGEST_HA1 = "digest_ha1"
+ASSOC_IRS_PREFIX = "associated_irs_"
+
+class PrivateID(ProvisioningModel):
     """Model representing a provisioned private ID"""
 
-    def __init__(self, private_id, cache):
-        self._private_id = private_id
-        self._cache = cache
-
-        model = CassandraModel("homestead_provisioning")
-        self._row = CassandraCF(model, config.PRIVATE_TABLE).row(private_id)
-
-    @staticmethod
-    def flatten(list_of_lists):
-        """Flatten a list of lists into a single list, e.g:
-        flatten([[A, B], [C, D]]) -> [A, B, C, D] """
-        return list(itertools.chain.from_iterable(list_of_lists))
+    cass_table = config.PRIVATE_TABLE
 
     @defer.inlineCallbacks
     def get_digest(self):
-        digest = yield self._row.get_columns(["digest_ha1"])
+        digest = yield self.get_columns([DIGEST_HA1])
         defer.returnValue(digest)
 
     @defer.inlineCallbacks
     def get_irses(self):
-        irses = yield self._row.get_columns_with_prefix_stripped("associated_irs_")
+        irses = yield self.get_columns_with_prefix_stripped(ASSOC_IRS_PREFIX)
         defer.returnValue(irses)
 
     @defer.inlineCallbacks
     def get_public_ids(self):
         irs_uuids = yield self.get_irses()
-        public_ids = self.flatten(yield IRS(uuid).get_public_ids()
+        public_ids = utils.flatten(yield IRS(uuid).get_public_ids()
                                                           for uuid in irs_uuids)
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
     def put_digest(self, digest):
-        yield self._row.modify_columns({"digest_ha1": digest})
+        yield self.modify_columns({DIGEST_HA1: digest})
         yield self._cache.put_digest(self._private_id, digest)
 
     @defer.inlineCallbacks
@@ -80,32 +72,49 @@ class PrivateID(object):
         for uuid in irs_uuids:
             yield IRS(uuid).dissociate_private_id(self._private_id)
 
-        yield self._row.delete()
+        yield self.delete_row()
         yield self._cache.delete_private_id(self._private_id)
 
     @defer.inlineCallbacks
     def associate_irs(self, irs_uuid):
-        yield self._row.modify_columns({"associated_irs_%s" % irs_uuid: None})
+        yield self.modify_columns({ASSOC_IRS_PREFIX + str(irs_uuid): None})
         yield IRS(uuid).associate_private_id(self._private_id)
         yield self.rebuild()
 
     @defer.inlineCallbacks
     def dissociate_irs(self, irs_uuid):
-        yield self._row.delete_columns(["associated_irs_%s" % irs_uuid])
+        yield self.delete_columns([ASSOC_IRS_PREFIX + str(irs_uuid)])
         yield IRS(uuid).dissociate_private_id(self._private_id)
         yield self.rebuild()
 
     @defer.inlineCallbacks
     def rebuild(self):
+        """ Rebuild the IMPI table in the cache """
+
+        # Get all the information we need to rebuild the cache.  Do this before
+        # deleting any cache entries to minimize the time the cache is empty.
         digest = yield self.get_digest()
-        irs_uuids = yield self.get_irses()
 
+        public_ids = []
+        for irs in yield self.get_irses():
+            for pub_id in yield IRS(irs).get_public_ids():
+                public_ids.append(pub_id)
+
+        # About to update the cache.  Another cache update operation could be
+        # happening in parallel. Since cache updates involve writing to multiple
+        # rows this could leave the cache inconsistent (if some the database
+        # ended upwith some rows from update A and other from update B).  To
+        # alleviate this we use the same timestamp for _all_ our updates.  This
+        # ensures the database ends up with all the rows from either update A or
+        # update B (though we can't tell which), meaning the cache is
+        # consistent, even if it isn't completely up-to-date.
+        timestamp = self.generate_timestamp()
+
+        # Delete the existing cache entry then write back the digest and the
+        # associated public IDs.
         yield self._cache.delete_private_id(self._private_id)
-        for irs in irs_uuids:
-            for public_id in yield IRS(irs).get_public_ids():
-                yield self._cache.put_associated_public_id(private_id, public_id)
-        yield self._cache.put_digest(digest)
-
-
-
-
+        yield self._cache.put_digest(digest, timestamp)
+        for pub_id in public_ids:
+            yield self._cache.put_associated_public_id(private_id,
+                                                       public_id,
+                                                       timestamp)
