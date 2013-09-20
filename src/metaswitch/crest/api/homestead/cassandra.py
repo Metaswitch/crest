@@ -121,8 +121,8 @@ class CassandraModel(object):
                                  column_family=self.cass_table,
                                  column=column_name)
 
-    @defer.inlineCallbacks
     @classmethod
+    @defer.inlineCallbacks
     def row_exists(self, row_key):
         """
         Returns whether a row exists with the specified key

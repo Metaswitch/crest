@@ -37,6 +37,7 @@ from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, IMSSubs
 from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead import config
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSBackend
+from metaswitch.crest.api.homestead.backends.provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be
