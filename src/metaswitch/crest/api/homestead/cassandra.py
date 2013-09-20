@@ -74,6 +74,12 @@ class CassandraModel(object):
         defer.returnValue(columns_as_dictionary)
 
     @defer.inlineCallbacks
+    def get_column_value(self, column):
+        """Gets the value of a single named column"""
+        column_dict = yield self.get_columns([column])
+        defer.returnValue(column_dict[column])
+
+    @defer.inlineCallbacks
     def get_columns_with_prefix(self, prefix):
         """Gets all columns with the given prefix from this row.
         Returns the columns formatted as a dictionary.

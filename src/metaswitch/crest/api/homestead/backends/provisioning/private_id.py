@@ -46,7 +46,7 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_digest(self):
-        digest = yield self.get_columns([DIGEST_HA1])
+        digest = yield self.get_column_value(DIGEST_HA1)
         defer.returnValue(digest)
 
     @defer.inlineCallbacks

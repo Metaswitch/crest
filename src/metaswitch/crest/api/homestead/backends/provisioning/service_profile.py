@@ -51,12 +51,12 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_ifc(self):
-        retval = yield self.get_columns([IFC_COLUMN])
+        retval = yield self.get_column_value(IFC_COLUMN)
         defer.returnValue(retval)
 
     @defer.inlineCallbacks
     def get_irs(self):
-        retval = yield self.get_columns([IRS_COLUMN])
+        retval = yield self.get_column_value(IRS_COLUMN)
         defer.returnValue(retval)
 
     @defer.inlineCallbacks

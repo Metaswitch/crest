@@ -46,7 +46,7 @@ class PublicID(ProvisioningModel):
 
    @defer.inlineCallbacks
    def get_sp(self):
-       sp_uuid = yield self.get_columns([SERVICE_PROFILE])
+       sp_uuid = yield self.get_column_value(SERVICE_PROFILE)
        defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
@@ -55,7 +55,7 @@ class PublicID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_publicidentity(self):
-        xml = yield self.get_columns([PUBLICIDENTITY])
+        xml = yield self.get_column_value(PUBLICIDENTITY)
         defer.returnValue(xml)
 
     @defer.inlineCallbacks

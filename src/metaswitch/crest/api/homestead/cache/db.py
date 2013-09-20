@@ -74,9 +74,8 @@ class IMPU(CacheModel):
 
     @defer.inlineCallbacks
     def get_ims_subscription(self):
-        columns = yield self.get_columns([IMS_SUBSCRIPTION])
-        if columns:
-            defer.returnValue(columns[IMS_SUBSCRIPTION])
+        retval = yield self.get_column_value(IMS_SUBSCRIPTION)
+        defer.returnValue(retval)
 
     @defer.inlineCallbacks
     def put_ims_subscription(self, ims_subscription, timestamp=None):
