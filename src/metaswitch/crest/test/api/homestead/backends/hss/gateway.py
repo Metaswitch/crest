@@ -44,7 +44,8 @@ from twisted.internet import defer
 from twisted.python.failure import Failure
 
 from metaswitch.crest import settings
-from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener, HSSBackend
+from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener
+from metaswitch.crest.api.homestead.backends.hss import HSSBackend
 
 class TestHSSGateway(unittest.TestCase):
     """
@@ -337,7 +338,7 @@ class TestHSSPeerListener(unittest.TestCase):
 class HSSBackendFixture(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
-        patcher = mock.patch("metaswitch.crest.api.homestead.backends.hss.gateway.HSSGateway")
+        patcher = mock.patch("metaswitch.crest.api.homestead.backends.hss.backend.HSSGateway")
         self.HSSGateway = patcher.start()
         self.addCleanup(patcher.stop)
 

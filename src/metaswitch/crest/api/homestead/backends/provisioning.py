@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file provisioning.py.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,6 +32,26 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Import the HSS backend into this module so that users of the package don't
-# need to know the package structure.
-from .backend import HSSBackend
+from twisted.internet import defer
+
+from .backend import Backend
+
+class ProvisioningBackend(Backend):
+    """
+    Backend providing access to the homestead provisioning database.
+
+    When new data is provisioned the cache is automatically updated at the same
+    time (and the cached data never expires). As such all methods on this class
+    simply return None).
+    """
+
+    def __init__(self, cache):
+        self._cache = cache
+
+    @defer.inlineCallbacks
+    def get_digest(self, private_id, public_id):
+        defer.returnValue(None)
+
+    @defer.inlineCallbacks
+    def get_ims_subscription(self, public_id, private_id):
+        defer.returnValue(None)

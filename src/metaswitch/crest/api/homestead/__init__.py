@@ -38,7 +38,8 @@ from .. import settings
 from . import config
 
 from .cache.cache import Cache
-from .backends.hss.gateway import HSSBackend
+from .backends.hss import HSSBackend
+from .backends.provisioning import ProvisioningBackend
 
 from .cache.handlers import DigestHandler, IMSSubscriptionHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
@@ -92,7 +93,7 @@ def initialize(application):
     if settings.HSS_ENABLED:
         application.backend = HSSBackend(application.cache)
     else:
-        application.backend = None
+        application.backend = ProvisioningBackend(application.cache)
 
     # Connect to the cache and provisioning databases.
     ProvisioningModel.start_connection()
