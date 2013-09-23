@@ -43,9 +43,6 @@ IRS_COLUMN = "irs"
 IFC_COLUMN = "initialfiltercriteria"
 PUBLIC_ID_COLUMN_PREFIX = "public_id_"
 
-class IRSNotFoundException(NotFoundException):
-    """Exception raised when a parent IRS could not be found"""
-    pass
 
 class ServiceProfile(ProvisioningModel):
     """Model representing a provisioned service profile"""

@@ -38,7 +38,7 @@ from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 
 
-class IRSAllServiceProfilesHandler(BaseHandler):
+class AllServiceProfilesHandler(BaseHandler):
     @defer.inlineCallbacks
     def post(self, irs_uuid):
         if not self.request.body:
@@ -51,7 +51,7 @@ class IRSAllServiceProfilesHandler(BaseHandler):
             self.send_error(400, "Body is not empty")
 
 
-class IRSServiceProfileHandler(BaseHandler):
+class ServiceProfileHandler(BaseHandler):
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid):
         try:
@@ -94,7 +94,7 @@ class SPPublicIDHandler(BaseHandler):
         self.finish()
 
 
-class SPFilterCriteria(BaseHandler):
+class SPFilterCriteriaHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         try:

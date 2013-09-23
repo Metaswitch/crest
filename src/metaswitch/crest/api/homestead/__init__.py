@@ -43,6 +43,9 @@ from .backends.provisioning import ProvisioningBackend
 
 from .cache.handlers import DigestHandler, IMSSubscriptionHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
+from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
+from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
+from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicIDIRSHandler, PublicIDPrivateIDHandler
 
 from .cache.db import IMPI, IMPU, CacheModel
 from .provisioning.models.private_id import PrivateID
@@ -83,15 +86,15 @@ ROUTES = [
     (r'/irs/'+UUID+r'/?', IRSHandler),
     (r'/irs/'+UUID+r'/public_ids/?', IRSAllPublicIDsHandler),
     (r'/irs/'+UUID+r'/private_ids/?', IRSAllPrivateIDsHandler),
-    (r'/irs/'+UUID+r'/private_ids/?', IRSPrivateIdHandler),
+    (r'/irs/'+UUID+r'/private_ids/?', IRSPrivateIDHandler),
 
     # Service profile provisionng.
     #
     # In the class naming scheme, "all" refers to all objects in the parent
     # container (all service profiles in an IRS, or all public IDs in a
     # profile).
-    (r'/irs/'+UUID+r'/service_profiles/?', IRSAllServiceProfilesHandler),
-    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/?', IRSServiceProfileHandler),
+    (r'/irs/'+UUID+r'/service_profiles/?', AllServiceProfilesHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/?', ServiceProfileHandler),
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids?', SPAllPublicIDsHandler),
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/([^/]+)?', SPPublicIDHandler),
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/filter_criteria/?', SPFilterCriteriaHandler),

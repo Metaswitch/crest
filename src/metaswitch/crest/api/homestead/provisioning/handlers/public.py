@@ -68,7 +68,7 @@ class PublicIDIRSHandler(BaseHandler):
             self.send_error(404)
 
 
-class PublicIDPrivateHandler(BaseHandler):
+class PublicIDPrivateIDHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         try:
