@@ -109,17 +109,19 @@ class CassandraModel(object):
                                        timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def delete_row(self):
+    def delete_row(self, timestamp=None):
         """Delete this entire row"""
         yield self.client.remove(key=self.row_key,
-                                 column_family=self.cass_table)
+                                 column_family=self.cass_table,
+                                 timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def delete_column(self, column_name):
+    def delete_column(self, column_name, timestamp=None):
         """Delete a single column from the row"""
         yield self.client.remove(key=row_key,
                                  column_family=self.cass_table,
-                                 column=column_name)
+                                 column=column_name,
+                                 timestamp=timestamp)
 
     @classmethod
     @defer.inlineCallbacks

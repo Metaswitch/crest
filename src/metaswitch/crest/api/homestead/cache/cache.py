@@ -81,10 +81,10 @@ class Cache(object):
         yield IMPU(public_id).put_ims_subscription(xml, timestamp)
 
     @defer.inlineCallbacks
-    def delete_private_id(self, private_id):
-        yield IMPI(private_id).delete()
+    def delete_private_id(self, private_id, timestamp):
+        yield IMPI(private_id).delete_row()
 
     @defer.inlineCallbacks
-    def delete_public_id(self, public_id):
-        yield IMPU(public_id).delete()
+    def delete_public_id(self, public_id, timestamp):
+        yield IMPU(public_id).delete_row()
 

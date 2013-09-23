@@ -88,6 +88,7 @@ class PublicID(ProvisioningModel):
 
         yield ServiceProfile(sp_uuid).dissociate_public_id(self.row_key)
         yield self.delete_row()
-        yield self._cache.delete_public_id(self.row_key)
+        yield self._cache.delete_public_id(self.row_key,
+                                           self._cache.generate_timestamp())
 
         yield IRS(irs_uuid).rebuild()

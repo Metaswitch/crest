@@ -74,7 +74,9 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def put_digest(self, digest):
         yield self.modify_columns({DIGEST_HA1: digest})
-        yield self._cache.put_digest(self.row_key, digest)
+        yield self._cache.put_digest(self.row_key,
+                                     digest,
+                                     self._cache.generate_timestamp())
 
     @defer.inlineCallbacks
     def delete(self):
@@ -83,7 +85,8 @@ class PrivateID(ProvisioningModel):
             yield IRS(uuid).dissociate_private_id(self.row_key)
 
         yield self.delete_row()
-        yield self._cache.delete_private_id(self.row_key)
+        yield self._cache.delete_private_id(self.row_key,
+                                            self._cache.generate_timestamp())
 
     @defer.inlineCallbacks
     def associate_irs(self, irs_uuid):
@@ -114,7 +117,7 @@ class PrivateID(ProvisioningModel):
 
         # Delete the existing cache entry then write back the digest and the
         # associated public IDs.
-        yield self._cache.delete_private_id(self.row_key)
+        yield self._cache.delete_private_id(self.row_key, timestamp)
         yield self._cache.put_digest(digest, timestamp)
         for pub_id in public_ids:
             yield self._cache.put_associated_public_id(private_id,
