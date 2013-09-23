@@ -44,7 +44,7 @@ thread_local = threading.local()
 thread_local.connections = {}
 
 def get_or_create(keyspace):
-    connection = thread_local.connection.get(keyspace)
+    connection = thread_local.connections.get(keyspace)
 
     if not connection:
         _log.info("Connecting to Cassandra on %s", settings.CASS_HOST)
