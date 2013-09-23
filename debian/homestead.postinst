@@ -86,6 +86,7 @@ case "$1" in
             #cd $HOMESTEAD_DIR
             #$HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/upgrade_homestead_db.py
             #cd -
+            :
         else
             echo "Initializing homestead Cassandra database"
             echo "CREATE KEYSPACE homestead_cache WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
