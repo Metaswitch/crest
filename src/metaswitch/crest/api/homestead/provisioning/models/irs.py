@@ -34,6 +34,7 @@
 
 import xml.etree.ElementTree as ET
 import StringIO
+import uuid
 
 from twisted.internet import defer
 
@@ -41,6 +42,7 @@ from metaswitch.crest.api import utils
 from .db import ProvisioningModel
 from ... import config
 
+CREATED = "created"
 ASSOC_PRIVATE_PREFIX = "associated_private_"
 SERVICE_PROFILE_PREFIX = "service_profile_"
 
@@ -52,8 +54,16 @@ class IRS(ProvisioningModel):
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "id uuid PRIMARY KEY" +
+            CREATED+" boolean" +
         ") WITH read_repair_chance = 1.0;"
     )
+
+    @classmethod
+    @defer.inlineCallbacks
+    def create(cls):
+        irs_uuid = uuid.uuid4()
+        IRS(irs_uuid).modify_columns({CREATED: True})
+        defer.returnValue(irs_uuid)
 
     @defer.inlineCallbacks
     def get_associated_privates(self):
@@ -104,15 +114,7 @@ class IRS(ProvisioningModel):
         self.delete_row()
 
     @defer.inlineCallbacks
-    def rebuild(self):
-        """
-        Rebuild the IMPU tables in the cache when the IRS (or it's children are
-        modified).
-        """
-
-        # Keep a record off all the public IDs that need to be updated.
-        all_public_ids = []
-
+    def build_imssubscription_xml(self):
         # Create an IMS subscription mode with a dummy private ID node.
         root = ET.Element("IMSSubscription")
         root.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
@@ -123,7 +125,7 @@ class IRS(ProvisioningModel):
 
         # Add a ServiceProfile node for each profile in this IRS.
         sp_uuids = yield self.get_associated_service_profiles()
-        for sp_uuid in service_profiles:
+        for sp_uuid in sp_uuids:
             sp_elem = ET.SubElement(root, "ServiceProfile")
 
             # Add the Initial Filer Criteria node for this profile.
@@ -139,17 +141,26 @@ class IRS(ProvisioningModel):
                 pub_id_xml_elem = ET.fromstring(pub_id_xml)
                 sp_elem.append(pub_id_xml_element)
 
-                # Record that this cache for this identity needs updating with
-                # the new XML.
-                all_public_ids.append(pub_id)
-
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()
         tree = ET.ElementTree(root)
         tree.write(output)
         xml = output.getvalue()
 
+        defer.returnValue(xml)
+
+    @defer.inlineCallbacks
+    def rebuild(self):
+        """
+        Rebuild the IMPI and IMPU tables in the cache when the IRS (or it's
+        children are modified).
+        """
+
+        xml = yield self.build_imssubscription_xml()
         timestamp = self._cache.generate_timestamp()
 
-        for pub_id in all_public_ids:
+        for pub_id in (yield self.get_associated_publics()):
             yield self._cache.put_ims_subscription(pub_id, xml, timestamp)
+
+        for priv_id in (yield self.get_associated_privates()):
+            yield PrivateID(priv_id).rebuild()

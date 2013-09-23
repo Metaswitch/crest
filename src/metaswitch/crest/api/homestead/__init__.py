@@ -50,6 +50,10 @@ from .provisioning.models.irs import IRS
 from .provisioning.models.service_profile import ServiceProfile
 from .provisioning.models.public_id import PublicID
 
+# Regex that matches a uuid.
+HEX = '[a-fA-F0-9]'
+UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
+
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be
 # passed to the the Handler.
@@ -72,6 +76,29 @@ ROUTES = [
     (r'/private/([^/]+)/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
     (r'/private/([^/]+)/associated_implicit_registration_sets/([^/])/?', PrivateOneIrsHandler),
     (r'/private/([^/]+)/associated_public_ids/?', PrivateAllPublicIdsHandler),
+
+    # Implicit Registration Set provisioning.
+    (r'/irs/?', AllIRSHandler),
+    (r'/irs/'+UUID+r'/?', IRSHandler),
+    (r'/irs/'+UUID+r'/public_ids/?', IRSAllPublicIDsHandler),
+    (r'/irs/'+UUID+r'/private_ids/?', IRSAllPrivateIDsHandler),
+    (r'/irs/'+UUID+r'/private_ids/?', IRSPrivateIdHandler),
+
+    # Service profile provisionng.
+    #
+    # In the class naming scheme, "all" refers to all objects in the parent
+    # container (all service profiles in an IRS, or all public IDs in a
+    # profile).
+    (r'/irs/'+UUID+r'/service_profiles/?', IRSAllServiceProfilesHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/?', IRSServiceProfileHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids?', SPAllPublicIDsHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/([^/]+)?', SPPublicIDHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/filter_criteria/?', SPFilterCriteriaHandler),
+
+    # Read-only privte ID interface.
+    (r'/public/([^/]+)/service_profile/?', PublicIDServiceProfileHandler),
+    (r'/public/([^/]+)/irs/?', PublicIDIRSHandler),
+    (r'/public/([^/]+)/service_profile/?', PublicIDPrivateIDHandler),
 ]
 
 # List of all the tables used by homestead.

@@ -291,6 +291,16 @@ class BaseHandler(cyclone.web.RequestHandler):
             data["exception"] = traceback.format_exception(*kwargs["exc_info"])
         self.finish(data)
 
+    def send_json(obj):
+        """
+        Send and object as a JSON response.
+
+        This is required for types that cyclone does not automatically convert
+        to json (such as Lists).
+        """
+        self.write(str(obj))
+        self.set_header("Content-Type", "application/json")
+        self.finish()
 
 class UnknownApiHandler(BaseHandler):
     """

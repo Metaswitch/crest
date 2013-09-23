@@ -32,14 +32,20 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import uuid
 from twisted.internet import defer
 
 from .db import ProvisioningModel
 from ... import config
 
+CREATED_COLUMN = "created"
 IRS_COLUMN = "irs"
 IFC_COLUMN = "initialfiltercriteria"
 PUBLIC_ID_COLUMN_PREFIX = "public_id_"
+
+class IRSNotFoundException(NotFoundException):
+    """Exception raised when a parent IRS could not be found"""
+    pass
 
 class ServiceProfile(ProvisioningModel):
     """Model representing a provisioned service profile"""
@@ -49,10 +55,19 @@ class ServiceProfile(ProvisioningModel):
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "id uuid PRIMARY KEY, " +
+            CREATED_COLUMN+" boolean, " +
             IRS_COLUMN+" uuid, " +
             IFC_COLUMN+" text" +
         ") WITH read_repair_chance = 1.0;"
     )
+
+    @classmethod
+    @defer.inlineCallbacks
+    def create(self, irs_uuid):
+        sp_uuid = uuid.uuid4()
+        IRS(irs_uuid).associate_service_profile(sp_uuid)
+        ServiceProfile(sp_uuid).modify_rows({CREATED: True, IRS_COLUMN: irs_uuid})
+        defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
     def get_public_ids(self):
