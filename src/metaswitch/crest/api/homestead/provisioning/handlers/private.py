@@ -33,30 +33,17 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
-import json
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
+from ..models.private_id import PrivateID
 
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
 
 
-class PrivateHandlerBase(BaseHandler):
-    def send_json(obj):
-        """
-        Send and object as a JSON response.
-
-        This is required for tpyes that cyclone does not automatically convert
-        to json (such as Lists).
-        """
-        self.write(str(obj))
-        self.set_header("Content-Type", "application/json")
-        self.finish()
-
-
-class PrivateHandler(PrivateHandlerBase):
+class PrivateHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
@@ -91,7 +78,7 @@ class PrivateHandler(PrivateHandlerBase):
         self.finish()
 
 
-class PrivateAllIrsHandler(PrivateHandlerBase):
+class PrivateAllIrsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
@@ -102,25 +89,25 @@ class PrivateAllIrsHandler(PrivateHandlerBase):
             self.send_error(404)
 
 
-class PrivateOneIrsHandler(PrivateHandlerBase):
+class PrivateOneIrsHandler(BaseHandler):
     @defer.inlineCallbacks
     def put(self, private_id, irs_uuid):
         if not (yield PrivateID.row_exists(private_id)):
             self.send_error(400, "Private ID %s does not exist" % private_id)
-
-        yield PrivateID(private_id).associate_irs(irs_uuid)
-        self.finish()
+        else:
+            yield PrivateID(private_id).associate_irs(irs_uuid)
+            self.finish()
 
     @defer.inlineCallbacks
     def delete(self, private_id, irs_uuid):
         if not (yield PrivateID.row_exists(private_id)):
             self.send_error(400, "Private ID %s does not exist" % private_id)
+        else:
+            yield PrivateID(private_id).dissociate_irs(irs_uuid)
+            self.finish()
 
-        yield PrivateID(private_id).dissociate_irs(irs_uuid)
-        self.finish()
 
-
-class PrivateAllPublicIdsHandler(PrivateHandlerBase):
+class PrivateAllPublicIdsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:

@@ -52,6 +52,7 @@ class CacheApiHandler(BaseHandler):
         else:
             self.finish(retval)
 
+    @staticmethod
     def sequential_getter(*funcs):
         @defer.inlineCallbacks
         def getter(*pos_args, **kwd_args):
