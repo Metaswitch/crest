@@ -46,7 +46,7 @@ def create_tables(logger):
             print "  "+s
 
     # Now execute the statements in the correct keyspace.
-    for keyspace, statements in create_statements:
+    for keyspace, statements in create_statements.items():
         c = connection.cursor(keyspace)
 
         for s in statements:
