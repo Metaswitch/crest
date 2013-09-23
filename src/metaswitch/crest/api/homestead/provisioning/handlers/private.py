@@ -96,21 +96,20 @@ class PrivateOneIrsHandler(BaseHandler):
     @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def put(self, private_id, irs_uuid):
-        if not (yield PrivateID.row_exists(private_id)):
-            self.send_error(400, "Private ID %s does not exist" % private_id)
-        else:
+        try:
             yield PrivateID(private_id).associate_irs(irs_uuid)
             self.finish()
+        except NotFoundException:
+            self.error(404)
 
     @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def delete(self, private_id, irs_uuid):
-        if not (yield PrivateID.row_exists(private_id)):
-            self.send_error(400, "Private ID %s does not exist" % private_id)
-        else:
+        try:
             yield PrivateID(private_id).dissociate_irs(irs_uuid)
             self.finish()
-
+        except NotFoundException:
+            self.send_error(404)
 
 class PrivateAllPublicIdsHandler(BaseHandler):
     @defer.inlineCallbacks

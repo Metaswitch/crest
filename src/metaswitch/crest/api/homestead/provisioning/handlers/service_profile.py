@@ -39,18 +39,20 @@ from metaswitch.crest.api._base import BaseHandler
 
 JSON_PUBLIC_IDS = "public_ids"
 
-def check_hierarchy(func):
-    """Decorator that check that the Service Profile is a child of the Implicit
-    Registration Set, and (if supplied) the Public ID is a child of the profile.
+def verify_relationships(func):
+    """Decorator that verifies that:
+    -  Any supplied Service Profile is a child of the IRS.
+    -  Any supplied public ID is a child of the Service Profile.
     """
     @defer.inlineCallbacks
-    def wrapper(handler, irs_uuid, sp_uuid, public_id=None):
-
+    def wrapper(handler, irs_uuid, sp_uuid=None, public_id=None):
         try:
-            parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
-            if irs_uuid != parent_irs_uuid:
-                handler.send_error(403, "Service Profile not a child of IRS")
-                defer.returnValue(None)
+            if sp_uuid:
+                parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
+                if irs_uuid != parent_irs_uuid:
+                    handler.send_error(
+                                      403, "Service Profile not a child of IRS")
+                    defer.returnValue(None)
 
             if public_id:
                 parent_sp_uuid = yield PublicID(public_id).get_sp()
@@ -70,6 +72,7 @@ def check_hierarchy(func):
 
 class AllServiceProfilesHandler(BaseHandler):
     @BaseHandler.requires_empty_body
+    @verify_relationships
     @defer.inlineCallbacks
     def post(self, irs_uuid):
         sp_uuid = yield ServiceProfile.create()
@@ -81,7 +84,7 @@ class AllServiceProfilesHandler(BaseHandler):
 
 class ServiceProfileHandler(BaseHandler):
     @BaseHandler.requires_empty_body
-    @check_hierarchy
+    @verify_relationships
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid):
         yield ServiceProfile(sp_uuid).delete()
@@ -89,15 +92,18 @@ class ServiceProfileHandler(BaseHandler):
 
 
 class SPAllPublicIDsHandler(BaseHandler):
-    @check_hierarchy
+    @verify_relationships
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
-        public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
-        self.send_json({JSON_PUBLIC_IDS: public_ids})
+        try:
+            public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
+            self.send_json({JSON_PUBLIC_IDS: public_ids})
+        except NotFoundException:
+            self.send_error(404)
 
 
 class SPPublicIDHandler(BaseHandler):
-    @check_hierarchy
+    @verify_relationships
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid, public_id):
         try:
@@ -112,7 +118,7 @@ class SPPublicIDHandler(BaseHandler):
         except:
             self.send_error(400, "Badly formed XML")
 
-    @check_hierarchy
+    @verify_relationships
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid, public_id):
         PublicID(public_id).delete()
@@ -120,7 +126,7 @@ class SPPublicIDHandler(BaseHandler):
 
 
 class SPFilterCriteriaHandler(BaseHandler):
-    @check_hierarchy
+    @verify_relationships
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         try:
@@ -130,7 +136,7 @@ class SPFilterCriteriaHandler(BaseHandler):
         except NotFoundException:
             self.send_error(404)
 
-    @check_hierarchy
+    @verify_relationships
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid):
         xml_body = self.request.body

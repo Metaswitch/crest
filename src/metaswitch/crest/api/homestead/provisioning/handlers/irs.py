@@ -82,22 +82,21 @@ class IRSPrivateIDHandler(BaseHandler):
     @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def put(self, irs_uuid, private_id):
-        if not (yield IRS.row_exists(irs_uuid)):
-            self.send_error(400, "Implcit registration set does not exist")
-        else:
+        try:
             # Associating the IRS with the private ID also does the reciprocal
             # association.
             yield PrivateID(private_id).associate_irs(irs_uuid)
             self.finish()
+        except NotFoundException:
+            self.send_error(404)
 
     @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def delete(self, irs_uuid, private_id):
-        if not (yield IRS.row_exists(irs_uuid)):
-            self.send_error(400, "Implcit registration set does not exist")
-        else:
+        try:
             # Dissociating the IRS with the private ID also does the reciprocal
-            # dissociation.
+            # association.
             yield PrivateID(private_id).dissociate_irs(irs_uuid)
             self.finish()
-
+        except NotFoundException:
+            self.send_error(404)
