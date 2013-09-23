@@ -39,11 +39,9 @@ import logging
 from diameter import stack
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
-from xml.etree import ElementTree
 
 from metaswitch.crest import settings
-from metaswitch.crest.api.homestead.backends.backend import Backend
-from metaswitch.crest.api.homestead.backends.hss.io import HSSPeerIO
+from .io import HSSPeerIO
 
 _log = logging.getLogger("crest.api.homestead.hss")
 
@@ -58,65 +56,6 @@ class HSSNotEnabled(Exception):
 class HSSNotFound(Exception):
     """Exception to throw if a request cannot be completed because a resource is not found"""
     pass
-
-
-class HSSBackend(Backend):
-    """
-    A backend that gets it's data from a real HSS.
-
-    This class is responsible for querying the HSS and updating the cache with
-    the returned results.  The actual communication with the HSS is handled by
-    the HSSGateway class.
-    """
-
-    def __init__(self, cache):
-        self._cache = cache
-        self._hss_gateway = HSSGateway()
-
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
-        if not public_id:
-            # We can't query the HSS without a public ID.
-            _log.info("Cannot get digest for private ID '%s' " % private_id +
-                      "as no public ID has been supplied")
-            defer.returnValue(None)
-        else:
-            digest = yield self._hss_gateway.get_digest(private_id,
-                                                        public_id)
-            if digest:
-                timestamp = self._cache.generate_timestamp()
-                yield self._cache.put_digest(private_id,
-                                             digest,
-                                             timestamp)
-                yield self._cache.put_associated_public_id(private_id,
-                                                           public_id,
-                                                           timestamp)
-            defer.returnValue(digest)
-
-    @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id=None):
-        if not private_id:
-            if public_id.startswith("sip:"):
-                _log.debug("Build private ID from public ID: " + public_id)
-                private_id = public_id[len("sip:"):]
-            else:
-                _log.info("Unable to determine private ID from public ID: " +
-                          public_id)
-                defer.returnValue(None)
-
-        # Note that _get_ims_subscription_ on the gateway has the public and
-        # private IDs in a different order from this method.
-        ims_subscription = yield self._hss_gateway.get_ims_subscription(
-                                                                     private_id,
-                                                                     public_id)
-        if ims_subscription:
-            timestamp = self._cache.generate_timestamp()
-            yield self._cache.put_ims_subscription(public_id,
-                                                   ims_subscription,
-                                                   timestamp)
-
-        defer.returnValue(ims_subscription)
-
 
 class HSSGateway(stack.ApplicationListener):
     """

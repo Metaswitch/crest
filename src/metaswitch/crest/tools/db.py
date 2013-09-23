@@ -40,7 +40,7 @@ def create_tables(logger):
     create_statements = get_create_statements()
 
     # Print out the statements we will execute.
-    for keyspace, statements in create_statements:
+    for keyspace, statements in create_statements.items():
         print keyspace+":"
         for s in statements:
             print "  "+s
