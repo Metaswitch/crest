@@ -44,11 +44,12 @@ from .backends.provisioning import ProvisioningBackend
 from .cache.handlers import DigestHandler, IMSSubscriptionHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 
-from .cache.db import IMPI, IMPU
+from .cache.db import IMPI, IMPU, CacheModel
 from .provisioning.models.private_id import PrivateID
 from .provisioning.models.irs import IRS
 from .provisioning.models.service_profile import ServiceProfile
 from .provisioning.models.public_id import PublicID
+from .provisioning.models.db import ProvisioningModel
 
 # Routes for application. Each route consists of:
 # - The actual route regex, with capture groups for parameters that will be
