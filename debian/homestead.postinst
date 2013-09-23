@@ -80,13 +80,16 @@ case "$1" in
         echo Connecting to Cassandra on localhost...
         if echo "describe KEYSPACE homestead;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homestead"
         then
+            # TODO work out how upgrade works when moving to the new database
+            # schema.
             echo "Homestead database already exists in Cassandra - ensure that all tables exist"
             cd $HOMESTEAD_DIR
             $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/upgrade_homestead_db.py
             cd -
         else
             echo "Initializing homestead Cassandra database"
-            echo "CREATE KEYSPACE homestead WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
+            echo "CREATE KEYSPACE homestead_cache WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
+            echo "CREATE KEYSPACE homestead_provisioning WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
             cd $HOMESTEAD_DIR
             $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/create_db.py
             cd -
