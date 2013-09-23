@@ -33,6 +33,8 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
+import json
+
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler

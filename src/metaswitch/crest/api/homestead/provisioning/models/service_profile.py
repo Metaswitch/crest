@@ -63,7 +63,8 @@ class ServiceProfile(ProvisioningModel):
     def create(self, irs_uuid):
         sp_uuid = uuid.uuid4()
         IRS(irs_uuid).associate_service_profile(sp_uuid)
-        ServiceProfile(sp_uuid).modify_rows({CREATED: True, IRS_COLUMN: irs_uuid})
+        ServiceProfile(sp_uuid).modify_columns(
+                                          {CREATED: True, IRS_COLUMN: irs_uuid})
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
@@ -112,4 +113,3 @@ class ServiceProfile(ProvisioningModel):
     def rebuild(self):
         irs_uuid = yield self.get_irs()
         yield IRS(irs_uuid).rebuild()
-
