@@ -37,28 +37,22 @@ from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 
+JSON_PUBLIC_IDS = "public_ids"
 
 class AllServiceProfilesHandler(BaseHandler):
     @defer.inlineCallbacks
     def post(self, irs_uuid):
-        if not self.request.body:
-            sp_uuid = yield ServiceProfile.create()
-            self.set_header("Location", "/irs/%s/service_profile/%s" %
+        sp_uuid = yield ServiceProfile.create()
+        self.set_header("Location", "/irs/%s/service_profile/%s" %
                                                             (irs_uuid, sp_uuid))
-            self.set_status(201)
-            self.finish()
-        else:
-            self.send_error(400, "Body is not empty")
+        self.set_status(201)
+        self.finish()
 
 
 class ServiceProfileHandler(BaseHandler):
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid):
-        try:
-            yield ServiceProfile(sp_uuid).delete()
-        except NotFoundException:
-            pass
-
+        yield ServiceProfile(sp_uuid).delete()
         self.finish()
 
 
@@ -66,7 +60,7 @@ class SPAllPublicIDsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
-        self.send_json(public_ids)
+        self.send_json({JSON_PUBLIC_IDS: public_ids})
 
 
 class SPPublicIDHandler(BaseHandler):
@@ -82,15 +76,11 @@ class SPPublicIDHandler(BaseHandler):
             else:
                 self.send_error(403, "Incorrect XML Identity")
         except:
-            self.send_error(400, "BAdly formed XML")
+            self.send_error(400, "Badly formed XML")
 
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid, public_id):
-        try:
-            PublicID(public_id).delete()
-        except NotFoundException:
-            pass
-
+        PublicID(public_id).delete()
         self.finish()
 
 

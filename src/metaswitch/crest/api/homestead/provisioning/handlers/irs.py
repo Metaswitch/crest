@@ -37,16 +37,16 @@ from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 
+JSON_PUBLIC_IDS = "public_ids"
+JSON_PRIVATE_IDS = "private_ids"
+
 class AllIRSHandler(BaseHandler):
     @defer.inlineCallbacks
     def post(self):
-        if not self.request.body:
-            irs_uuid = yield IRS.create()
-            self.set_header("Location", "/irs/%s" % irs_uuid)
-            self.set_status(201)
-            self.finish()
-        else:
-            self.send_error(400, "Body is not empty")
+        irs_uuid = yield IRS.create()
+        self.set_header("Location", "/irs/%s" % irs_uuid)
+        self.set_status(201)
+        self.finish()
 
 
 class IRSHandler(BaseHandler):
@@ -61,7 +61,7 @@ class IRSAllPublicIDsHandler(BaseHandler):
     def get(self, irs_uuid):
         try:
             ids = yield IRS(irs_uuid).get_associated_publics()
-            self.send_json(ids)
+            self.send_json({JSON_PUBLIC_IDS: ids})
         except NotFoundException:
             self.send_error(404)
 
@@ -71,7 +71,7 @@ class IRSAllPrivateIDsHandler(BaseHandler):
     def get(self, irs_uuid):
         try:
             ids = yield IRS(irs_uuid).get_associated_privates()
-            self.send_json(ids)
+            self.send_json({JSON_PRIVATE_IDS: ids})
         except NotFoundException:
             self.send_error(404)
 

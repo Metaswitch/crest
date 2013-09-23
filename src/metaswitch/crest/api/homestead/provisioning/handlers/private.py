@@ -43,7 +43,8 @@ from ..models.private_id import PrivateID
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
-
+JSON_ASSOC_IRS = "associated_implicit_registration_sets"
+JSON_ASSOC_PUBLIC_IDS = "associated_public_ids"
 
 class PrivateHandler(BaseHandler):
     @defer.inlineCallbacks
@@ -85,7 +86,7 @@ class PrivateAllIrsHandler(BaseHandler):
     def get(self, private_id):
         try:
             irses = PrivateID(private_id).get_irses()
-            self.send_json(irses)
+            self.send_json({JSON_ASSOC_IRS: irses})
 
         except NotFoundException:
             self.send_error(404)
@@ -114,6 +115,6 @@ class PrivateAllPublicIdsHandler(BaseHandler):
     def get(self, private_id):
         try:
             public_ids = PrivateID(private_id).get_public_ids()
-            self.send_json(public_ids)
+            self.send_json({JSON_ASSOC_PUBLIC_IDS: public_ids})
         except NotFoundException:
             self.send_error(404)

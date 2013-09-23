@@ -37,6 +37,7 @@ from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 
+JSON_PRIVATE_IDS = "private_ids"
 
 class PublicIDServiceProfileHandler(BaseHandler):
     @defer.inlineCallbacks
@@ -73,7 +74,7 @@ class PublicIDPrivateIDHandler(BaseHandler):
     def get(self, public_id):
         try:
             private_ids = yield PublicID(public_id).get_private_ids()
-            self.send_json(private_ids)
+            self.send_json({JSON_PRIVATE_IDS: private_ids})
 
         except NotFoundException:
             self.send_error(404)
