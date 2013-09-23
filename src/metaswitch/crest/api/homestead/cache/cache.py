@@ -33,6 +33,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
+import time
 
 from twisted.internet import defer
 from .db import IMPI, IMPU

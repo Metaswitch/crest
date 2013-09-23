@@ -53,7 +53,7 @@ class IRS(ProvisioningModel):
 
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
-            "id uuid PRIMARY KEY" +
+            "id uuid PRIMARY KEY, " +
             CREATED+" boolean" +
         ") WITH read_repair_chance = 1.0;"
     )
