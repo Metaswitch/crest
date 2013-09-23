@@ -72,8 +72,17 @@ class SPAllPublicIDsHandler(BaseHandler):
 class SPPublicIDHandler(BaseHandler):
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid, public_id):
-        # TODO
-        pass
+        try:
+            xml = self.request.body
+            xml_root = ET.from_string(xml)
+            xml_public_id = xml_root.find("Identity").text
+
+            if public_id == xml_public_id:
+                yield PublicID(public_id).put_publicidentity(xml)
+            else:
+                self.send_error(403, "Incorrect XML Identity")
+        except:
+            self.send_error(400, "BAdly formed XML")
 
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid, public_id):

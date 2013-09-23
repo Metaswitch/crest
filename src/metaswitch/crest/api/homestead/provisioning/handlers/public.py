@@ -1,4 +1,4 @@
-# @file public_id.py
+# @file public.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,62 +32,49 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import logging
 from twisted.internet import defer
+from telephus.cassandra.ttypes import NotFoundException
+from metaswitch.crest.api._base import BaseHandler
 
-from .db import ProvisioningModel
-from .irs import IRS
-from .service_profile import ServiceProfile
-from ... import config
 
-SERVICE_PROFILE = "service_profile"
-PUBLICIDENTITY = "publicidentity"
-
-class PublicID(ProvisioningModel):
-    """Model representing a provisioned public identity"""
-
-    cass_table = config.PUBLIC_TABLE
-
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "public_id text PRIMARY KEY, " +
-            PUBLICIDENTITY+" text, " +
-            SERVICE_PROFILE+" uuid" +
-        ") WITH read_repair_chance = 1.0;"
-    )
-
+class PublicIDServiceProfileHandler(BaseHandler):
     @defer.inlineCallbacks
-    def get_sp(self):
-        sp_uuid = yield self.get_column_value(SERVICE_PROFILE)
-        defer.returnValue(sp_uuid)
+    def get(self, public_id):
+        try:
+            pub = PublicID(public_id)
+            sp_uuid = yield pub.get_sp()
+            irs_uuid = yield pub.get_irs()
 
+            self.set_header("Location", "/irs/%s/service_profile/%s" %
+                                                            (irs_uuid, sp_uuid))
+            self.set_status(303)
+            self.finish()
+
+        except NotFoundException:
+            self.send_error(404)
+
+
+class PublicIDIRSHandler(BaseHandler):
     @defer.inlineCallbacks
-    def get_publicidentity(self):
-        xml = yield self.get_column_value(PUBLICIDENTITY)
-        defer.returnValue(xml)
+    def get(self, public_id):
+        try:
+            irs_uuid = yield PublicID(public_id).get_irs()
+            self.set_header("Location", "/irs/%s" % irs_uuid)
+            self.set_status(303)
+            self.finish()
 
+        except NotFoundException:
+            self.send_error(404)
+
+
+class PublicIDPrivateHandler(BaseHandler):
     @defer.inlineCallbacks
-    def get_irs(self):
-        sp_uuid = yield self.get_sp()
-        irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
-        defer.returnValue(irs_uuid)
+    def get(self, public_id):
+        try:
+            private_ids = yield PublicID(public_id).get_private_ids()
+            self.send_json(private_ids)
 
-    @defer.inlineCallbacks
-    def get_private_ids(self):
-        irs_uuid = yield self.get_irs()
-        private_ids = yield IRS(irs_uuid).get_private_ids()
-        defer.returnValue(private_ids)
+        except NotFoundException:
+            self.send_error(404)
 
-    @defer.inlineCallbacks
-    def put_publicidentity(self, xml):
-        yield self.modify_columns({PUBLICIDENTITY: xml})
-
-    @defer.inlineCallbacks
-    def delete(self):
-        irs_uuid = yield self.get_irs()
-        sp_uuid = yield self.get_sp()
-
-        yield ServiceProfile(sp_uuid).dissociate_public_id(self.row_key)
-        yield self.delete_row()
-        yield self._cache.delete_public_id(self.row_key)
-
-        yield IRS(irs_uuid).rebuild()
