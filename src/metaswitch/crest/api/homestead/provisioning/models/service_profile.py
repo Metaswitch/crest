@@ -85,6 +85,7 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def associate_public_id(self, public_id):
+        yield self.assert_row_exists()
         yield self.modify_columns({PUBLIC_ID_COLUMN_PREFIX + public_id: None})
         yield self.rebuild()
 
@@ -95,6 +96,7 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def update_ifc(self, ifc):
+        yield self.assert_row_exists()
         yield self.modify_columns({IFC_COLUMN: ifc})
         yield self.rebuild()
 

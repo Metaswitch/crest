@@ -298,9 +298,20 @@ class BaseHandler(cyclone.web.RequestHandler):
         This is required for types that cyclone does not automatically convert
         to json (such as Lists).
         """
-        self.write(str(obj))
+        self.write(json.dumps(obj))
         self.set_header("Content-Type", "application/json")
         self.finish()
+
+    @staticmethod
+    def requires_empty_body(func):
+        """Decorator that returns a 400 error if an HTTP request does not have
+        an empty body"""
+        def wrapper(handler, *pos_args, **kwd_args):
+            if not handler.request.body:
+                handler.send_error(400, "Body not empty")
+            else:
+                return func(handler, *pos_args, **kwd_args)
+        return wrapper
 
 class UnknownApiHandler(BaseHandler):
     """

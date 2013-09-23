@@ -85,6 +85,7 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def associate_private_id(self, private_id):
+        yield self.assert_row_exists()
         yield self.modify_columns({ASSOC_PRIVATE_PREFIX + private_id: None})
 
     @defer.inlineCallbacks
@@ -93,6 +94,7 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def associate_service_profile(self, sp_uuid):
+        yield self.assert_row_exists()
         yield self.modify_columns({ASSOC_PRIVATE_PREFIX + str(sp_uuid): None})
         yield self.rebuild()
 

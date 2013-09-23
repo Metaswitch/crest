@@ -39,7 +39,37 @@ from metaswitch.crest.api._base import BaseHandler
 
 JSON_PUBLIC_IDS = "public_ids"
 
+def check_hierarchy(func):
+    """Decorator that check that the Service Profile is a child of the Implicit
+    Registration Set, and (if supplied) the Public ID is a child of the profile.
+    """
+    @defer.inlineCallbacks
+    def wrapper(handler, irs_uuid, sp_uuid, public_id=None):
+
+        try:
+            parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
+            if irs_uuid != parent_irs_uuid:
+                handler.send_error(403, "Service Profile not a child of IRS")
+                defer.returnValue(None)
+
+            if public_id:
+                parent_sp_uuid = yield PublicID(public_id).get_sp()
+                if sp_uuid != parent_sp_uuid:
+                    handler.send_error(
+                                403, "Public ID not a child of Service Profile")
+                    defer.returnValue(None)
+
+            retval = func(handler, *pos_args, **kwd_args)
+            defer.returnValue(retval)
+
+        except NotFoundException:
+            send_error(404)
+
+    return wrapper
+
+
 class AllServiceProfilesHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def post(self, irs_uuid):
         sp_uuid = yield ServiceProfile.create()
@@ -50,6 +80,8 @@ class AllServiceProfilesHandler(BaseHandler):
 
 
 class ServiceProfileHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
+    @check_hierarchy
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid):
         yield ServiceProfile(sp_uuid).delete()
@@ -57,6 +89,7 @@ class ServiceProfileHandler(BaseHandler):
 
 
 class SPAllPublicIDsHandler(BaseHandler):
+    @check_hierarchy
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
@@ -64,6 +97,7 @@ class SPAllPublicIDsHandler(BaseHandler):
 
 
 class SPPublicIDHandler(BaseHandler):
+    @check_hierarchy
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid, public_id):
         try:
@@ -78,6 +112,7 @@ class SPPublicIDHandler(BaseHandler):
         except:
             self.send_error(400, "Badly formed XML")
 
+    @check_hierarchy
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid, public_id):
         PublicID(public_id).delete()
@@ -85,6 +120,7 @@ class SPPublicIDHandler(BaseHandler):
 
 
 class SPFilterCriteriaHandler(BaseHandler):
+    @check_hierarchy
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         try:
@@ -94,6 +130,7 @@ class SPFilterCriteriaHandler(BaseHandler):
         except NotFoundException:
             self.send_error(404)
 
+    @check_hierarchy
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid):
         xml_body = self.request.body

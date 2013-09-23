@@ -93,6 +93,7 @@ class PrivateAllIrsHandler(BaseHandler):
 
 
 class PrivateOneIrsHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def put(self, private_id, irs_uuid):
         if not (yield PrivateID.row_exists(private_id)):
@@ -101,6 +102,7 @@ class PrivateOneIrsHandler(BaseHandler):
             yield PrivateID(private_id).associate_irs(irs_uuid)
             self.finish()
 
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def delete(self, private_id, irs_uuid):
         if not (yield PrivateID.row_exists(private_id)):

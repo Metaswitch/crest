@@ -32,6 +32,8 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+from twisted.internet import defer
+
 from ... import config
 from ...cassandra import CassandraModel
 
@@ -42,3 +44,9 @@ class ProvisioningModel(CassandraModel):
     def register_cache(cls, cache):
         cls._cache = cache
 
+    @defer.inlineCallbacks
+    def assert_row_exists(self):
+        """Checks if the row exists and if not raise NotFoundException"""
+
+        # To check if the row exists, simply try to read all it's columns.
+        yield self.get_columns()

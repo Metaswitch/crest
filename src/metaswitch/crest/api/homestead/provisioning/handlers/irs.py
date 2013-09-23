@@ -41,6 +41,7 @@ JSON_PUBLIC_IDS = "public_ids"
 JSON_PRIVATE_IDS = "private_ids"
 
 class AllIRSHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def post(self):
         irs_uuid = yield IRS.create()
@@ -50,6 +51,7 @@ class AllIRSHandler(BaseHandler):
 
 
 class IRSHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def delete(self, irs_uuid):
         yield IRS(irs_uuid).delete()
@@ -77,6 +79,7 @@ class IRSAllPrivateIDsHandler(BaseHandler):
 
 
 class IRSPrivateIDHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def put(self, irs_uuid, private_id):
         if not (yield IRS.row_exists(irs_uuid)):
@@ -87,6 +90,7 @@ class IRSPrivateIDHandler(BaseHandler):
             yield PrivateID(private_id).associate_irs(irs_uuid)
             self.finish()
 
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def delete(self, irs_uuid, private_id):
         if not (yield IRS.row_exists(irs_uuid)):

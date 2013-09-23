@@ -90,6 +90,7 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def associate_irs(self, irs_uuid):
+        yield self.assert_row_exists()
         yield self.modify_columns({ASSOC_IRS_PREFIX + str(irs_uuid): None})
         yield IRS(uuid).associate_private_id(self.row_key)
         yield self.rebuild()
