@@ -5,6 +5,8 @@ DEB_COMPONENT := homer
 DEB_MAJOR_VERSION := 1.0
 DEB_NAMES := homer homestead
 
+MAX_LINE_LENGTH ?= 79
+
 # As we plan to deploy on 64 bit systems, by default target 64 bit. Disable this to attempt to build on 32 bit
 # Note we do not plan to support 32 bit going forward, so this may be removed in the future
 X86_64_ONLY=1
@@ -27,13 +29,13 @@ test: bin/python setup.py
 	bin/python setup.py test
 
 verify:
-	flake8 --ignore=E,W src/
+	flake8 --select=E10,E11,E9,F src/
 
 style:
-	flake8 --select=E,W src/
+	flake8 --select=E,W,C,N --max-line-length=${MAX_LINE_LENGTH} src/
 
 explain-style:
-	flake8 --select=E,W --show-pep8 --first src/
+	flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=${MAX_LINE_LENGTH} src/
 
 .PHONY: coverage
 coverage: bin/coverage setup.py
