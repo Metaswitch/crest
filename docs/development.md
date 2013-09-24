@@ -11,7 +11,7 @@ Get the code
 This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
 
     git config --global url."https://github.com/".insteadOf git@github.com:
-    git clone --recursive git@github.com:Metaswitch/crest.git 
+    git clone --recursive git@github.com:Metaswitch/crest.git
 
 The code consists of the `crest` repository and its submodules as
 defined in `.gitmodules`:
@@ -50,6 +50,10 @@ Pre-requisites
     ```
     sudo apt-get install libxml2-dev libxslt-dev
     ```
+
+5. Python static analysis checker
+
+    sudo pip install flake8
 
 Setting up a virtualenv
 =======================

@@ -26,6 +26,15 @@ run: bin/python setup.py
 test: bin/python setup.py
 	bin/python setup.py test
 
+verify:
+	flake8 --ignore=E,W src/
+
+style:
+	flake8 --select=E,W src/
+
+explain-style:
+	flake8 --select=E,W --show-pep8 --first src/
+
 .PHONY: coverage
 coverage: bin/coverage setup.py
 	# Explictly force use of bin/python so we load the correct python modules
