@@ -36,7 +36,7 @@ from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 
-from ..models.public import PublicID
+from ..models import PublicID
 
 JSON_PRIVATE_IDS = "private_ids"
 

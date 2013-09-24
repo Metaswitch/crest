@@ -47,11 +47,7 @@ from .provisioning.handlers.service_profile import AllServiceProfilesHandler, Se
 from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicIDIRSHandler, PublicIDPrivateIDHandler
 
 from .cache.db import IMPI, IMPU, CacheModel
-from .provisioning.models.private_id import PrivateID
-from .provisioning.models.irs import IRS
-from .provisioning.models.service_profile import ServiceProfile
-from .provisioning.models.public_id import PublicID
-from .provisioning.models.db import ProvisioningModel
+from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, ProvisioningModel
 
 # Regex that matches a uuid.
 HEX = '[a-fA-F0-9]'

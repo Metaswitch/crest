@@ -37,8 +37,7 @@ from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 import xml.etree.ElementTree as ET
 
-from ..models.public import PublicID
-from ..models.service_profile import ServiceProfile
+from ..models import PublicID, ServiceProfile
 
 JSON_PUBLIC_IDS = "public_ids"
 

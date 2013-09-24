@@ -56,7 +56,7 @@ class ProvisioningBackend(Backend):
         return d
 
     def get_digest(self, private_id, public_id):
-        return sync_return(None)
+        return self.sync_return(None)
 
     def get_ims_subscription(self, public_id, private_id):
-        return sync_return(None)
+        return self.sync_return(None)
