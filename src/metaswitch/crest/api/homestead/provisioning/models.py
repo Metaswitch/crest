@@ -57,6 +57,29 @@ class ProvisioningModel(CassandraModel):
         # To check if the row exists, simply try to read all it's columns.
         yield self.get_columns()
 
+    @staticmethod
+    def convert_uuid(this_uuid):
+        """Convert a uuid in various formats to a byte array."""
+
+        if isinstance(this_uuid, uuid.UUID):
+            # UUID has been passed as a UUID object.  Convert it to bytes.
+            return this_uuid.bytes()
+        elif isinstance(this_uuid, str):
+            # UUID has been passed as a string.  It could either be a byte
+            # array, or a string of the form 123456-1234-1234-1234-1234567890ab
+            try:
+                return uuid.UUID(this_uuid).bytes()
+            except ValueError:
+                pass
+
+            try:
+                return uuid.UUID(bytes=this_uuid).bytes()
+            except ValueError:
+                pass
+
+        # Not got a valid UUID.
+        raise ValueError("Row key must be a UUID or a byte array")
+
 
 class IRS(ProvisioningModel):
     """Model representing an implicit registration set"""
@@ -74,11 +97,14 @@ class IRS(ProvisioningModel):
         ") WITH read_repair_chance = 1.0;"
     )
 
+    def __init__(self, row_key):
+        super(ServiceProfile, self).__init__(self.convert_uuid(row_key))
+
     @classmethod
     @defer.inlineCallbacks
     def create(cls):
         irs_uuid = uuid.uuid4()
-        IRS(irs_uuid).modify_columns({cls.CREATED: True})
+        yield IRS(irs_uuid).modify_columns({cls.CREATED: True})
         defer.returnValue(irs_uuid)
 
     @defer.inlineCallbacks
@@ -340,24 +366,28 @@ class ServiceProfile(ProvisioningModel):
         "CREATE TABLE "+cass_table+" (" +
             "id uuid PRIMARY KEY, " +
             CREATED_COLUMN+" boolean, " +
-            IRS_COLUMN+" uuid, " +
+            IRS_COLUMN+" text, " +
             IFC_COLUMN+" text" +
         ") WITH read_repair_chance = 1.0;"
     )
+
+    def __init__(self, row_key):
+        super(ServiceProfile, self).__init__(self.convert_uuid(row_key))
 
     @classmethod
     @defer.inlineCallbacks
     def create(self, irs_uuid):
         sp_uuid = uuid.uuid4()
-        IRS(irs_uuid).associate_service_profile(sp_uuid)
-        ServiceProfile(sp_uuid).modify_columns(
-                                {self.CREATED_COLUMN: True, self.IRS_COLUMN: irs_uuid})
+        yield IRS(irs_uuid).associate_service_profile(sp_uuid)
+        yield ServiceProfile(sp_uuid).modify_columns(
+                                            {self.CREATED_COLUMN: True,
+                                             self.IRS_COLUMN: str(irs_uuid)})
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
     def get_public_ids(self):
         retval = yield self.get_columns_with_prefix_stripped(
-                                                        self.PUBLIC_ID_COLUMN_PREFIX)
+                                                self.PUBLIC_ID_COLUMN_PREFIX)
         defer.returnValue(retval)
 
     @defer.inlineCallbacks
@@ -373,7 +403,8 @@ class ServiceProfile(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_public_id(self, public_id):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.PUBLIC_ID_COLUMN_PREFIX + public_id: None})
+        yield self.modify_columns(
+                            {self.PUBLIC_ID_COLUMN_PREFIX + public_id: None})
         yield self.rebuild()
 
     @defer.inlineCallbacks

@@ -309,7 +309,7 @@ class BaseHandler(cyclone.web.RequestHandler):
         """Decorator that returns a 400 error if an HTTP request does not have
         an empty body"""
         def wrapper(handler, *pos_args, **kwd_args):
-            if not handler.request.body:
+            if handler.request.body:
                 handler.send_error(400, "Body not empty")
             else:
                 return func(handler, *pos_args, **kwd_args)
