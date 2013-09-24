@@ -42,7 +42,7 @@ PUBLIC_ID_PREFIX = "public_id_"
 
 
 class CacheModel(CassandraModel):
-    cass_keyspace = config.PROVISIONING_KEYSPACE
+    cass_keyspace = config.CACHE_KEYSPACE
 
 
 class IMPI(CacheModel):
