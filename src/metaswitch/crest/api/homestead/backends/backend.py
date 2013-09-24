@@ -45,8 +45,22 @@ class Backend(object):
 
     @abc.abstractmethod
     def get_digest(self, private_id, public_id):
+        """
+        Get the digest for the specified private_id (that is being used to
+        authenticate the specified public_id).
+
+        This function must return a deferred that either contains the digest or
+        None.
+        """
         pass
 
     @abc.abstractmethod
     def get_ims_subscription(self, public_id, private_id):
+        """
+        Get the IMS subscription for the specified public_id and private_id
+        pair.
+
+        This function must return a deferred that either contains the digest or
+        None.
+        """
         pass

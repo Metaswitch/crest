@@ -49,10 +49,14 @@ class ProvisioningBackend(Backend):
     def __init__(self, cache):
         self._cache = cache
 
-    @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id):
-        defer.returnValue(None)
+    @staticmethod
+    def sync_return(value):
+        d = defer.Deferred()
+        d.callback(value)
+        return d
 
-    @defer.inlineCallbacks
+    def get_digest(self, private_id, public_id):
+        return sync_return(None)
+
     def get_ims_subscription(self, public_id, private_id):
-        defer.returnValue(None)
+        return sync_return(None)
