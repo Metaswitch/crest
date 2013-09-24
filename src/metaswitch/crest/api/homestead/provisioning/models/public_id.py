@@ -42,6 +42,7 @@ from ... import config
 SERVICE_PROFILE = "service_profile"
 PUBLICIDENTITY = "publicidentity"
 
+
 class PublicID(ProvisioningModel):
     """Model representing a provisioned public identity"""
 

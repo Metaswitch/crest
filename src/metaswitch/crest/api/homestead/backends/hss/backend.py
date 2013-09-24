@@ -41,6 +41,7 @@ from .gateway import HSSGateway
 
 _log = logging.getLogger("crest.api.homestead.hss")
 
+
 class HSSBackend(Backend):
     """
     A backend that gets it's data from a real HSS.
@@ -88,8 +89,8 @@ class HSSBackend(Backend):
         # Note that _get_ims_subscription_ on the gateway has the public and
         # private IDs in a different order from this method.
         ims_subscription = yield self._hss_gateway.get_ims_subscription(
-                                                                     private_id,
-                                                                     public_id)
+                                                                    private_id,
+                                                                    public_id)
         if ims_subscription:
             timestamp = self._cache.generate_timestamp()
             yield self._cache.put_ims_subscription(public_id,

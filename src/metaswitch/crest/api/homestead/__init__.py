@@ -35,7 +35,6 @@
 import collections
 
 from .. import settings
-from . import config
 
 from .cache.cache import Cache
 from .backends.hss import HSSBackend
@@ -114,8 +113,10 @@ CREATE_STATEMENTS = collections.defaultdict(list)
 for table in TABLES:
     CREATE_STATEMENTS[table.cass_keyspace].append(table.cass_create_statement)
 
-# Module initialization
+
 def initialize(application):
+    """Module initialization"""
+
     # Create a cache and register it with the provisioning models (so they keep
     # the denormalized tables in sync with the normalized ones).
     application.cache = Cache()

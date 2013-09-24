@@ -34,8 +34,8 @@
 
 import itertools
 
+
 def flatten(list_of_lists):
     """Flatten a list of lists into a single list, e.g:
     flatten([[A, B], [C, D]]) -> [A, B, C, D] """
     return list(itertools.chain.from_iterable(list_of_lists))
-

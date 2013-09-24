@@ -37,6 +37,7 @@ import logging
 import json
 import traceback
 import httplib
+import time
 
 import msgpack
 import cyclone.web
@@ -44,11 +45,9 @@ from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 
 from metaswitch.common import utils
-from metaswitch.crest import settings
-import sys
-import time
 
 _log = logging.getLogger("crest.api")
+
 
 class LeakyBucket:
     def __init__(self, max_size, rate):
@@ -77,6 +76,7 @@ class LeakyBucket:
         self.replenish_time = replenish_time
         if self.tokens > self.max_size:
             self.tokens = self.max_size
+
 
 class LoadMonitor:
     # Number of request processed between each adjustment of the leaky bucket rate
@@ -151,6 +151,7 @@ class LoadMonitor:
 # 20 requests and initial token rate of 10 per second
 _loadmonitor = LoadMonitor(0.1, 20, 10)
 
+
 def _guess_mime_type(body):
     if (body == "null" or
         (body[0] == "{" and
@@ -162,6 +163,7 @@ def _guess_mime_type(body):
     else:
         _log.warning("Guessed MIME type of uploaded data as URL-encoded. Client should specify.")
         return "application/x-www-form-urlencoded"
+
 
 class BaseHandler(cyclone.web.RequestHandler):
     """
@@ -183,12 +185,12 @@ class BaseHandler(cyclone.web.RequestHandler):
             return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
-        latency = time.time() - self._start;
+        latency = time.time() - self._start
         _loadmonitor.request_complete(latency)
 
     def write(self, chunk):
         if (isinstance(chunk, dict) and
-            "application/x-msgpack" in self.request.headers.get("Accept", "")):
+             "application/x-msgpack" in self.request.headers.get("Accept", "")):
             _log.debug("Responding with msgpack")
             self.set_header("Content-Type", "application/x-msgpack")
             chunk = msgpack.dumps(chunk)
@@ -291,7 +293,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             data["exception"] = traceback.format_exception(*kwargs["exc_info"])
         self.finish(data)
 
-    def send_json(obj):
+    def send_json(self, obj):
         """
         Send and object as a JSON response.
 
@@ -312,6 +314,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 return func(handler, *pos_args, **kwd_args)
         return wrapper
+
 
 class UnknownApiHandler(BaseHandler):
     """

@@ -36,9 +36,6 @@
 import logging
 import os
 
-from lxml import etree
-from cyclone.web import HTTPError
-
 from metaswitch.crest.api.passthrough import PassthroughHandler
 from metaswitch.crest.api import xsd
 
@@ -48,6 +45,7 @@ SCHEMA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), SCHEMA_DI
 SCHEMA_PATH = os.path.join(SCHEMA_DIR, SCHEMA_NAME)
 
 _log = logging.getLogger("crest.api.homer")
+
 
 class SimservsHandler(PassthroughHandler):
     """

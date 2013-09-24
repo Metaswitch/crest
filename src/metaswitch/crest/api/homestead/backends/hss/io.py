@@ -36,10 +36,11 @@
 import logging
 
 from diameter import peer
-from twisted.internet import defer, endpoints, reactor
+from twisted.internet import endpoints, reactor
 from twisted.internet.protocol import Protocol, Factory
 
 _log = logging.getLogger("crest.api.homestead.hss")
+
 
 class HSSPeerIOTwisted(Protocol):
     def __init__(self, peer):
@@ -61,6 +62,7 @@ class HSSPeerIOTwisted(Protocol):
             self.in_buffer = self.in_buffer[consumed:]
             self.in_pos -= consumed
 
+
 class TwistedClientFactory(Factory):
     def __init__(self, client_peer):
         self.client_peer = client_peer
@@ -75,8 +77,8 @@ class TwistedClientFactory(Factory):
         d.addErrback(self.failure, endpoint)
 
     def failure(self, err, endpoint):
-        d = defer.Deferred()
         reactor.callLater(10, self.delayedConnect, endpoint)
+
 
 class TwistedServerFactory(Factory):
     def __init__(self, base_peer):
@@ -84,9 +86,10 @@ class TwistedServerFactory(Factory):
         self.stack = base_peer.stack
 
     def buildProtocol(self, addr):
-        client_peer = self.stack.serverV4Accept(self.server_peer, "1.1.1",11)
+        client_peer = self.stack.serverV4Accept(self.server_peer, "1.1.1", 11)
         _log.debug("New client accepted")
         return HSSPeerIOTwisted(client_peer)
+
 
 class HSSPeerIO(peer.PeerIOCallbacks):
     def __init__(self):

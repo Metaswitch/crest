@@ -88,4 +88,3 @@ class Cache(object):
     @defer.inlineCallbacks
     def delete_public_id(self, public_id, timestamp):
         yield IMPU(public_id).delete_row()
-

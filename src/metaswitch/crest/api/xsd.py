@@ -34,7 +34,6 @@
 
 
 import logging
-import os
 
 from lxml import etree
 from cyclone.web import HTTPError
@@ -42,10 +41,12 @@ from cyclone.web import HTTPError
 _log = logging.getLogger("crest.api")
 _parsers = {}
 
+
 def _validate(xml, schema_path):
     parser = _get_parser(schema_path)
-    root = etree.fromstring(xml, parser) # Will throw etree.XMLSyntaxError exception on failure
+    etree.fromstring(xml, parser)  # Will throw etree.XMLSyntaxError exception on failure
     return True
+
 
 def _get_parser(schema_path):
     if schema_path in _parsers:
@@ -54,6 +55,7 @@ def _get_parser(schema_path):
         with open(schema_path, 'r') as f:
             parser = etree.XMLParser(schema=etree.XMLSchema(etree.parse(f)))
             return _parsers.setdefault(schema_path, parser)
+
 
 def validate(schema_path):
     """

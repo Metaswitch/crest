@@ -46,12 +46,13 @@ JSON_DIGEST_HA1 = "digest_ha1"
 JSON_ASSOC_IRS = "associated_implicit_registration_sets"
 JSON_ASSOC_PUBLIC_IDS = "associated_public_ids"
 
+
 class PrivateHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
             digest_ha1 = yield PrivateID(private_id).get_digest()
-            body = {JSON_DIGEST_HA1: digest_ha1 }
+            body = {JSON_DIGEST_HA1: digest_ha1}
             self.send_json(body)
 
         except NotFoundException:
@@ -110,6 +111,7 @@ class PrivateOneIrsHandler(BaseHandler):
             self.finish()
         except NotFoundException:
             self.send_error(404)
+
 
 class PrivateAllPublicIdsHandler(BaseHandler):
     @defer.inlineCallbacks

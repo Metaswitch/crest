@@ -38,13 +38,17 @@ import uuid
 
 from twisted.internet import defer
 
-from metaswitch.crest.api import utils
-from .db import ProvisioningModel
 from ... import config
+
+from .db import ProvisioningModel
+from .private import PrivateID
+from .public import PublicID
+from .service_profile import ServiceProfile
 
 CREATED = "created"
 ASSOC_PRIVATE_PREFIX = "associated_private_"
 SERVICE_PROFILE_PREFIX = "service_profile_"
+
 
 class IRS(ProvisioningModel):
     """Model representing an implicit registration set"""
@@ -89,7 +93,7 @@ class IRS(ProvisioningModel):
         yield self.modify_columns({ASSOC_PRIVATE_PREFIX + private_id: None})
 
     @defer.inlineCallbacks
-    def dissociate_private_id(self):
+    def dissociate_private_id(self, private_id):
         yield self.delete_columns([ASSOC_PRIVATE_PREFIX + private_id])
 
     @defer.inlineCallbacks
@@ -141,7 +145,7 @@ class IRS(ProvisioningModel):
             for pub_id in public_ids:
                 pub_id_xml = yield PublicID(pub_id).get_publicidentity()
                 pub_id_xml_elem = ET.fromstring(pub_id_xml)
-                sp_elem.append(pub_id_xml_element)
+                sp_elem.append(pub_id_xml_elem)
 
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()

@@ -45,6 +45,7 @@ from metaswitch.crest.api._base import BaseHandler
 
 _log = logging.getLogger("crest.api")
 
+
 class PassthroughHandler(BaseHandler):
     """
     The passthrough handler simply takes what has been sent in from the router
@@ -71,7 +72,7 @@ class PassthroughHandler(BaseHandler):
         try:
             result = yield self.ha_get(column_family=self.table, key=row, column=self.column)
             self.finish(result.column.value)
-        except NotFoundException, e:
+        except NotFoundException:
             raise HTTPError(404)
 
     # POST is difficult to generalize as it resource-specific - so force subclasses to implement

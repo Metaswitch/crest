@@ -48,14 +48,17 @@ _log = logging.getLogger("crest.api.homestead.hss")
 DICT_NAME = "dictionary.xml"
 DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
+
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
     """Exception to throw if gateway is created without a valid HSS_IP"""
     pass
 
+
 class HSSNotFound(Exception):
     """Exception to throw if a request cannot be completed because a resource is not found"""
     pass
+
 
 class HSSGateway(stack.ApplicationListener):
     """
@@ -90,7 +93,7 @@ class HSSGateway(stack.ApplicationListener):
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id):
-        _log.debug("Getting auth for priv:%s pub:%s"  % (private_id, public_id))
+        _log.debug("Getting auth for priv:%s pub:%s" % (private_id, public_id))
         result = yield self.peer_listener.fetch_multimedia_auth(private_id,
                                                                 public_id)
         defer.returnValue(result)
@@ -133,6 +136,7 @@ class HSSAppListener(stack.ApplicationListener):
             _log.debug("Executing callbacks for pending requests %s" % hash(key))
             for deferred in self._pending_responses.pop(key):
                 deferred.callback(answer)
+
 
 class HSSPeerListener(stack.PeerListener):
     def __init__(self, app, domain, stack):

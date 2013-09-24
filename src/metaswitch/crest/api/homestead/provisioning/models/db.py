@@ -37,6 +37,7 @@ from twisted.internet import defer
 from ... import config
 from ...cassandra import CassandraModel
 
+
 class ProvisioningModel(CassandraModel):
     cass_keyspace = config.PROVISIONING_KEYSPACE
 

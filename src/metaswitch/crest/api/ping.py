@@ -32,9 +32,8 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
 from cyclone.web import RequestHandler
-import cyclone.web
+
 
 class PingHandler(RequestHandler):
     def get(self):

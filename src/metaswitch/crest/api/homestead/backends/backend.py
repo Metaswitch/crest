@@ -34,10 +34,11 @@
 
 import abc
 
+
 class Backend(object):
     """
     Abstract base class for all backends that can be used in homestead to
-    retrieve subscriber data. 
+    retrieve subscriber data.
     """
 
     __metaclass__ = abc.ABCMeta

@@ -42,6 +42,7 @@ from metaswitch.crest.api import utils
 DIGEST_HA1 = "digest_ha1"
 ASSOC_IRS_PREFIX = "associated_irs_"
 
+
 class PrivateID(ProvisioningModel):
     """Model representing a provisioned private ID"""
 
@@ -92,13 +93,13 @@ class PrivateID(ProvisioningModel):
     def associate_irs(self, irs_uuid):
         yield self.assert_row_exists()
         yield self.modify_columns({ASSOC_IRS_PREFIX + str(irs_uuid): None})
-        yield IRS(uuid).associate_private_id(self.row_key)
+        yield IRS(irs_uuid).associate_private_id(self.row_key)
         yield self.rebuild()
 
     @defer.inlineCallbacks
     def dissociate_irs(self, irs_uuid):
         yield self.delete_columns([ASSOC_IRS_PREFIX + str(irs_uuid)])
-        yield IRS(uuid).dissociate_private_id(self.row_key)
+        yield IRS(irs_uuid).dissociate_private_id(self.row_key)
         yield self.rebuild()
 
     @defer.inlineCallbacks
@@ -121,6 +122,6 @@ class PrivateID(ProvisioningModel):
         yield self._cache.delete_private_id(self.row_key, timestamp)
         yield self._cache.put_digest(digest, timestamp)
         for pub_id in public_ids:
-            yield self._cache.put_associated_public_id(private_id,
-                                                       public_id,
+            yield self._cache.put_associated_public_id(self.row_key,
+                                                       pub_id,
                                                        timestamp)

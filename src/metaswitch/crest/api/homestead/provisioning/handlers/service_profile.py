@@ -32,12 +32,16 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import logging
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
+import xml.etree.ElementTree as ET
+
+from ..models.public import PublicID
+from ..models.service_profile import ServiceProfile
 
 JSON_PUBLIC_IDS = "public_ids"
+
 
 def verify_relationships(func):
     """Decorator that verifies that:
@@ -45,13 +49,25 @@ def verify_relationships(func):
     -  Any supplied public ID is a child of the Service Profile.
     """
     @defer.inlineCallbacks
-    def wrapper(handler, irs_uuid, sp_uuid=None, public_id=None):
+    def wrapper(handler, *pos_args, **kwd_args):
         try:
+
+            # Extract arguments.  The IRS must be supplied but the service
+            # profile and public ID are optional.
+            irs_uuid = pos_args[0]
+            sp_uuid = public_id = None
+
+            try:
+                sp_uuid = pos_args[1]
+                public_id = pos_args[2]
+            except IndexError:
+                pass
+
             if sp_uuid:
                 parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
                 if irs_uuid != parent_irs_uuid:
                     handler.send_error(
-                                      403, "Service Profile not a child of IRS")
+                                403, "Service Profile not a child of IRS")
                     defer.returnValue(None)
 
             if public_id:
@@ -65,7 +81,7 @@ def verify_relationships(func):
             defer.returnValue(retval)
 
         except NotFoundException:
-            send_error(404)
+            handler.send_error(404)
 
     return wrapper
 

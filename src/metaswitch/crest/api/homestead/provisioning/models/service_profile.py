@@ -35,8 +35,12 @@
 import uuid
 from twisted.internet import defer
 
-from .db import ProvisioningModel
 from ... import config
+
+from .db import ProvisioningModel
+from .irs import IRS
+from .public import PublicID
+
 
 CREATED_COLUMN = "created"
 IRS_COLUMN = "irs"
@@ -64,7 +68,7 @@ class ServiceProfile(ProvisioningModel):
         sp_uuid = uuid.uuid4()
         IRS(irs_uuid).associate_service_profile(sp_uuid)
         ServiceProfile(sp_uuid).modify_columns(
-                                          {CREATED: True, IRS_COLUMN: irs_uuid})
+                                {CREATED_COLUMN: True, IRS_COLUMN: irs_uuid})
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
