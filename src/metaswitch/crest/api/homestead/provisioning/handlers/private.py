@@ -86,7 +86,7 @@ class PrivateAllIrsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            irses = PrivateID(private_id).get_irses()
+            irses = yield PrivateID(private_id).get_irses()
             self.send_json({JSON_ASSOC_IRS: irses})
 
         except NotFoundException:
