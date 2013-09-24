@@ -43,16 +43,7 @@ _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
 
-
-class DigestHandler(BaseHandler):
-    @defer.inlineCallbacks
-    def get(self, private_id):
-        public_id = self.get_argument("public_id", default=None)
-        retval = yield self.application.cache.get_digest(private_id,
-                                                         public_id)
-        retval = {JSON_DIGEST_HA1: retval} if retval else None
-        self.send_error_or_response(retval)
-
+class CacheApiHandler(BaseHandler):
     def send_error_or_response(self, retval):
         if retval is None:
             self.send_error(404)
@@ -61,19 +52,37 @@ class DigestHandler(BaseHandler):
         else:
             self.finish(retval)
 
+    @staticmethod
+    def sequential_getter(*funcs):
+        @defer.inlineCallbacks
+        def getter(*pos_args, **kwd_args):
+            for f in funcs:
+                retval = yield f(*pos_args, **kwd_args)
+                if retval:
+                    defer.returnValue(retval)
+        return getter
 
-class IMSSubscriptionHandler(DigestHandler):
+
+class DigestHandler(CacheApiHandler):
     @defer.inlineCallbacks
-    def get(self, public_id):
-        private_id = self.get_argument("private_id", default=None)
-        retval = yield self.application.cache.get_IMSSubscription(public_id,
-                                                                  private_id)
+    def get(self, private_id):
+        public_id = self.get_argument("public_id", default=None)
+
+        getter = self.sequential_getter(self.application.cache.get_digest,
+                                        self.application.backend.get_digest)
+        retval = yield getter(private_id, public_id)
+
+        retval = {JSON_DIGEST_HA1: retval} if retval else None
         self.send_error_or_response(retval)
 
 
-class iFCHandler(DigestHandler):
+class IMSSubscriptionHandler(CacheApiHandler):
     @defer.inlineCallbacks
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
-        retval = yield self.application.cache.get_iFC(public_id, private_id)
+
+        getter = self.sequential_getter(
+                                  self.application.cache.get_ims_subscription,
+                                  self.application.backend.get_ims_subscription)
+        retval = yield getter(public_id, private_id)
         self.send_error_or_response(retval)

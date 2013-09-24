@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file provisioning.py.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,54 +32,26 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import collections
+from twisted.internet import defer
 
-from cyclone.web import RequestHandler
-import cyclone.web
+from .backend import Backend
 
-from metaswitch.crest.api import _base
-from metaswitch.crest.api.ping import PingHandler
-from metaswitch.crest import settings
-
-# Dynamically load routes (and assoicated CREATE statements) from configured modules
-def load_module(name):
-    return __import__("metaswitch.crest.api.%s" % name,
-                      fromlist=["ROUTES", "CREATE_STATEMENTS"])
-
-def get_routes():
-    return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
-
-def get_create_statements():
+class ProvisioningBackend(Backend):
     """
-    Get all the statements for creating the necessary database tables.
+    Backend providing access to the homestead provisioning database.
 
-    Each application must define a CREATE_STATEMENTS module attribute that is a
-    dictionary mapping keyspaces to a list of statements creating tables in that
-    keyspace.  This function merges these into one dictionary.
+    When new data is provisioned the cache is automatically updated at the same
+    time (and the cached data never expires). As such all methods on this class
+    simply return None).
     """
-    statement_dict = collections.defaultdict(list)
 
-    for m in settings.INSTALLED_HANDLERS:
-        for keyspace, statements in load_module(m).CREATE_STATEMENTS.items():
-            statement_dict[keyspace] += statements
+    def __init__(self, cache):
+        self._cache = cache
 
-    return statement_dict
+    @defer.inlineCallbacks
+    def get_digest(self, private_id, public_id):
+        defer.returnValue(None)
 
-def initialize(application):
-    for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:
-        try:
-            m.initialize(application)
-        except AttributeError:
-            # No initializer for module
-            pass
-
-PATH_PREFIX = "^/"
-
-# Basic routes for application. See modules (e.g. api.homestead.__init__) for actual application routes
-ROUTES = [
-    # Liveness ping.
-    (PATH_PREFIX + r'ping/?$', PingHandler),
-
-    # JSON 404 page for API calls.
-    (PATH_PREFIX + r'.*$', _base.UnknownApiHandler),
-]
+    @defer.inlineCallbacks
+    def get_ims_subscription(self, public_id, private_id):
+        defer.returnValue(None)

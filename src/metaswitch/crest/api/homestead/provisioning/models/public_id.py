@@ -1,4 +1,4 @@
-# @file filtercriteria.py
+# @file public_id.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,46 +32,63 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
-import logging
-import httplib
-
-from cyclone.web import HTTPError
-from telephus.cassandra.ttypes import NotFoundException
 from twisted.internet import defer
 
-from metaswitch.common import utils
-from metaswitch.crest import settings
-from metaswitch.crest.api.passthrough import PassthroughHandler
-from metaswitch.crest.api.homestead.hss.gateway import HSSNotFound
+from .db import ProvisioningModel
+from .irs import IRS
+from .service_profile import ServiceProfile
+from ... import config
 
-_log = logging.getLogger("crest.api.homestead")
+SERVICE_PROFILE = "service_profile"
+PUBLICIDENTITY = "publicidentity"
 
-class FilterCriteriaHandler(PassthroughHandler):
-    """
-    Handler for Initial Filter Criteria
-    """
+class PublicID(ProvisioningModel):
+    """Model representing a provisioned public identity"""
+
+    cass_table = config.PUBLIC_TABLE
+
+    cass_create_statement = (
+        "CREATE TABLE "+cass_table+" (" +
+            "public_id text PRIMARY KEY, " +
+            PUBLICIDENTITY+" text, " +
+            SERVICE_PROFILE+" uuid" +
+        ") WITH read_repair_chance = 1.0;"
+    )
+
     @defer.inlineCallbacks
-    def get(self, public_id):
-        try:
-            result = yield self.cass.get(column_family=self.table,
-                                         key=public_id,
-                                         column=self.column)
-            ifc = result.column.value
-        except NotFoundException, e:
-            if not settings.HSS_ENABLED:
-                # No HSS
-                raise HTTPError(404)
-            # IFC not in Cassandra, attempt to fetch from HSS
-            try:
-                # TODO For now we assume to same public to private id mapping as ellis
-                private_id = utils.sip_public_id_to_private(public_id)
-                ifc = yield self.application.hss_gateway.get_ifc(private_id, public_id)
-            except HSSNotFound:
-                raise HTTPError(404)
-            # Have result from HSS, store in Cassandra
-            yield self.cass.insert(column_family=self.table,
-                                   key=public_id,
-                                   column=self.column,
-                                   value=ifc)
-        self.finish(ifc)
+    def get_sp(self):
+        sp_uuid = yield self.get_column_value(SERVICE_PROFILE)
+        defer.returnValue(sp_uuid)
+
+    @defer.inlineCallbacks
+    def get_publicidentity(self):
+        xml = yield self.get_column_value(PUBLICIDENTITY)
+        defer.returnValue(xml)
+
+    @defer.inlineCallbacks
+    def get_irs(self):
+        sp_uuid = yield self.get_sp()
+        irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
+        defer.returnValue(irs_uuid)
+
+    @defer.inlineCallbacks
+    def get_private_ids(self):
+        irs_uuid = yield self.get_irs()
+        private_ids = yield IRS(irs_uuid).get_private_ids()
+        defer.returnValue(private_ids)
+
+    @defer.inlineCallbacks
+    def put_publicidentity(self, xml):
+        yield self.modify_columns({PUBLICIDENTITY: xml})
+
+    @defer.inlineCallbacks
+    def delete(self):
+        irs_uuid = yield self.get_irs()
+        sp_uuid = yield self.get_sp()
+
+        yield ServiceProfile(sp_uuid).dissociate_public_id(self.row_key)
+        yield self.delete_row()
+        yield self._cache.delete_public_id(self.row_key,
+                                           self._cache.generate_timestamp())
+
+        yield IRS(irs_uuid).rebuild()

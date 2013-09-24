@@ -33,36 +33,59 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
+import time
 
 from twisted.internet import defer
-
-from metaswitch.crest.api.homestead import config
 from .db import IMPI, IMPU
-from metaswitch.crest.api.homestead.cassandra import CassandraModel
+
 _log = logging.getLogger("crest.api.homestead.cache")
 
 
 class Cache(object):
-    def __init__(self):
-        cass = CassandraModel("homestead_cache")
-        self.impi = IMPI(cass, config.IMPI_TABLE)
-        self.impu = IMPU(cass, config.IMPU_TABLE)
+
+    @staticmethod
+    def generate_timestamp():
+        """
+        Return a timestamp (in ms) suitable for supplying to cache updates.
+
+        Cache update operation can happen in parallel and involve writes to
+        multiple rows. This could leave the cache inconsistent (if some of the
+        database ended upwith some rows from update A and other from update B).
+
+        To alleviate this the cache user must use the same timestamp for _all_
+        related updates. This ensures the database ends up with all the rows
+        from either update A or update B (though we can't tell which), meaning
+        the cache is consistent, even if it isn't completely up-to-date.
+        """
+        return time.time() * 1000000
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
-        row = self.impi.row(private_id)
-        digest_ha1 = yield row.get_digest_ha1(public_id)
-
-        # Could query a backend if digest_ha1 is None
-
+        digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)
         defer.returnValue(digest_ha1)
 
     @defer.inlineCallbacks
-    def get_IMSSubscription(self, public_id, private_id=None):
-        xml = yield self.impu.row(public_id).get_IMSSubscriptionXML()
+    def get_ims_subscription(self, public_id, private_id=None):
+        xml = yield IMPU(public_id).get_ims_subscription()
         defer.returnValue(xml)
 
     @defer.inlineCallbacks
-    def get_iFC(self, public_id, private_id=None):
-        xml = yield self.impu.row(public_id).get_iFCXML()
-        defer.returnValue(xml)
+    def put_digest(self, private_id, digest, timestamp):
+        yield IMPI(private_id).put_digest_ha1(digest, timestamp)
+
+    @defer.inlineCallbacks
+    def put_associated_public_id(self, private_id, public_id, timestamp):
+        yield IMPI(private_id).put_associated_public_id(public_id, timestamp)
+
+    @defer.inlineCallbacks
+    def put_ims_subscription(self, public_id, xml, timestamp):
+        yield IMPU(public_id).put_ims_subscription(xml, timestamp)
+
+    @defer.inlineCallbacks
+    def delete_private_id(self, private_id, timestamp):
+        yield IMPI(private_id).delete_row()
+
+    @defer.inlineCallbacks
+    def delete_public_id(self, public_id, timestamp):
+        yield IMPU(public_id).delete_row()
+

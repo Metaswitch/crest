@@ -11,7 +11,7 @@ Get the code
 This accesses the repository over SSH on Github, and will not work unless you have a Github account and registered SSH key. If you do not have both of these, you will need to configure Git to read over HTTPS instead:
 
     git config --global url."https://github.com/".insteadOf git@github.com:
-    git clone --recursive git@github.com:Metaswitch/crest.git 
+    git clone --recursive git@github.com:Metaswitch/crest.git
 
 The code consists of the `crest` repository and its submodules as
 defined in `.gitmodules`:
@@ -36,7 +36,7 @@ Pre-requisites
 2. Lib-curl
 
     ```
-    sudo apt-get install libcurl4-gnutls-dev
+    sudo apt-get install libcurl4-openssl-dev
     ```
 
 3. Building debian packages
@@ -78,7 +78,6 @@ that could be put at the bottom of `settings.py` can be put in `local_settings.p
 For a homestead node, you'll probably need at least the following in `local_settings.py`.
 
     LOG_FILE_PREFIX = "homestead"
-    CASS_KEYSPACE = "homestead"
     INSTALLED_HANDLERS = ["homestead"]
     HTTP_PORT = 8888
     HSS_ENABLED = False
@@ -87,7 +86,6 @@ For a homestead node, you'll probably need at least the following in `local_sett
 For a homer node, you'll probably need the following instead.
 
     LOG_FILE_PREFIX = "homer"
-    CASS_KEYSPACE = "homer"
     INSTALLED_HANDLERS = ["homer"]
     HTTP_PORT = 7888
 

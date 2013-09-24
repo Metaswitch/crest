@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file public.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,54 +32,50 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import collections
+import logging
+from twisted.internet import defer
+from telephus.cassandra.ttypes import NotFoundException
+from metaswitch.crest.api._base import BaseHandler
 
-from cyclone.web import RequestHandler
-import cyclone.web
+JSON_PRIVATE_IDS = "private_ids"
 
-from metaswitch.crest.api import _base
-from metaswitch.crest.api.ping import PingHandler
-from metaswitch.crest import settings
-
-# Dynamically load routes (and assoicated CREATE statements) from configured modules
-def load_module(name):
-    return __import__("metaswitch.crest.api.%s" % name,
-                      fromlist=["ROUTES", "CREATE_STATEMENTS"])
-
-def get_routes():
-    return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
-
-def get_create_statements():
-    """
-    Get all the statements for creating the necessary database tables.
-
-    Each application must define a CREATE_STATEMENTS module attribute that is a
-    dictionary mapping keyspaces to a list of statements creating tables in that
-    keyspace.  This function merges these into one dictionary.
-    """
-    statement_dict = collections.defaultdict(list)
-
-    for m in settings.INSTALLED_HANDLERS:
-        for keyspace, statements in load_module(m).CREATE_STATEMENTS.items():
-            statement_dict[keyspace] += statements
-
-    return statement_dict
-
-def initialize(application):
-    for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:
+class PublicIDServiceProfileHandler(BaseHandler):
+    @defer.inlineCallbacks
+    def get(self, public_id):
         try:
-            m.initialize(application)
-        except AttributeError:
-            # No initializer for module
-            pass
+            pub = PublicID(public_id)
+            sp_uuid = yield pub.get_sp()
+            irs_uuid = yield pub.get_irs()
 
-PATH_PREFIX = "^/"
+            self.set_header("Location", "/irs/%s/service_profile/%s" %
+                                                            (irs_uuid, sp_uuid))
+            self.set_status(303)
+            self.finish()
 
-# Basic routes for application. See modules (e.g. api.homestead.__init__) for actual application routes
-ROUTES = [
-    # Liveness ping.
-    (PATH_PREFIX + r'ping/?$', PingHandler),
+        except NotFoundException:
+            self.send_error(404)
 
-    # JSON 404 page for API calls.
-    (PATH_PREFIX + r'.*$', _base.UnknownApiHandler),
-]
+
+class PublicIDIRSHandler(BaseHandler):
+    @defer.inlineCallbacks
+    def get(self, public_id):
+        try:
+            irs_uuid = yield PublicID(public_id).get_irs()
+            self.set_header("Location", "/irs/%s" % irs_uuid)
+            self.set_status(303)
+            self.finish()
+
+        except NotFoundException:
+            self.send_error(404)
+
+
+class PublicIDPrivateIDHandler(BaseHandler):
+    @defer.inlineCallbacks
+    def get(self, public_id):
+        try:
+            private_ids = yield PublicID(public_id).get_private_ids()
+            self.send_json({JSON_PRIVATE_IDS: private_ids})
+
+        except NotFoundException:
+            self.send_error(404)
+

@@ -1,4 +1,4 @@
-# @file handlers.py
+# @file irs.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,68 +32,71 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import logging
 from twisted.internet import defer
+from telephus.cassandra.ttypes import NotFoundException
+from metaswitch.crest.api._base import BaseHandler
 
-from .. import config
-from ..cassandra import CassandraModel, CassandraConnection
+JSON_PUBLIC_IDS = "public_ids"
+JSON_PRIVATE_IDS = "private_ids"
 
-DIGEST_HA1 = "digest_ha1"
-PUBLIC_ID_PREFIX = "public_id_"
-
-class CacheModel(CassandraModel):
-    cass_keyspace = config.PROVISIONING_KEYSPACE
-
-class IMPI(CacheModel):
-    cass_table = config.IMPI_TABLE
-
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "private_id text PRIMARY KEY, " +
-            DIGEST_HA1+" text" +
-        ") WITH read_repair_chance = 1.0;"
-    )
-
+class AllIRSHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
-    def get_digest_ha1(self, public_id):
-        query_columns = [DIGEST_HA1]
-        if public_id:
-            public_id_column = PUBLIC_ID_PREFIX+str(public_id)
-            query_columns.append(public_id_column)
+    def post(self):
+        irs_uuid = yield IRS.create()
+        self.set_header("Location", "/irs/%s" % irs_uuid)
+        self.set_status(201)
+        self.finish()
 
-        columns = yield self.get_columns(query_columns)
 
-        if (DIGEST_HA1 in columns) and \
-           (public_id is None or public_id_column in columns):
-            defer.returnValue(columns[DIGEST_HA1])
-
+class IRSHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
-    def put_digest_ha1(self, digest, timestamp=None):
-        yield self.modify_columns({DIGEST_HA1: digest}, timestamp=timestamp)
+    def delete(self, irs_uuid):
+        yield IRS(irs_uuid).delete()
+        self.finish()
 
+
+class IRSAllPublicIDsHandler(BaseHandler):
     @defer.inlineCallbacks
-    def put_associated_public_id(self, public_id, timestamp=None):
-        public_id_column = PUBLIC_ID_PREFIX + public_id
-        yield self.modify_columns({public_id_column: None}, timestamp=timestamp)
+    def get(self, irs_uuid):
+        try:
+            ids = yield IRS(irs_uuid).get_associated_publics()
+            self.send_json({JSON_PUBLIC_IDS: ids})
+        except NotFoundException:
+            self.send_error(404)
 
 
-IMS_SUBSCRIPTION = "ims_subscription_xml"
-
-class IMPU(CacheModel):
-    cass_table = config.IMPU_TABLE
-
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "public_id text PRIMARY KEY, " +
-            IMS_SUBSCRIPTION+" text" +
-        ") WITH read_repair_chance = 1.0;"
-    )
-
+class IRSAllPrivateIDsHandler(BaseHandler):
     @defer.inlineCallbacks
-    def get_ims_subscription(self):
-        retval = yield self.get_column_value(IMS_SUBSCRIPTION)
-        defer.returnValue(retval)
+    def get(self, irs_uuid):
+        try:
+            ids = yield IRS(irs_uuid).get_associated_privates()
+            self.send_json({JSON_PRIVATE_IDS: ids})
+        except NotFoundException:
+            self.send_error(404)
 
+
+class IRSPrivateIDHandler(BaseHandler):
+    @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
-    def put_ims_subscription(self, ims_subscription, timestamp=None):
-        yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription},
-                                  timestamp=timestamp)
+    def put(self, irs_uuid, private_id):
+        try:
+            # Associating the IRS with the private ID also does the reciprocal
+            # association.
+            yield PrivateID(private_id).associate_irs(irs_uuid)
+            self.finish()
+        except NotFoundException:
+            self.send_error(404)
+
+    @BaseHandler.requires_empty_body
+    @defer.inlineCallbacks
+    def delete(self, irs_uuid, private_id):
+        try:
+            # Dissociating the IRS with the private ID also does the reciprocal
+            # association.
+            yield PrivateID(private_id).dissociate_irs(irs_uuid)
+            self.finish()
+        except NotFoundException:
+            self.send_error(404)

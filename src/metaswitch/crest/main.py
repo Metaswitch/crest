@@ -61,9 +61,6 @@ def create_application():
         "debug": settings.CYCLONE_DEBUG,
     }
     application = cyclone.web.Application(api.get_routes(), **app_settings)
-    if settings.CASS_KEYSPACE and (settings.CASS_KEYSPACE != "default"):
-        application.cassandra_factory = ManagedCassandraClientFactory(settings.CASS_KEYSPACE)
-        reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, application.cassandra_factory)
 
     # Initialize all modules
     api.initialize(application)

@@ -41,28 +41,21 @@ import cql
 _log = logging.getLogger("crest.connection")
 
 thread_local = threading.local()
+thread_local.connections = {}
 
-def get():
-    return getattr(thread_local, "connection", None)
+def get_or_create(keyspace):
+    connection = thread_local.connections.get(keyspace)
 
-def get_or_create():
-    connection = get()
-    if connection == None:
+    if not connection:
         _log.info("Connecting to Cassandra on %s", settings.CASS_HOST)
         connection = cql.connect(settings.CASS_HOST,
                                  settings.CASS_PORT,
-                                 settings.CASS_KEYSPACE,
+                                 keyspace,
                                  cql_version='2.0.0')
         assert connection
-        thread_local.connection = connection
+        thread_local.connections[keyspace] = connection
     return connection
 
-def cursor(*args, **kwargs):
-    connection = get_or_create()
+def cursor(keyspace, *args, **kwargs):
+    connection = get_or_create(keyspace)
     return connection.cursor(*args, **kwargs)
-
-def cycle():
-    connection = get()
-    if connection != None:
-        thread_local.connection = None
-        connection.close()

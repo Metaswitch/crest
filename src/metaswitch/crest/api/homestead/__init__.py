@@ -32,42 +32,100 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from metaswitch.crest.api import settings
-from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, IMSSubscriptionHandler, iFCHandler
-from metaswitch.crest.api.homestead.cache.cache import Cache
-from metaswitch.crest.api.homestead import config
+import collections
 
-# TODO More precise regexes
-PRIVATE_ID = r'[^/]+'
-PUBLIC_ID = r'[^/]+'
+from .. import settings
+from . import config
+
+from .cache.cache import Cache
+from .backends.hss import HSSBackend
+from .backends.provisioning import ProvisioningBackend
+
+from .cache.handlers import DigestHandler, IMSSubscriptionHandler
+from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
+from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
+from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
+from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicIDIRSHandler, PublicIDPrivateIDHandler
+
+from .cache.db import IMPI, IMPU, CacheModel
+from .provisioning.models.private_id import PrivateID
+from .provisioning.models.irs import IRS
+from .provisioning.models.service_profile import ServiceProfile
+from .provisioning.models.public_id import PublicID
+from .provisioning.models.db import ProvisioningModel
+
+# Regex that matches a uuid.
+HEX = '[a-fA-F0-9]'
+UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
 
 # Routes for application. Each route consists of:
-# - The actual route regex, with capture groups for parameters that will be passed to the the Handler
+# - The actual route regex, with capture groups for parameters that will be
+# passed to the the Handler.
 # - The Handler to process the request.
 ROUTES = [
-    # IMPI Digest: the API for getting/updating the digest of a private ID. Can optionally validate whether a public ID is associated.
+    # IMPI Digest: the API for getting/updating the digest of a private ID. Can
+    # optionally validate whether a public ID is associated.
+    #
     # /impi/<private ID>/digest?public_id=xxx
     (r'/impi/([^/]+)/digest/?',  DigestHandler),
 
-    # IMPU: the read-only API for accessing the XMLSubscription associated with a particular public ID.
+    # IMPU: the read-only API for accessing the XMLSubscription associated with
+    # a particular public ID.
+    #
     # /impu/<public ID>?private_id=xxx
     (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
 
-    # IMPU filter criteria: the read-only API for accessing the InitialFilterCriteria associated with a particular public ID.
-    # /impu/<public ID>/service_profile/filter_criteria?private_id=xxx
-    (r'/impu/([^/]+)/service_profile/filter_criteria/?',  iFCHandler),
+    # Private ID provisioning.
+    (r'/private/([^/]+)/?', PrivateHandler),
+    (r'/private/([^/]+)/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
+    (r'/private/([^/]+)/associated_implicit_registration_sets/([^/])/?', PrivateOneIrsHandler),
+    (r'/private/([^/]+)/associated_public_ids/?', PrivateAllPublicIdsHandler),
+
+    # Implicit Registration Set provisioning.
+    (r'/irs/?', AllIRSHandler),
+    (r'/irs/'+UUID+r'/?', IRSHandler),
+    (r'/irs/'+UUID+r'/public_ids/?', IRSAllPublicIDsHandler),
+    (r'/irs/'+UUID+r'/private_ids/?', IRSAllPrivateIDsHandler),
+    (r'/irs/'+UUID+r'/private_ids/?', IRSPrivateIDHandler),
+
+    # Service profile provisionng.
+    #
+    # In the class naming scheme, "all" refers to all objects in the parent
+    # container (all service profiles in an IRS, or all public IDs in a
+    # profile).
+    (r'/irs/'+UUID+r'/service_profiles/?', AllServiceProfilesHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/?', ServiceProfileHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids?', SPAllPublicIDsHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/([^/]+)?', SPPublicIDHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/filter_criteria/?', SPFilterCriteriaHandler),
+
+    # Read-only privte ID interface.
+    (r'/public/([^/]+)/service_profile/?', PublicIDServiceProfileHandler),
+    (r'/public/([^/]+)/irs/?', PublicIDIRSHandler),
+    (r'/public/([^/]+)/service_profile/?', PublicIDPrivateIDHandler),
 ]
 
-# Initial Cassandra table creation. Whenever you add a route to the URLS above, add
-# a CQL CREATE statement below
-CREATE_IMPI = "CREATE TABLE "+config.IMPI_TABLE+" (private_id text PRIMARY KEY, digest text) WITH read_repair_chance = 1.0;"
-CREATE_IMPU = "CREATE TABLE "+config.IMPU_TABLE+" (public_id text PRIMARY KEY, IMSSubscription text, InitialFilterCriteria text) WITH read_repair_chance = 1.0;"
-CREATE_STATEMENTS = []
+# List of all the tables used by homestead.
+TABLES = [IMPI, IMPU, PrivateID, IRS, ServiceProfile, PublicID]
+
+# CREATE_STATEMENTS is a dictionary that maps keyspaces to a list of tables in
+# that keyspace. Generate this now.
+CREATE_STATEMENTS = collections.defaultdict(list)
+for table in TABLES:
+    CREATE_STATEMENTS[table.cass_keyspace].append(table.cass_create_statement)
 
 # Module initialization
 def initialize(application):
+    # Create a cache and register it with the provisioning models (so they keep
+    # the denormalized tables in sync with the normalized ones).
     application.cache = Cache()
+    ProvisioningModel.register_cache(application.cache)
+
     if settings.HSS_ENABLED:
-        application.backend = None
+        application.backend = HSSBackend(application.cache)
     else:
-        application.backend = None
+        application.backend = ProvisioningBackend(application.cache)
+
+    # Connect to the cache and provisioning databases.
+    ProvisioningModel.start_connection()
+    CacheModel.start_connection()

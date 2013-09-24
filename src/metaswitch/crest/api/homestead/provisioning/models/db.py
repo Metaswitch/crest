@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file db.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,54 +32,21 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import collections
+from twisted.internet import defer
 
-from cyclone.web import RequestHandler
-import cyclone.web
+from ... import config
+from ...cassandra import CassandraModel
 
-from metaswitch.crest.api import _base
-from metaswitch.crest.api.ping import PingHandler
-from metaswitch.crest import settings
+class ProvisioningModel(CassandraModel):
+    cass_keyspace = config.PROVISIONING_KEYSPACE
 
-# Dynamically load routes (and assoicated CREATE statements) from configured modules
-def load_module(name):
-    return __import__("metaswitch.crest.api.%s" % name,
-                      fromlist=["ROUTES", "CREATE_STATEMENTS"])
+    @classmethod
+    def register_cache(cls, cache):
+        cls._cache = cache
 
-def get_routes():
-    return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
+    @defer.inlineCallbacks
+    def assert_row_exists(self):
+        """Checks if the row exists and if not raise NotFoundException"""
 
-def get_create_statements():
-    """
-    Get all the statements for creating the necessary database tables.
-
-    Each application must define a CREATE_STATEMENTS module attribute that is a
-    dictionary mapping keyspaces to a list of statements creating tables in that
-    keyspace.  This function merges these into one dictionary.
-    """
-    statement_dict = collections.defaultdict(list)
-
-    for m in settings.INSTALLED_HANDLERS:
-        for keyspace, statements in load_module(m).CREATE_STATEMENTS.items():
-            statement_dict[keyspace] += statements
-
-    return statement_dict
-
-def initialize(application):
-    for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:
-        try:
-            m.initialize(application)
-        except AttributeError:
-            # No initializer for module
-            pass
-
-PATH_PREFIX = "^/"
-
-# Basic routes for application. See modules (e.g. api.homestead.__init__) for actual application routes
-ROUTES = [
-    # Liveness ping.
-    (PATH_PREFIX + r'ping/?$', PingHandler),
-
-    # JSON 404 page for API calls.
-    (PATH_PREFIX + r'.*$', _base.UnknownApiHandler),
-]
+        # To check if the row exists, simply try to read all it's columns.
+        yield self.get_columns()

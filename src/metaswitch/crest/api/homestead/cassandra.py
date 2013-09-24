@@ -32,6 +32,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import time
 from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
@@ -39,27 +40,25 @@ from telephus.client import CassandraClient, ConsistencyLevel
 from telephus.cassandra.ttypes import NotFoundException, UnavailableException
 
 
-class CassandraModel(object):
-    """Simple representation of a Cassandra keyspace"""
+class CassandraConnection(object):
+    """Simple representation of a connection to a Cassandra keyspace"""
     def __init__(self, keyspace):
+        self._keyspace = keyspace
+
         factory = ManagedCassandraClientFactory(keyspace)
         reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, factory)
         self.client = CassandraClient(factory)
 
 
-class CassandraCF(object):
-    """Simple representation of a Cassandra column family"""
-    def __init__(self, model, cf):
-        self.client, self.cf = model.client, cf
+class CassandraModel(object):
+    @classmethod
+    def start_connection(cls):
+        cls.cass_connection = CassandraConnection(cls.cass_keyspace)
+        cls.client = cls.cass_connection.client
 
-    def row(self, row_key):
-        return CassandraRow(self.client, self.cf, row_key)
-
-
-class CassandraRow(object):
     """Simple representation of a Cassandra row"""
-    def __init__(self, client, cf, row_key):
-        self.client, self.cf, self.row_key = client, cf, row_key
+    def __init__(self, row_key):
+        self.row_key = row_key
 
     @defer.inlineCallbacks
     def get_columns(self, columns=None):
@@ -67,18 +66,24 @@ class CassandraRow(object):
         specified). Returns the columns formatted as a dictionary.
         Does not support super columns."""
         columns = yield self.ha_get_slice(key=self.row_key,
-                                          column_family=self.cf,
+                                          column_family=self.cass_table,
                                           names=columns)
         columns_as_dictionary = {col.column.name: col.column.value
                                  for col in columns}
         defer.returnValue(columns_as_dictionary)
 
     @defer.inlineCallbacks
+    def get_column_value(self, column):
+        """Gets the value of a single named column"""
+        column_dict = yield self.get_columns([column])
+        defer.returnValue(column_dict[column])
+
+    @defer.inlineCallbacks
     def get_columns_with_prefix(self, prefix):
         """Gets all columns with the given prefix from this row.
         Returns the columns formatted as a dictionary.
         Does not support super columns."""
-        columns = yield self.ha_get(key=self.row_key, column_family=self.cf)
+        columns = yield self.ha_get(key=self.row_key, column_family=self.cass_table)
         desired_pairs = {k: v for k, v in columns if k.startswith(prefix)}
         defer.returnValue(desired_pairs)
 
@@ -94,13 +99,46 @@ class CassandraRow(object):
         defer.returnValue(new_mapping)
 
     @defer.inlineCallbacks
-    def modify_columns(self, mapping, ttl=None):
+    def modify_columns(self, mapping, ttl=None, timestamp=None):
         """Updates this row to give the columns specified by the keys of
         `mapping` their respective values."""
         yield self.client.batch_insert(key=self.row_key,
-                                       column_family=self.cf,
+                                       column_family=self.cass_table,
                                        mapping=mapping,
-                                       ttl=ttl)
+                                       ttl=ttl,
+                                       timestamp=timestamp)
+
+    @defer.inlineCallbacks
+    def delete_row(self, timestamp=None):
+        """Delete this entire row"""
+        yield self.client.remove(key=self.row_key,
+                                 column_family=self.cass_table,
+                                 timestamp=timestamp)
+
+    @defer.inlineCallbacks
+    def delete_column(self, column_name, timestamp=None):
+        """Delete a single column from the row"""
+        yield self.client.remove(key=row_key,
+                                 column_family=self.cass_table,
+                                 column=column_name,
+                                 timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def row_exists(self, row_key):
+        """
+        Returns whether a row exists with the specified key
+
+        This is determined by issuing a get on all columns and checking for
+        NotFoundException.
+        """
+        try:
+            columns = yield self.get_columns()
+            exists = True
+        except NotFoundException:
+            exists = False
+
+        defer.returnValue(exists)
 
     # After growing a cluster, Cassandra does not pro-actively populate the
     # new nodes with their data (the nodes are expected to use `nodetool

@@ -31,3 +31,7 @@
 # "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
+
+# Import the HSS backend into this module so that users of the package don't
+# need to know the package structure.
+from .backend import HSSBackend

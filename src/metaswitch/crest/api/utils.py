@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file utils.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,54 +32,10 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import collections
+import itertools
 
-from cyclone.web import RequestHandler
-import cyclone.web
+def flatten(list_of_lists):
+    """Flatten a list of lists into a single list, e.g:
+    flatten([[A, B], [C, D]]) -> [A, B, C, D] """
+    return list(itertools.chain.from_iterable(list_of_lists))
 
-from metaswitch.crest.api import _base
-from metaswitch.crest.api.ping import PingHandler
-from metaswitch.crest import settings
-
-# Dynamically load routes (and assoicated CREATE statements) from configured modules
-def load_module(name):
-    return __import__("metaswitch.crest.api.%s" % name,
-                      fromlist=["ROUTES", "CREATE_STATEMENTS"])
-
-def get_routes():
-    return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
-
-def get_create_statements():
-    """
-    Get all the statements for creating the necessary database tables.
-
-    Each application must define a CREATE_STATEMENTS module attribute that is a
-    dictionary mapping keyspaces to a list of statements creating tables in that
-    keyspace.  This function merges these into one dictionary.
-    """
-    statement_dict = collections.defaultdict(list)
-
-    for m in settings.INSTALLED_HANDLERS:
-        for keyspace, statements in load_module(m).CREATE_STATEMENTS.items():
-            statement_dict[keyspace] += statements
-
-    return statement_dict
-
-def initialize(application):
-    for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:
-        try:
-            m.initialize(application)
-        except AttributeError:
-            # No initializer for module
-            pass
-
-PATH_PREFIX = "^/"
-
-# Basic routes for application. See modules (e.g. api.homestead.__init__) for actual application routes
-ROUTES = [
-    # Liveness ping.
-    (PATH_PREFIX + r'ping/?$', PingHandler),
-
-    # JSON 404 page for API calls.
-    (PATH_PREFIX + r'.*$', _base.UnknownApiHandler),
-]
