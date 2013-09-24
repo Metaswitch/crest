@@ -98,7 +98,7 @@ class IRS(ProvisioningModel):
     )
 
     def __init__(self, row_key):
-        super(ServiceProfile, self).__init__(self.convert_uuid(row_key))
+        super(IRS, self).__init__(self.convert_uuid(row_key))
 
     @classmethod
     @defer.inlineCallbacks
