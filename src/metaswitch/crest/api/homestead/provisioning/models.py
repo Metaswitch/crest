@@ -63,17 +63,17 @@ class ProvisioningModel(CassandraModel):
 
         if isinstance(this_uuid, uuid.UUID):
             # UUID has been passed as a UUID object.  Convert it to bytes.
-            return this_uuid.bytes()
+            return this_uuid.bytes
         elif isinstance(this_uuid, str):
             # UUID has been passed as a string.  It could either be a byte
             # array, or a string of the form 123456-1234-1234-1234-1234567890ab
             try:
-                return uuid.UUID(this_uuid).bytes()
+                return uuid.UUID(this_uuid).bytes
             except ValueError:
                 pass
 
             try:
-                return uuid.UUID(bytes=this_uuid).bytes()
+                return uuid.UUID(bytes=this_uuid).bytes
             except ValueError:
                 pass
 
