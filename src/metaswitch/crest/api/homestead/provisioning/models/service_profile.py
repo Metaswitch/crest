@@ -39,7 +39,7 @@ from ... import config
 
 from .db import ProvisioningModel
 from .irs import IRS
-from .public import PublicID
+from .public_id import PublicID
 
 
 CREATED_COLUMN = "created"

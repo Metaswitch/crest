@@ -41,8 +41,8 @@ from twisted.internet import defer
 from ... import config
 
 from .db import ProvisioningModel
-from .private import PrivateID
-from .public import PublicID
+from .private_id import PrivateID
+from .public_id import PublicID
 from .service_profile import ServiceProfile
 
 CREATED = "created"
