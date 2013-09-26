@@ -188,12 +188,12 @@ class HSSPeerListener(stack.PeerListener):
             raise HSSNotFound()
 
     @defer.inlineCallbacks
-    def fetch_server_assignment(self, private_id, public_id):
+    def fetch_server_assignment(self, private_id=None, public_id):
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         public_id = str(public_id)
-        private_id = str(private_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
-        req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
+        if private_id:
+            req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(public_id))
         req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
         req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(1))
