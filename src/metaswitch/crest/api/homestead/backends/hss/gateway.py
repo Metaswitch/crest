@@ -190,7 +190,6 @@ class HSSPeerListener(stack.PeerListener):
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id=None, public_id):
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
-        public_id = str(public_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
         if private_id:
             req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
