@@ -76,16 +76,7 @@ class HSSBackend(Backend):
             defer.returnValue(digest)
 
     @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id=None):
-        if not private_id:
-            if public_id.startswith("sip:"):
-                _log.debug("Build private ID from public ID: " + public_id)
-                private_id = public_id[len("sip:"):]
-            else:
-                _log.info("Unable to determine private ID from public ID: " +
-                          public_id)
-                defer.returnValue(None)
-
+    def get_ims_subscription(self, public_id, private_id):
         # Note that _get_ims_subscription_ on the gateway has the public and
         # private IDs in a different order from this method.
         ims_subscription = yield self._hss_gateway.get_ims_subscription(
