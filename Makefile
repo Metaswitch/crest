@@ -5,7 +5,7 @@ DEB_COMPONENT := homer
 DEB_MAJOR_VERSION := 1.0
 DEB_NAMES := homer homestead
 
-MAX_LINE_LENGTH ?= 79
+MAX_LINE_LENGTH ?= 99
 
 # As we plan to deploy on 64 bit systems, by default target 64 bit. Disable this to attempt to build on 32 bit
 # Note we do not plan to support 32 bit going forward, so this may be removed in the future
