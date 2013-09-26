@@ -35,7 +35,6 @@
 import collections
 
 from .. import settings
-from . import config
 
 from .cache.cache import Cache
 from .backends.hss import HSSBackend
@@ -48,11 +47,7 @@ from .provisioning.handlers.service_profile import AllServiceProfilesHandler, Se
 from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicIDIRSHandler, PublicIDPrivateIDHandler
 
 from .cache.db import IMPI, IMPU, CacheModel
-from .provisioning.models.private_id import PrivateID
-from .provisioning.models.irs import IRS
-from .provisioning.models.service_profile import ServiceProfile
-from .provisioning.models.public_id import PublicID
-from .provisioning.models.db import ProvisioningModel
+from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, ProvisioningModel
 
 # Regex that matches a uuid.
 HEX = '[a-fA-F0-9]'
@@ -114,8 +109,10 @@ CREATE_STATEMENTS = collections.defaultdict(list)
 for table in TABLES:
     CREATE_STATEMENTS[table.cass_keyspace].append(table.cass_create_statement)
 
-# Module initialization
+
 def initialize(application):
+    """Module initialization"""
+
     # Create a cache and register it with the provisioning models (so they keep
     # the denormalized tables in sync with the normalized ones).
     application.cache = Cache()

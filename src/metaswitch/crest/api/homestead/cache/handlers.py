@@ -33,7 +33,6 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
-import json
 
 from cyclone.web import HTTPError
 from twisted.internet import defer
@@ -42,6 +41,7 @@ from metaswitch.crest.api._base import BaseHandler
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
+
 
 class CacheApiHandler(BaseHandler):
     def send_error_or_response(self, retval):
@@ -82,7 +82,7 @@ class IMSSubscriptionHandler(CacheApiHandler):
         private_id = self.get_argument("private_id", default=None)
 
         getter = self.sequential_getter(
-                                  self.application.cache.get_ims_subscription,
-                                  self.application.backend.get_ims_subscription)
+                                self.application.cache.get_ims_subscription,
+                                self.application.backend.get_ims_subscription)
         retval = yield getter(public_id, private_id)
         self.send_error_or_response(retval)

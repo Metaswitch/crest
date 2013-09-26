@@ -34,20 +34,20 @@
 
 import collections
 
-from cyclone.web import RequestHandler
-import cyclone.web
-
 from metaswitch.crest.api import _base
 from metaswitch.crest.api.ping import PingHandler
 from metaswitch.crest import settings
+
 
 # Dynamically load routes (and assoicated CREATE statements) from configured modules
 def load_module(name):
     return __import__("metaswitch.crest.api.%s" % name,
                       fromlist=["ROUTES", "CREATE_STATEMENTS"])
 
+
 def get_routes():
     return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
+
 
 def get_create_statements():
     """
@@ -64,6 +64,7 @@ def get_create_statements():
             statement_dict[keyspace] += statements
 
     return statement_dict
+
 
 def initialize(application):
     for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:

@@ -35,13 +35,15 @@
 from twisted.internet import defer
 
 from .. import config
-from ..cassandra import CassandraModel, CassandraConnection
+from ..cassandra import CassandraModel
 
 DIGEST_HA1 = "digest_ha1"
 PUBLIC_ID_PREFIX = "public_id_"
 
+
 class CacheModel(CassandraModel):
-    cass_keyspace = config.PROVISIONING_KEYSPACE
+    cass_keyspace = config.CACHE_KEYSPACE
+
 
 class IMPI(CacheModel):
     cass_table = config.IMPI_TABLE
@@ -77,6 +79,7 @@ class IMPI(CacheModel):
 
 
 IMS_SUBSCRIPTION = "ims_subscription_xml"
+
 
 class IMPU(CacheModel):
     cass_table = config.IMPU_TABLE

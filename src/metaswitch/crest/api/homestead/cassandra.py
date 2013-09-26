@@ -32,7 +32,6 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import time
 from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
@@ -83,8 +82,8 @@ class CassandraModel(object):
         """Gets all columns with the given prefix from this row.
         Returns the columns formatted as a dictionary.
         Does not support super columns."""
-        columns = yield self.ha_get(key=self.row_key, column_family=self.cass_table)
-        desired_pairs = {k: v for k, v in columns if k.startswith(prefix)}
+        columns = yield self.get_columns()
+        desired_pairs = {k: v for k, v in columns.items() if k.startswith(prefix)}
         defer.returnValue(desired_pairs)
 
     @defer.inlineCallbacks
@@ -118,7 +117,7 @@ class CassandraModel(object):
     @defer.inlineCallbacks
     def delete_column(self, column_name, timestamp=None):
         """Delete a single column from the row"""
-        yield self.client.remove(key=row_key,
+        yield self.client.remove(key=self.row_key,
                                  column_family=self.cass_table,
                                  column=column_name,
                                  timestamp=timestamp)
@@ -133,7 +132,7 @@ class CassandraModel(object):
         NotFoundException.
         """
         try:
-            columns = yield self.get_columns()
+            yield self.get_columns()
             exists = True
         except NotFoundException:
             exists = False

@@ -38,7 +38,7 @@ import json
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
-from ..models.private_id import PrivateID
+from ..models import PrivateID
 
 _log = logging.getLogger("crest.api.homestead.cache")
 
@@ -46,12 +46,13 @@ JSON_DIGEST_HA1 = "digest_ha1"
 JSON_ASSOC_IRS = "associated_implicit_registration_sets"
 JSON_ASSOC_PUBLIC_IDS = "associated_public_ids"
 
+
 class PrivateHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
             digest_ha1 = yield PrivateID(private_id).get_digest()
-            body = {JSON_DIGEST_HA1: digest_ha1 }
+            body = {JSON_DIGEST_HA1: digest_ha1}
             self.send_json(body)
 
         except NotFoundException:
@@ -85,7 +86,7 @@ class PrivateAllIrsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            irses = PrivateID(private_id).get_irses()
+            irses = yield PrivateID(private_id).get_irses()
             self.send_json({JSON_ASSOC_IRS: irses})
 
         except NotFoundException:
@@ -110,6 +111,7 @@ class PrivateOneIrsHandler(BaseHandler):
             self.finish()
         except NotFoundException:
             self.send_error(404)
+
 
 class PrivateAllPublicIdsHandler(BaseHandler):
     @defer.inlineCallbacks

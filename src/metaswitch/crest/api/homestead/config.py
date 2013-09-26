@@ -42,7 +42,6 @@ IMPU_TABLE = "impu"
 
 # Provisioning tables.
 PRIVATE_TABLE = "private"
-IRS_TABLE     = "implicit_registration_sets"
-SP_TABLE      = "service_profiles"
-PUBLIC_TABLE  = "public"
-
+IRS_TABLE = "implicit_registration_sets"
+SP_TABLE = "service_profiles"
+PUBLIC_TABLE = "public"

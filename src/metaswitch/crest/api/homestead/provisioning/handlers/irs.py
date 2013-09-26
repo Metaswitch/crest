@@ -32,13 +32,15 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import logging
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api._base import BaseHandler
 
+from ..models import PrivateID, IRS
+
 JSON_PUBLIC_IDS = "public_ids"
 JSON_PRIVATE_IDS = "private_ids"
+
 
 class AllIRSHandler(BaseHandler):
     @BaseHandler.requires_empty_body
