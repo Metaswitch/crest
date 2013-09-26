@@ -53,7 +53,7 @@ Pre-requisites
 
 5. Python static analysis checker
 
-    sudo pip install flake8
+    sudo pip install flake8 mccabe pep8-naming
 
 Setting up a virtualenv
 =======================
