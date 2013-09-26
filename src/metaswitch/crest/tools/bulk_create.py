@@ -115,70 +115,25 @@ def standalone():
                     # Generate the user-specific data
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
 
-                    public_identity_xml = "<PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity></PublicIdentity>" % public_id
-
-                    ims_subscription_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<IMSSubscription xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\">
-<PrivateID>%s</PrivateID>
-<ServiceProfile>
-%s
-%s</ServiceProfile></IMSSubscription>""" % (private_id,
-                                            public_identity_xml,
-                                            INITIAL_FILTER_CRITERIA)
-                    irs_uuid = str(uuid.uuid4())
-                    sp_uuid = str(uuid.uuid4())
+                    ims_subscription_xml = '<?xml version="1.0" encoding="UTF-8"?><IMSSubscription xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\"><PrivateID>%s</PrivateID><ServiceProfile><PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity></PublicIdentity>%s</ServiceProfile></IMSSubscription>' % (private_id, public_id, INITIAL_FILTER_CRITERIA)
+                    initial_filter_xml = '<?xml version="1.0" encoding="UTF-8"?>%s' % (INITIAL_FILTER_CRITERIA)
+                    irs_uuid = str(uuid.uuid4());
 
                     # Add the user to the optimized cassandra cache.
-                    homestead_cache_casscli_file.write(
-                        "SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
-                    homestead_cache_casscli_file.write(
-                        "SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id,
-                                                                      public_id,
-                                                                      public_id))
-                    homestead_cache_casscli_file.write(
-                        "SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (public_id,
-                                                                              ims_subscription_xml))
+                    homestead_cache_casscli_file.write("SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
+                    homestead_cache_casscli_file.write("SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id, public_id, public_id))
+                    homestead_cache_casscli_file.write("SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (public_id, ims_subscription_xml))
+                    homestead_cache_casscli_file.write("SET impu['%s']['initial_filter_criteria_xml'] = '%s';\n" % (public_id, initial_filter_xml))
 
                     # Populate the provisioning tables for the user.
-                    homestead_prov_casscli_file.write(
-                        "SET implicit_registration_sets['%s']['service_profile_%s'] = '%s';\n" % (irs_uuid,
-                                                                                                  sp_uuid,
-                                                                                                  sp_uuid))
-                    homestead_prov_casscli_file.write(
-                        "SET implicit_registration_sets['%s']['associated_private_%s'] = '%s';\n" % (irs_uuid,
-                                                                                                     private_id,
-                                                                                                     private_id))
-
-                    homestead_prov_casscli_file.write(
-                        "SET service_profiles['%s']['irs'] = '%s';\n" % (sp_uuid,
-                                                                         irs_uuid))
-                    homestead_prov_casscli_file.write(
-                        "SET service_profiles['%s']['initialfiltercriteria'] = '%s';\n" % (sp_uuid,
-                                                                                           INITIAL_FILTER_CRITERIA))
-                    homestead_prov_casscli_file.write(
-                        "SET service_profiles['%s']['public_identity_%s'] = '%s';\n" % (sp_uuid,
-                                                                                        public_id,
-                                                                                        public_id))
-
-                    homestead_prov_casscli_file.write(
-                        "SET public['%s']['publicidentity'] = '%s';\n" % (public_id,
-                                                                          public_identity_xml))
-                    homestead_prov_casscli_file.write(
-                        "SET public['%s']['service_profile'] = '%s';\n" % (public_id,
-                                                                           sp_uuid))
-
-                    homestead_prov_casscli_file.write(
-                        "SET private['%s']['digest_ha1'] = '%s';\n" % (private_id,
-                                                                       hash))
-                    homestead_prov_casscli_file.write(
-                        "SET private['%s']['associated_irs_%s'] = '%s';\n" % (private_id,
-                                                                              irs_uuid,
-                                                                              irs_uuid))
+                    homestead_prov_casscli_file.write("SET irs['%s']['ims_subscription_xml'] = '%s';\n" % (irs_uuid, ims_subscription_xml))
+                    homestead_prov_casscli_file.write("SET irs['%s']['private_id_%s'] = '%s';\n" % (irs_uuid, private_id, private_id))
+                    homestead_prov_casscli_file.write("SET public['%s']['associated_irs'] = '%s';\n" % (public_id, irs_uuid))
+                    homestead_prov_casscli_file.write("SET private['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
+                    homestead_prov_casscli_file.write("SET private['%s']['irs_uuid_%s'] = '%s';\n" % (private_id, irs_uuid, irs_uuid))
 
                     # Add the simservs document for the user to the documents table on Homer
-                    xdm_cqlsh_file.write(
-                        "INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id,
-                                                                                       SIMSERVS))
+                    xdm_cqlsh_file.write("INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id, SIMSERVS))
                 else:
                     print 'Error: row "%s" contains <4 entries - ignoring'
 
