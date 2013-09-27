@@ -109,13 +109,13 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_associated_privates(self):
-        retval = yield self.get_columns_with_prefix_stripped(self.ASSOC_PRIVATE_PREFIX)
-        defer.returnValue(retval)
+        priv_hash = yield self.get_columns_with_prefix_stripped(self.ASSOC_PRIVATE_PREFIX)
+        defer.returnValue(priv_hash.keys())
 
     @defer.inlineCallbacks
     def get_associated_service_profiles(self):
-        retval = yield self.get_columns_with_prefix_stripped(self.SERVICE_PROFILE_PREFIX)
-        defer.returnValue(retval)
+        sp_hash = yield self.get_columns_with_prefix_stripped(self.SERVICE_PROFILE_PREFIX)
+        defer.returnValue(sp_hash.keys())
 
     @defer.inlineCallbacks
     def get_associated_publics(self):
@@ -137,12 +137,12 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_service_profile(self, sp_uuid):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.ASSOC_PRIVATE_PREFIX + str(sp_uuid): None})
+        yield self.modify_columns({self.SERVICE_PROFILE_PREFIX + str(sp_uuid): None})
         yield self.rebuild()
 
     @defer.inlineCallbacks
     def dissociate_service_profile(self, sp_uuid):
-        yield self.delete_columns([self.ASSOC_PRIVATE_PREFIX + str(sp_uuid)])
+        yield self.delete_columns([self.SERVICE_PROFILE_PREFIX + str(sp_uuid)])
         yield self.rebuild()
 
     @defer.inlineCallbacks
@@ -387,9 +387,9 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_public_ids(self):
-        retval = yield self.get_columns_with_prefix_stripped(
+        pub_hash = yield self.get_columns_with_prefix_stripped(
                                                 self.PUBLIC_ID_COLUMN_PREFIX)
-        defer.returnValue(retval)
+        defer.returnValue(pub_hash.keys())
 
     @defer.inlineCallbacks
     def get_ifc(self):
