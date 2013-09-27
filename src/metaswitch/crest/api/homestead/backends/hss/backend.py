@@ -76,7 +76,7 @@ class HSSBackend(Backend):
             defer.returnValue(digest)
 
     @defer.inlineCallbacks
-    def get_ims_subscription(self, public_id, private_id):
+    def get_ims_subscription(self, public_id, private_id=None):
         # Note that _get_ims_subscription_ on the gateway has the public and
         # private IDs in a different order from this method.
         ims_subscription = yield self._hss_gateway.get_ims_subscription(

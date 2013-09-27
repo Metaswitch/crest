@@ -144,25 +144,13 @@ class TestHSSBackend(HSSBackendFixture):
 
         self.assertEquals(get_callback.call_args[0][0], "xml")
 
-    def test_get_ims_subscription_derive_priv_id(self):
+    def test_get_ims_subscription_no_priv_id(self):
         self.gateway.get_ims_subscription.return_value = defer.Deferred()
 
         get_deferred = self.backend.get_ims_subscription("sip:pub")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
 
-        self.gateway.get_ims_subscription.assert_called_once_with("pub", "sip:pub")
+        self.gateway.get_ims_subscription.assert_called_once_with(None, "sip:pub")
         self.gateway.get_ims_subscription.return_value.callback(None)
         self.assertEquals(get_callback.call_args[0][0], None)
-
-    def test_get_ims_subscription_no_derive_priv_id(self):
-        self.gateway.get_ims_subscription.return_value = defer.Deferred()
-
-        get_deferred = self.backend.get_ims_subscription("pub")
-        get_callback = mock.MagicMock()
-        get_deferred.addCallback(get_callback)
-        self.assertEquals(get_callback.call_args[0][0], None)
-
-        # We haven't queried the gateway or updated the cache.
-        self.assertFalse(self.gateway.method_calls)
-        self.assertFalse(self.cache.method_calls)
