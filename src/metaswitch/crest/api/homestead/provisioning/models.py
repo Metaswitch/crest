@@ -90,9 +90,12 @@ class IRS(ProvisioningModel):
 
     cass_table = config.IRS_TABLE
 
+    # Note that CQL requires at least one non-dynamic column (hence the use of
+    # the "dummy" column below).
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
-            "id uuid PRIMARY KEY " +
+            "id uuid PRIMARY KEY, " +
+            "dummy text"
         ") WITH read_repair_chance = 1.0;"
     )
 
