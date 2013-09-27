@@ -42,6 +42,7 @@ from .. import config
 from metaswitch.crest.api import utils
 from ..cassandra import CassandraModel
 
+NULL_COLUMN_VALUE = ""
 
 class ProvisioningModel(CassandraModel):
     cass_keyspace = config.PROVISIONING_KEYSPACE
@@ -128,7 +129,8 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_private_id(self, private_id):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.ASSOC_PRIVATE_PREFIX + private_id: None})
+        yield self.modify_columns({self.ASSOC_PRIVATE_PREFIX + private_id:
+                                                            NULL_COLUMN_VALUE})
 
     @defer.inlineCallbacks
     def dissociate_private_id(self, private_id):
@@ -137,7 +139,8 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_service_profile(self, sp_uuid):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.SERVICE_PROFILE_PREFIX + str(sp_uuid): None})
+        yield self.modify_columns({self.SERVICE_PROFILE_PREFIX + str(sp_uuid):
+                                                            NULL_COLUMN_VALUE})
         yield self.rebuild()
 
     @defer.inlineCallbacks
@@ -263,7 +266,8 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_irs(self, irs_uuid):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.ASSOC_IRS_PREFIX + str(irs_uuid): None})
+        yield self.modify_columns({self.ASSOC_IRS_PREFIX + str(irs_uuid):
+                                                            NULL_COLUMN_VALUE})
         yield IRS(irs_uuid).associate_private_id(self.row_key)
         yield self.rebuild()
 
@@ -404,8 +408,8 @@ class ServiceProfile(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_public_id(self, public_id):
         yield self.assert_row_exists()
-        yield self.modify_columns(
-                            {self.PUBLIC_ID_COLUMN_PREFIX + public_id: None})
+        yield self.modify_columns({self.PUBLIC_ID_COLUMN_PREFIX + public_id:
+                                                            NULL_COLUMN_VALUE})
         yield self.rebuild()
 
     @defer.inlineCallbacks
