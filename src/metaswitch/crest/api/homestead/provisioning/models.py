@@ -232,8 +232,9 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_irses(self):
-        irses = yield self.get_columns_with_prefix_stripped(self.ASSOC_IRS_PREFIX)
-        defer.returnValue(irses)
+        irses_hash = \
+            yield self.get_columns_with_prefix_stripped(self.ASSOC_IRS_PREFIX)
+        defer.returnValue(irses_hash.keys())
 
     @defer.inlineCallbacks
     def get_public_ids(self):

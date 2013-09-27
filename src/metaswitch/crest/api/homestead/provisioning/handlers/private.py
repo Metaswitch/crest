@@ -78,7 +78,7 @@ class PrivateHandler(BaseHandler):
 
     @defer.inlineCallbacks
     def delete(self, private_id):
-        PrivateID(private_id).delete()
+        yield PrivateID(private_id).delete()
         self.finish()
 
 
