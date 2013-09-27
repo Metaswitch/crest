@@ -73,7 +73,7 @@ ROUTES = [
     # Private ID provisioning.
     (r'/private/([^/]+)/?', PrivateHandler),
     (r'/private/([^/]+)/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
-    (r'/private/([^/]+)/associated_implicit_registration_sets/'+UUID+'/])/?', PrivateOneIrsHandler),
+    (r'/private/([^/]+)/associated_implicit_registration_sets/'+UUID+r'/])/?', PrivateOneIrsHandler),
     (r'/private/([^/]+)/associated_public_ids/?', PrivateAllPublicIdsHandler),
 
     # Implicit Registration Set provisioning.
