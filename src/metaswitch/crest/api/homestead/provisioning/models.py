@@ -85,7 +85,6 @@ class ProvisioningModel(CassandraModel):
 class IRS(ProvisioningModel):
     """Model representing an implicit registration set"""
 
-    CREATED = "created"
     ASSOC_PRIVATE_PREFIX = "associated_private_"
     SERVICE_PROFILE_PREFIX = "service_profile_"
 
@@ -93,8 +92,7 @@ class IRS(ProvisioningModel):
 
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
-            "id uuid PRIMARY KEY, " +
-            CREATED+" boolean" +
+            "id uuid PRIMARY KEY " +
         ") WITH read_repair_chance = 1.0;"
     )
 
@@ -105,7 +103,7 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def create(cls):
         irs_uuid = uuid.uuid4()
-        yield IRS(irs_uuid).modify_columns({cls.CREATED: "\x01"})
+        yield IRS(irs_uuid).touch()
         defer.returnValue(irs_uuid)
 
     @defer.inlineCallbacks
@@ -360,7 +358,6 @@ class PublicID(ProvisioningModel):
 class ServiceProfile(ProvisioningModel):
     """Model representing a provisioned service profile"""
 
-    CREATED_COLUMN = "created"
     IRS_COLUMN = "irs"
     IFC_COLUMN = "initialfiltercriteria"
     PUBLIC_ID_COLUMN_PREFIX = "public_id_"
@@ -370,7 +367,6 @@ class ServiceProfile(ProvisioningModel):
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "id uuid PRIMARY KEY, " +
-            CREATED_COLUMN+" boolean, " +
             IRS_COLUMN+" text, " +
             IFC_COLUMN+" text" +
         ") WITH read_repair_chance = 1.0;"
@@ -385,8 +381,7 @@ class ServiceProfile(ProvisioningModel):
         sp_uuid = uuid.uuid4()
         yield IRS(irs_uuid).associate_service_profile(sp_uuid)
         yield ServiceProfile(sp_uuid).modify_columns(
-                                            {self.CREATED_COLUMN: "\x01",
-                                             self.IRS_COLUMN: str(irs_uuid)})
+                                            {self.IRS_COLUMN: str(irs_uuid)})
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks

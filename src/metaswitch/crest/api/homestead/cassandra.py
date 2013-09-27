@@ -50,12 +50,19 @@ class CassandraConnection(object):
 
 
 class CassandraModel(object):
+    """Simple representation of a Cassandra row"""
+
+    # When doing a get Telephus does not distinguish between a row that doesn't
+    # exists, or a row where none of the columns matched the predicate.  It is
+    # useful to know whether a row exists or not, so we add a column that is
+    # always present and we can query to tell if this is the case.
+    EXISTS_COLUMN = "_exists"
+
     @classmethod
     def start_connection(cls):
         cls.cass_connection = CassandraConnection(cls.cass_keyspace)
         cls.client = cls.cass_connection.client
 
-    """Simple representation of a Cassandra row"""
     def __init__(self, row_key):
         self.row_key = row_key
 
@@ -64,11 +71,23 @@ class CassandraModel(object):
         """Gets the named columns from this row (or all columns if it is not
         specified). Returns the columns formatted as a dictionary.
         Does not support super columns."""
-        columns = yield self.ha_get_slice(key=self.row_key,
-                                          column_family=self.cass_table,
-                                          names=columns)
+
+        # If we've not been asked for all columns, also query the 'created'
+        # column as well (but don't modify the list that was passed in).
+        if columns:
+            columns = list(columns)
+            columns.append(self.EXISTS_COLUMN)
+
+        cass_columns = yield self.ha_get_slice(key=self.row_key,
+                                               column_family=self.cass_table,
+                                               names=columns)
+
+        # Raise NotFoundException if the row doesn't exist.
+        if not cass_columns:
+            raise NotFoundException
+
         columns_as_dictionary = {col.column.name: col.column.value
-                                 for col in columns}
+                                 for col in cass_columns}
         defer.returnValue(columns_as_dictionary)
 
     @defer.inlineCallbacks
@@ -98,9 +117,21 @@ class CassandraModel(object):
         defer.returnValue(new_mapping)
 
     @defer.inlineCallbacks
+    def touch(self):
+        """Ensure this row exists in the database, but don't change/set any
+        columns."""
+        yield self.modify_columns({})
+
+    @defer.inlineCallbacks
     def modify_columns(self, mapping, ttl=None, timestamp=None):
         """Updates this row to give the columns specified by the keys of
         `mapping` their respective values."""
+
+        # Also write the 'exists' column, but don't modify the dictionary that
+        # was passed in.
+        mapping = dict(mapping)
+        mapping[self.EXISTS_COLUMN] = ""
+
         yield self.client.batch_insert(key=self.row_key,
                                        column_family=self.cass_table,
                                        mapping=mapping,
