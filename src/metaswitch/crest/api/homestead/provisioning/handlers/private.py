@@ -101,7 +101,7 @@ class PrivateOneIrsHandler(BaseHandler):
             yield PrivateID(private_id).associate_irs(irs_uuid)
             self.finish()
         except NotFoundException:
-            self.error(404)
+            self.send_error(404)
 
     @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
