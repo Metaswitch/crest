@@ -37,6 +37,7 @@ import StringIO
 import uuid
 
 from twisted.internet import defer
+from telephus.cassandra.ttypes import NotFoundException
 
 from .. import config
 from metaswitch.crest.api import utils
@@ -79,7 +80,7 @@ class ProvisioningModel(CassandraModel):
                 pass
 
         # Not got a valid UUID.
-        raise ValueError("Row key must be a UUID or a byte array " + 
+        raise ValueError("Row key must be a UUID or a byte array " +
                          "(got %s of type %s)" % (this_uuid, type(this_uuid)))
 
 
@@ -177,18 +178,24 @@ class IRS(ProvisioningModel):
         for sp_uuid in sp_uuids:
             sp_elem = ET.SubElement(root, "ServiceProfile")
 
-            # Add the Initial Filer Criteria node for this profile.
-            ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
-            ifc_xml_elem = ET.fromstring(ifc_xml)
-            sp_elem.append(ifc_xml_elem)
+            # Add the Initial Filer Criteria node for this profile. If not
+            # present just ignore the profile entirely.
+            try:
+                ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
+                ifc_xml_elem = ET.fromstring(ifc_xml)
+                sp_elem.append(ifc_xml_elem)
 
-            # Add a PublicIdentity node for each ID in this service profile. The
-            # contents of this node are stored in the database.
-            public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
-            for pub_id in public_ids:
-                pub_id_xml = yield PublicID(pub_id).get_publicidentity()
-                pub_id_xml_elem = ET.fromstring(pub_id_xml)
-                sp_elem.append(pub_id_xml_elem)
+                # Add a PublicIdentity node for each ID in this service
+                # profile. The contents of this node are stored in the
+                # database.
+                public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
+                for pub_id in public_ids:
+                    pub_id_xml = yield PublicID(pub_id).get_publicidentity()
+                    pub_id_xml_elem = ET.fromstring(pub_id_xml)
+                    sp_elem.append(pub_id_xml_elem)
+
+            except NotFoundException:
+                pass
 
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()
@@ -383,9 +390,9 @@ class ServiceProfile(ProvisioningModel):
     @defer.inlineCallbacks
     def create(self, irs_uuid):
         sp_uuid = uuid.uuid4()
-        yield IRS(irs_uuid).associate_service_profile(sp_uuid)
         yield ServiceProfile(sp_uuid).modify_columns(
                                             {self.IRS_COLUMN: str(irs_uuid)})
+        yield IRS(irs_uuid).associate_service_profile(sp_uuid)
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks

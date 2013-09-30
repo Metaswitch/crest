@@ -88,13 +88,21 @@ class CassandraModel(object):
 
         columns_as_dictionary = {col.column.name: col.column.value
                                  for col in cass_columns}
+
+        # Don't return the internal "exists" column to the user.
+        del columns_as_dictionary[self.EXISTS_COLUMN]
+
         defer.returnValue(columns_as_dictionary)
 
     @defer.inlineCallbacks
     def get_column_value(self, column):
         """Gets the value of a single named column"""
-        column_dict = yield self.get_columns([column])
-        defer.returnValue(column_dict[column])
+
+        try:
+            column_dict = yield self.get_columns([column])
+            defer.returnValue(column_dict[column])
+        except KeyError:
+            raise NotFoundException
 
     @defer.inlineCallbacks
     def get_columns_with_prefix(self, prefix):
