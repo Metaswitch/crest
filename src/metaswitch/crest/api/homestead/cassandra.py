@@ -112,8 +112,9 @@ class CassandraModel(object):
         with the prefix stripped off the keys.
         Does not support super columns."""
         mapping = yield self.get_columns_with_prefix(prefix)
-        new_mapping = {key.lstrip(prefix): value
-                       for key, value in mapping.iteritems()}
+        new_mapping = {key[len(prefix):] : value
+                       for key, value in mapping.iteritems()
+                       if key.startswith(prefix)}
         defer.returnValue(new_mapping)
 
     @defer.inlineCallbacks
