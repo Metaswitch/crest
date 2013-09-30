@@ -79,7 +79,8 @@ class ProvisioningModel(CassandraModel):
                 pass
 
         # Not got a valid UUID.
-        raise ValueError("Row key must be a UUID or a byte array")
+        raise ValueError("Row key must be a UUID or a byte array " + 
+                         "(got %s of type %s)" % (this_uuid, type(this_uuid)))
 
 
 class IRS(ProvisioningModel):
@@ -288,7 +289,7 @@ class PrivateID(ProvisioningModel):
 
         public_ids = []
         for irs in (yield self.get_irses()):
-            for pub_id in (yield IRS(irs).get_public_ids()):
+            for pub_id in (yield IRS(irs).get_associated_publics()):
                 public_ids.append(pub_id)
 
         timestamp = self._cache.generate_timestamp()
@@ -296,7 +297,7 @@ class PrivateID(ProvisioningModel):
         # Delete the existing cache entry then write back the digest and the
         # associated public IDs.
         yield self._cache.delete_private_id(self.row_key, timestamp)
-        yield self._cache.put_digest(digest, timestamp)
+        yield self._cache.put_digest(self.row_key, digest, timestamp)
         for pub_id in public_ids:
             yield self._cache.put_associated_public_id(self.row_key,
                                                        pub_id,
