@@ -125,8 +125,9 @@ class IRS(ProvisioningModel):
     def get_associated_publics(self):
         sp_uuids = yield self.get_associated_service_profiles()
 
-        public_ids = [(yield ServiceProfile(uuid).get_public_ids())
-                                                           for uuid in sp_uuids]
+        public_ids = utils.flatten(
+			[(yield ServiceProfile(uuid).get_public_ids())
+                         for uuid in sp_uuids])
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
@@ -176,13 +177,13 @@ class IRS(ProvisioningModel):
         # Add a ServiceProfile node for each profile in this IRS.
         sp_uuids = yield self.get_associated_service_profiles()
         for sp_uuid in sp_uuids:
-            sp_elem = ET.SubElement(root, "ServiceProfile")
-
             # Add the Initial Filer Criteria node for this profile. If not
             # present just ignore the profile entirely.
             try:
                 ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
                 ifc_xml_elem = ET.fromstring(ifc_xml)
+
+                sp_elem = ET.SubElement(root, "ServiceProfile")
                 sp_elem.append(ifc_xml_elem)
 
                 # Add a PublicIdentity node for each ID in this service
