@@ -76,7 +76,7 @@ def verify_relationships(func):
                                 403, "Public ID not a child of Service Profile")
                     defer.returnValue(None)
 
-            retval = func(handler, *pos_args, **kwd_args)
+            retval = yield func(handler, *pos_args, **kwd_args)
             defer.returnValue(retval)
 
         except NotFoundException:
@@ -90,7 +90,7 @@ class AllServiceProfilesHandler(BaseHandler):
     @verify_relationships
     @defer.inlineCallbacks
     def post(self, irs_uuid):
-        sp_uuid = yield ServiceProfile.create()
+        sp_uuid = yield ServiceProfile.create(irs_uuid)
         self.set_header("Location", "/irs/%s/service_profile/%s" %
                                                             (irs_uuid, sp_uuid))
         self.set_status(201)
