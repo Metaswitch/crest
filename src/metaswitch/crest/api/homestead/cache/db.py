@@ -75,7 +75,7 @@ class IMPI(CacheModel):
     @defer.inlineCallbacks
     def put_associated_public_id(self, public_id, timestamp=None):
         public_id_column = PUBLIC_ID_PREFIX + public_id
-        yield self.modify_columns({public_id_column: None}, timestamp=timestamp)
+        yield self.modify_columns({public_id_column: ""}, timestamp=timestamp)
 
 
 IMS_SUBSCRIPTION = "ims_subscription_xml"

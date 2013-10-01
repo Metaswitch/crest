@@ -138,7 +138,7 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def dissociate_private_id(self, private_id):
-        yield self.delete_columns([self.ASSOC_PRIVATE_PREFIX + private_id])
+        yield self.delete_column(self.ASSOC_PRIVATE_PREFIX + private_id)
 
     @defer.inlineCallbacks
     def associate_service_profile(self, sp_uuid):
