@@ -37,7 +37,7 @@
 
 import logging
 
-import db
+from metaswitch.crest.tools import db
 from metaswitch.crest import logging_config
 
 _log = logging.getLogger("crest.create_db")
