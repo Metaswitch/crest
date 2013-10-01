@@ -36,6 +36,7 @@ from twisted.internet import defer
 
 from .. import config
 from ..cassandra import CassandraModel
+from telephus.cassandra.ttypes import NotFoundException
 
 DIGEST_HA1 = "digest_ha1"
 PUBLIC_ID_PREFIX = "public_id_"
@@ -57,16 +58,21 @@ class IMPI(CacheModel):
 
     @defer.inlineCallbacks
     def get_digest_ha1(self, public_id):
-        query_columns = [DIGEST_HA1]
-        if public_id:
-            public_id_column = PUBLIC_ID_PREFIX+str(public_id)
-            query_columns.append(public_id_column)
+        try:
+            query_columns = [DIGEST_HA1]
+            if public_id:
+                public_id_column = PUBLIC_ID_PREFIX+str(public_id)
+                query_columns.append(public_id_column)
 
-        columns = yield self.get_columns(query_columns)
+            columns = yield self.get_columns(query_columns)
 
-        if (DIGEST_HA1 in columns) and \
-           (public_id is None or public_id_column in columns):
-            defer.returnValue(columns[DIGEST_HA1])
+            if (DIGEST_HA1 in columns) and \
+               (public_id is None or public_id_column in columns):
+                defer.returnValue(columns[DIGEST_HA1])
+
+        except NotFoundException:
+            pass
+
 
     @defer.inlineCallbacks
     def put_digest_ha1(self, digest, timestamp=None):
@@ -93,8 +99,12 @@ class IMPU(CacheModel):
 
     @defer.inlineCallbacks
     def get_ims_subscription(self):
-        retval = yield self.get_column_value(IMS_SUBSCRIPTION)
-        defer.returnValue(retval)
+        try:
+            retval = yield self.get_column_value(IMS_SUBSCRIPTION)
+            defer.returnValue(retval)
+
+        except NotFoundException:
+            pass
 
     @defer.inlineCallbacks
     def put_ims_subscription(self, ims_subscription, timestamp=None):
