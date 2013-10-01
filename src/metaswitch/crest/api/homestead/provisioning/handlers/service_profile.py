@@ -129,7 +129,7 @@ class SPPublicIDHandler(BaseHandler):
             xml_public_id = xml_root.find("Identity").text
 
             if public_id == xml_public_id:
-                yield PublicID(public_id, sp_uuid).put_publicidentity(xml)
+                yield PublicID(public_id).put_publicidentity(xml, sp_uuid)
             else:
                 self.send_error(403, "Incorrect XML Identity")
         except ET.ParseError:

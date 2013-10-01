@@ -328,10 +328,6 @@ class PublicID(ProvisioningModel):
         ") WITH read_repair_chance = 1.0;"
     )
 
-    def __init__(self, row_key, sp_uuid):
-        self._sp_uuid = sp_uuid
-        super(ProvisioningModel, self).__init__(row_key)
-
     @defer.inlineCallbacks
     def get_sp(self):
         sp_uuid = yield self.get_column_value(self.SERVICE_PROFILE)
@@ -355,9 +351,9 @@ class PublicID(ProvisioningModel):
         defer.returnValue(private_ids)
 
     @defer.inlineCallbacks
-    def put_publicidentity(self, xml):
+    def put_publicidentity(self, xml, sp_uuid):
         yield self.modify_columns({self.PUBLICIDENTITY: xml,
-                                   self.SERVICE_PROFILE: self._sp_uuid})
+                                   self.SERVICE_PROFILE: sp_uuid})
 
     @defer.inlineCallbacks
     def delete(self):
