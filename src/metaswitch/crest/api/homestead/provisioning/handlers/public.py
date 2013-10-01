@@ -49,7 +49,7 @@ class PublicIDServiceProfileHandler(BaseHandler):
             sp_uuid = yield pub.get_sp()
             irs_uuid = yield pub.get_irs()
 
-            self.set_header("Location", "/irs/%s/service_profile/%s" %
+            self.set_header("Location", "/irs/%s/service_profiles/%s" %
                                                             (irs_uuid, sp_uuid))
             self.set_status(303)
             self.finish()

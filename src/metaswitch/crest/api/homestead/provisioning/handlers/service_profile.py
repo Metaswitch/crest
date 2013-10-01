@@ -91,7 +91,7 @@ class AllServiceProfilesHandler(BaseHandler):
     @defer.inlineCallbacks
     def post(self, irs_uuid):
         sp_uuid = yield ServiceProfile.create(irs_uuid)
-        self.set_header("Location", "/irs/%s/service_profile/%s" %
+        self.set_header("Location", "/irs/%s/service_profiles/%s" %
                                                             (irs_uuid, sp_uuid))
         self.set_status(201)
         self.finish()
