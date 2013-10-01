@@ -42,52 +42,54 @@ from ..models import PublicID, ServiceProfile
 JSON_PUBLIC_IDS = "public_ids"
 
 
-def verify_relationships(func):
-    """Decorator that verifies that:
-    -  Any supplied Service Profile is a child of the IRS.
-    -  Any supplied public ID is a child of the Service Profile.
-    """
-    @defer.inlineCallbacks
-    def wrapper(handler, *pos_args, **kwd_args):
-        try:
-
-            # Extract arguments.  The IRS must be supplied but the service
-            # profile and public ID are optional.
-            irs_uuid = pos_args[0]
-            sp_uuid = public_id = None
-
+def verify_relationships(start=None, finish=None):
+    def decorator(func):
+        """Decorator that verifies that:
+        -  Any supplied Service Profile is a child of the IRS.
+        -  Any supplied public ID is a child of the Service Profile.
+        """
+        @defer.inlineCallbacks
+        def wrapper(handler, *pos_args):
             try:
-                sp_uuid = pos_args[1]
-                public_id = pos_args[2]
-            except IndexError:
-                pass
+                # Extract arguments.  The call to verify_relationships specifies
+                # the slice of arguments to check.
+                args_to_check = pos_args[start:finish]
+                irs_uuid = sp_uuid = public_id = None
 
-            if sp_uuid:
-                parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
-                if irs_uuid != parent_irs_uuid:
-                    handler.send_error(
+                try:
+                    irs_uuid = args_to_check[0]
+                    sp_uuid = args_to_check[1]
+                    public_id = args_to_check[2]
+                except IndexError:
+                    pass
+
+                if sp_uuid:
+                    parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
+                    if irs_uuid != parent_irs_uuid:
+                        handler.send_error(
                                 403, "Service Profile not a child of IRS")
-                    defer.returnValue(None)
+                        defer.returnValue(None)
 
-            if public_id:
-                parent_sp_uuid = yield PublicID(public_id).get_sp()
-                if sp_uuid != parent_sp_uuid:
-                    handler.send_error(
+                if public_id:
+                    parent_sp_uuid = yield PublicID(public_id).get_sp()
+                    if sp_uuid != parent_sp_uuid:
+                        handler.send_error(
                                 403, "Public ID not a child of Service Profile")
-                    defer.returnValue(None)
+                        defer.returnValue(None)
 
-            retval = yield func(handler, *pos_args, **kwd_args)
-            defer.returnValue(retval)
+                retval = yield func(handler, *pos_args)
+                defer.returnValue(retval)
 
-        except NotFoundException:
-            handler.send_error(404)
+            except NotFoundException:
+                handler.send_error(404)
 
-    return wrapper
+        return wrapper
+    return decorator
 
 
 class AllServiceProfilesHandler(BaseHandler):
     @BaseHandler.requires_empty_body
-    @verify_relationships
+    @verify_relationships()
     @defer.inlineCallbacks
     def post(self, irs_uuid):
         sp_uuid = yield ServiceProfile.create(irs_uuid)
@@ -99,7 +101,7 @@ class AllServiceProfilesHandler(BaseHandler):
 
 class ServiceProfileHandler(BaseHandler):
     @BaseHandler.requires_empty_body
-    @verify_relationships
+    @verify_relationships()
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid):
         yield ServiceProfile(sp_uuid).delete()
@@ -107,7 +109,7 @@ class ServiceProfileHandler(BaseHandler):
 
 
 class SPAllPublicIDsHandler(BaseHandler):
-    @verify_relationships
+    @verify_relationships()
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         try:
@@ -118,7 +120,7 @@ class SPAllPublicIDsHandler(BaseHandler):
 
 
 class SPPublicIDHandler(BaseHandler):
-    @verify_relationships
+    @verify_relationships(finish=-1)  # The public ID need not exist already.
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid, public_id):
         try:
@@ -133,7 +135,7 @@ class SPPublicIDHandler(BaseHandler):
         except:
             self.send_error(400, "Badly formed XML")
 
-    @verify_relationships
+    @verify_relationships()
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid, public_id):
         PublicID(public_id).delete()
@@ -141,7 +143,7 @@ class SPPublicIDHandler(BaseHandler):
 
 
 class SPFilterCriteriaHandler(BaseHandler):
-    @verify_relationships
+    @verify_relationships()
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
         try:
@@ -151,7 +153,7 @@ class SPFilterCriteriaHandler(BaseHandler):
         except NotFoundException:
             self.send_error(404)
 
-    @verify_relationships
+    @verify_relationships()
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid):
         xml_body = self.request.body
