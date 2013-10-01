@@ -117,7 +117,7 @@ class PrivateAllPublicIdsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            public_ids = PrivateID(private_id).get_public_ids()
+            public_ids = yield PrivateID(private_id).get_public_ids()
             self.send_json({JSON_ASSOC_PUBLIC_IDS: public_ids})
         except NotFoundException:
             self.send_error(404)

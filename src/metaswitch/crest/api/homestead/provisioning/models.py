@@ -252,8 +252,8 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def get_public_ids(self):
         irs_uuids = yield self.get_irses()
-        public_ids = utils.flatten((yield IRS(uuid).get_public_ids())
-                                                          for uuid in irs_uuids)
+        public_ids = utils.flatten([(yield IRS(uuid).get_associated_publics())
+                                                         for uuid in irs_uuids])
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
