@@ -130,6 +130,7 @@ class SPPublicIDHandler(BaseHandler):
 
             if public_id == xml_public_id:
                 yield PublicID(public_id).put_publicidentity(xml, sp_uuid)
+                yield ServiceProfile(sp_uuid).associate_public_id(public_id)
             else:
                 self.send_error(403, "Incorrect XML Identity")
         except ET.ParseError:
