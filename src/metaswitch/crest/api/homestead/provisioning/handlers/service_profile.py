@@ -125,15 +125,15 @@ class SPPublicIDHandler(BaseHandler):
     def put(self, irs_uuid, sp_uuid, public_id):
         try:
             xml = self.request.body
-            xml_root = ET.from_string(xml)
+            xml_root = ET.fromstring(xml)
             xml_public_id = xml_root.find("Identity").text
 
             if public_id == xml_public_id:
                 yield PublicID(public_id, sp_uuid).put_publicidentity(xml)
             else:
                 self.send_error(403, "Incorrect XML Identity")
-        except:
-            self.send_error(400, "Badly formed XML")
+        except ET.ParseError:
+            self.send_error(400, "Badly formed XML: (%s)" % xml)
 
     @verify_relationships()
     @defer.inlineCallbacks
