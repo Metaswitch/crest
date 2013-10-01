@@ -324,7 +324,7 @@ class PublicID(ProvisioningModel):
         "CREATE TABLE "+cass_table+" (" +
             "public_id text PRIMARY KEY, " +
             PUBLICIDENTITY+" text, " +
-            SERVICE_PROFILE+" uuid" +
+            SERVICE_PROFILE+" text" +
         ") WITH read_repair_chance = 1.0;"
     )
 
@@ -347,7 +347,7 @@ class PublicID(ProvisioningModel):
     @defer.inlineCallbacks
     def get_private_ids(self):
         irs_uuid = yield self.get_irs()
-        private_ids = yield IRS(irs_uuid).get_private_ids()
+        private_ids = yield IRS(irs_uuid).get_associated_privates()
         defer.returnValue(private_ids)
 
     @defer.inlineCallbacks
