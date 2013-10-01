@@ -303,8 +303,9 @@ class PrivateID(ProvisioningModel):
         timestamp = self._cache.generate_timestamp()
 
         # Delete the existing cache entry then write back the digest and the
-        # associated public IDs.
-        yield self._cache.delete_private_id(self.row_key, timestamp)
+        # associated public IDs.  Take 1ms off the timestamp to ensure the 
+        # update happens after the delete. 
+        yield self._cache.delete_private_id(self.row_key, timestamp - 1000)
         yield self._cache.put_digest(self.row_key, digest, timestamp)
         for pub_id in public_ids:
             yield self._cache.put_associated_public_id(self.row_key,
