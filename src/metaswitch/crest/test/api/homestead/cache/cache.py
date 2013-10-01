@@ -34,13 +34,10 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import httplib
 import mock
 import unittest
 
-from mock import ANY
 from twisted.internet import defer
-from twisted.python.failure import Failure
 
 from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead.cache.db import CacheModel
@@ -50,6 +47,33 @@ def MockColumn(name, val):
     m.column.name = name
     m.column.value = val
     return m
+
+class DictContaining(object):
+    """Matcher that checks a function argument is a dictionary containing the
+    specified key-value pairs (among others)"""
+    def __init__(self, mapping):
+        self._mapping = mapping
+
+    def __eq__(self, other):
+        try:
+            return all((other[k] == self._mapping[k]) for k in self._mapping)
+        except:
+            return False
+
+    def __repr__(self):
+        return "<Dictionary containing: %s>" % self._mapping
+
+class ListContaining(object):
+    """Matcher that checks a function argument is a list containing the
+    specified items (among others)"""
+    def __init__(self, items):
+        self._items = items
+
+    def __eq__(self, other):
+        return all(i in other for i in self._items)
+
+    def __repr__(self):
+        return "<List containing: %s>" % self._items
 
 class Result(object):
     def __init__(self, deferred):
@@ -82,7 +106,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_insert.assert_called_once_with(
                                                key="priv",
                                                column_family="impi",
-                                               mapping={"digest_ha1": "digest"},
+                                               mapping=DictContaining({"digest_ha1": "digest"}),
                                                ttl=None,
                                                timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -97,7 +121,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_insert.assert_called_once_with(
                                              key="priv",
                                              column_family="impi",
-                                             mapping={"public_id_kermit": None},
+                                             mapping=DictContaining({"public_id_kermit": ""}),
                                              ttl=None,
                                              timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -111,7 +135,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_insert.assert_called_once_with(
                                         key="pub",
                                         column_family="impu",
-                                        mapping={"ims_subscription_xml": "xml"},
+                                        mapping=DictContaining({"ims_subscription_xml": "xml"}),
                                         ttl=None,
                                         timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -124,8 +148,9 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="pub",
                                                  column_family="impu",
-                                                 names=["ims_subscription_xml"])
-        get_slice.callback([MockColumn("ims_subscription_xml", "xml")])
+                                                 names=ListContaining(["ims_subscription_xml"]))
+        get_slice.callback([MockColumn("ims_subscription_xml", "xml"),
+                            MockColumn("_exists", "")])
         self.assertEquals(res.value(), "xml")
 
     def test_get_digest_no_pub_id_supp(self):
@@ -135,8 +160,9 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="priv",
                                                  column_family="impi",
-                                                 names=["digest_ha1"])
-        get_slice.callback([MockColumn("digest_ha1", "digest")])
+                                                 names=ListContaining(["digest_ha1"]))
+        get_slice.callback([MockColumn("digest_ha1", "digest"),
+                            MockColumn("_exists", "")])
         self.assertEquals(res.value(), "digest")
 
     def test_get_digest_no_pub_id_assoc(self):
@@ -146,9 +172,10 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
                                    column_family="impi",
-                                   names=["digest_ha1", "public_id_miss_piggy"])
+                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
-                            MockColumn("public_id_kermit", None)])
+                            MockColumn("public_id_kermit", None),
+                            MockColumn("_exists", "")])
         self.assertEquals(res.value(), None)
 
     def test_get_digest_right_pub_id(self):
@@ -158,7 +185,8 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
                                    column_family="impi",
-                                   names=["digest_ha1", "public_id_miss_piggy"])
+                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
-                            MockColumn("public_id_miss_piggy", None)])
+                            MockColumn("public_id_miss_piggy", None),
+                            MockColumn("_exists", "")])
         self.assertEquals(res.value(), "digest")
