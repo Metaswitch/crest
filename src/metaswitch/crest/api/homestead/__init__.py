@@ -97,7 +97,7 @@ ROUTES = [
     # Read-only privte ID interface.
     (r'/public/([^/]+)/service_profile/?', PublicIDServiceProfileHandler),
     (r'/public/([^/]+)/irs/?', PublicIDIRSHandler),
-    (r'/public/([^/]+)/service_profile/?', PublicIDPrivateIDHandler),
+    (r'/public/([^/]+)/associated_private_ids/?', PublicIDPrivateIDHandler),
 ]
 
 # List of all the tables used by homestead.
