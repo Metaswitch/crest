@@ -48,6 +48,36 @@ from metaswitch.common import utils
 
 _log = logging.getLogger("crest.api")
 
+class PenaltyCounter:
+    def __init__(self):
+        _log = logging.getLogger("crest.api.penaltycounter")
+        _log.debug("Creating penalty counter")
+        
+        # Set up counters for HSS and cache overload responses. Only HSS overload responses
+        # are currently tracked. 
+        self.cache_penalty = 0
+        self.hss_penalty = 0
+
+    def reset_cache_penalty(self):
+        self.cache_penalty = 0
+
+    def reset_hss_penalty(self):
+        self.hss_penalty = 0
+
+    def incr_cache_penalty(self):
+        self.cache_penalty += 1
+
+    def incr_hss_penalty(self):
+        self.hss_penalty += 1
+
+    def get_cache_penalty(self):
+        _log.debug("%d cache overload penalties hit in adjustment period", self.cache_penalty)
+        return self.cache_penalty
+
+    def get_hss_penalty(self):
+        _log.debug("%d HSS overload penalties hit in adjustment period", self.hss_penalty)
+        return self.hss_penalty
+
 
 class LeakyBucket:
     def __init__(self, max_size, rate):
@@ -129,9 +159,9 @@ class LoadMonitor:
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
-            if err > self.DECREASE_THRESHOLD:
-                # latency is above where we want it to be, so adjust the rate
-                # downwards by a multiplicative factor
+            if ((err > self.DECREASE_THRESHOLD) or (_penaltycounter.get_hss_penalty > 0)):
+                # latency is above where we want it to be, or we are getting overload responses from the HSS, 
+                # so adjust the rate downwards by a multiplicative factor
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
                 _log.debug("Accepted %f requests, latency error = %f, decrease rate %f to %f" %
                                  (accepted_percent, err, self.bucket.rate, new_rate))
@@ -147,9 +177,13 @@ class LoadMonitor:
                 _log.debug("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
                                 (accepted_percent, err, self.bucket.rate))
 
+        _penaltycounter.reset_cache_penalty()        
+        _penaltycounter.reset_HSS_penalty()
+ 
 # Create load monitor with target latency of 100ms, maximum bucket size of
 # 20 requests and initial token rate of 10 per second
 _loadmonitor = LoadMonitor(0.1, 20, 10)
+_penaltycounter = PenaltyCounter();
 
 
 def _guess_mime_type(body):
@@ -311,6 +345,16 @@ class BaseHandler(cyclone.web.RequestHandler):
         def wrapper(handler, *pos_args, **kwd_args):
             if handler.request.body:
                 handler.send_error(400, "Body not empty")
+            else:
+                return func(handler, *pos_args, **kwd_args)
+        return wrapper
+ 
+    @staticmethod
+    def check_request_age(func):
+        """Decorator that returns a 503 error if the request is too old"""
+        def wrapper(handler, *pos_args, **kwd_args):
+            if time.time() - handler._start > _loadmonitor.target_latency:
+                handler.send_error(503, "Request too old")
             else:
                 return func(handler, *pos_args, **kwd_args)
         return wrapper

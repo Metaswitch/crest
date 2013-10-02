@@ -109,6 +109,7 @@ class ServiceProfileHandler(BaseHandler):
 
 
 class SPAllPublicIDsHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @verify_relationships()
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):
@@ -144,6 +145,7 @@ class SPPublicIDHandler(BaseHandler):
 
 
 class SPFilterCriteriaHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @verify_relationships()
     @defer.inlineCallbacks
     def get(self, irs_uuid, sp_uuid):

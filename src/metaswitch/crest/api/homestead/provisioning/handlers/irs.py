@@ -61,6 +61,7 @@ class IRSHandler(BaseHandler):
 
 
 class IRSAllPublicIDsHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, irs_uuid):
         try:
@@ -71,6 +72,7 @@ class IRSAllPublicIDsHandler(BaseHandler):
 
 
 class IRSAllPrivateIDsHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, irs_uuid):
         try:

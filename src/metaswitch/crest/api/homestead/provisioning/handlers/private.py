@@ -48,6 +48,7 @@ JSON_ASSOC_PUBLIC_IDS = "associated_public_ids"
 
 
 class PrivateHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
@@ -83,6 +84,7 @@ class PrivateHandler(BaseHandler):
 
 
 class PrivateAllIrsHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
@@ -114,6 +116,7 @@ class PrivateOneIrsHandler(BaseHandler):
 
 
 class PrivateAllPublicIdsHandler(BaseHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, private_id):
         try:

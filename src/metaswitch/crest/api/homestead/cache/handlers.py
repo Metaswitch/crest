@@ -64,6 +64,7 @@ class CacheApiHandler(BaseHandler):
 
 
 class DigestHandler(CacheApiHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
@@ -77,6 +78,7 @@ class DigestHandler(CacheApiHandler):
 
 
 class IMSSubscriptionHandler(CacheApiHandler):
+    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)

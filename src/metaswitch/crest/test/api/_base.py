@@ -38,6 +38,7 @@
 import sys
 import unittest
 import uuid
+import time
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 from metaswitch.crest import settings
@@ -108,6 +109,25 @@ class TestBaseHandler(unittest.TestCase):
         data = self.handler.finish.call_args[0][0]
         self.assertTrue("exception" in data)
         self.assertTrue("Traceback" in "".join(data['exception']), data["exception"])
+
+    def test_check_request_age_decorator(self):
+        self._start = time.time()
+        decorator = self.handler.check_request_age
+        func = MagicMock()
+        decorated = decorator(func)
+        decorated(self, "arg1")
+        func.assert_called_once_with(self, "arg1")
+
+    def test_check_request_age_decorator_error(self):
+        self.send_error = MagicMock()
+        # Ensure that the request is too old
+        self._start = time.time() - 1000
+        decorator = self.handler.check_request_age
+        func = MagicMock()
+        decorated = decorator(func)
+        decorated(self, "arg")
+        self.send_error.assert_called_once_with(503, "Request too old")
+        self.assertFalse(func.called)
 
 SIP_URI = "sip:1234567890@cw-ngv.com"
 OWNER_ID = uuid.uuid4()
