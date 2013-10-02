@@ -94,6 +94,9 @@ class IRS(ProvisioningModel):
 
     # Note that CQL requires at least one non-dynamic column (hence the use of
     # the "dummy" column below).
+    #
+    # If you change this, also update the corresponding create statement in
+    # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "id uuid PRIMARY KEY, " +
@@ -231,6 +234,8 @@ class PrivateID(ProvisioningModel):
 
     cass_table = config.PRIVATE_TABLE
 
+    # If you change this, also update the corresponding create statement in
+    # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "private_id text PRIMARY KEY, " +
@@ -303,8 +308,8 @@ class PrivateID(ProvisioningModel):
         timestamp = self._cache.generate_timestamp()
 
         # Delete the existing cache entry then write back the digest and the
-        # associated public IDs.  Take 1ms off the timestamp to ensure the 
-        # update happens after the delete. 
+        # associated public IDs.  Take 1ms off the timestamp to ensure the
+        # update happens after the delete.
         yield self._cache.delete_private_id(self.row_key, timestamp - 1000)
         yield self._cache.put_digest(self.row_key, digest, timestamp)
         for pub_id in public_ids:
@@ -321,6 +326,8 @@ class PublicID(ProvisioningModel):
 
     cass_table = config.PUBLIC_TABLE
 
+    # If you change this, also update the corresponding create statement in
+    # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "public_id text PRIMARY KEY, " +
@@ -378,6 +385,8 @@ class ServiceProfile(ProvisioningModel):
 
     cass_table = config.SP_TABLE
 
+    # If you change this, also update the corresponding create statement in
+    # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "id uuid PRIMARY KEY, " +

@@ -49,6 +49,8 @@ class CacheModel(CassandraModel):
 class IMPI(CacheModel):
     cass_table = config.IMPI_TABLE
 
+    # If you change this, also update the corresponding create statement in
+    # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "private_id text PRIMARY KEY, " +
@@ -90,6 +92,8 @@ IMS_SUBSCRIPTION = "ims_subscription_xml"
 class IMPU(CacheModel):
     cass_table = config.IMPU_TABLE
 
+    # If you change this, also update the corresponding create statement in
+    # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
             "public_id text PRIMARY KEY, " +
