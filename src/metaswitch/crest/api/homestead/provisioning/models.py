@@ -204,7 +204,7 @@ class IRS(ProvisioningModel):
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()
         tree = ET.ElementTree(root)
-        tree.write(output)
+        tree.write(output, encoding="UTF-8", xml_declaration=True)
         xml = output.getvalue()
 
         defer.returnValue(xml)
