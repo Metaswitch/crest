@@ -69,6 +69,7 @@ class CassandraModel(object):
 
     def __init__(self, row_key):
         self.row_key = row_key
+        self.row_key_str = str(row_key)
 
     @defer.inlineCallbacks
     def get_columns(self, columns=None):

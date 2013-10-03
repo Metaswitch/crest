@@ -42,7 +42,7 @@ from twisted.internet.task import LoopingCall
 
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter, _loadmonitor
-from metaswitch.crest.api import DeferTimeout 
+from metaswitch.crest.api import DeferTimeout
 from .io import HSSPeerIO
 
 _log = logging.getLogger("crest.api.homestead.hss")
@@ -199,7 +199,7 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                raise HSSNotFound() 
+                raise HSSNotFound()
 
     @DeferTimeout.timeout(_loadmonitor.target_latency)
     @defer.inlineCallbacks

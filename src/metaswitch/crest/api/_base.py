@@ -48,13 +48,14 @@ from metaswitch.common import utils
 
 _log = logging.getLogger("crest.api")
 
+
 class PenaltyCounter:
     def __init__(self):
         _log = logging.getLogger("crest.api.penaltycounter")
         _log.debug("Creating penalty counter")
-        
+
         # Set up counters for HSS and cache overload responses. Only HSS overload responses
-        # are currently tracked. 
+        # are currently tracked.
         self.cache_penalty_count = 0
         self.hss_penalty_count = 0
 
@@ -160,7 +161,7 @@ class LoadMonitor:
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
             if ((err > self.DECREASE_THRESHOLD) or (_penaltycounter.get_hss_penalty_count > 0)):
-                # latency is above where we want it to be, or we are getting overload responses from the HSS, 
+                # latency is above where we want it to be, or we are getting overload responses from the HSS,
                 # so adjust the rate downwards by a multiplicative factor
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
                 _log.debug("Accepted %f requests, latency error = %f, decrease rate %f to %f" %
@@ -178,11 +179,11 @@ class LoadMonitor:
                                 (accepted_percent, err, self.bucket.rate))
 
         _penaltycounter.reset_HSS_penalty_count()
- 
+
 # Create load monitor with target latency of 100ms, maximum bucket size of
 # 20 requests and initial token rate of 10 per second
 _loadmonitor = LoadMonitor(0.1, 20, 10)
-_penaltycounter = PenaltyCounter();
+_penaltycounter = PenaltyCounter()
 
 
 def _guess_mime_type(body):
@@ -347,7 +348,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 return func(handler, *pos_args, **kwd_args)
         return wrapper
- 
+
     @staticmethod
     def check_request_age(secs):
         """Decorator that sends a 503 error (and returns None) if the request
@@ -360,6 +361,7 @@ class BaseHandler(cyclone.web.RequestHandler):
                     return func(handler, *pos_args, **kwd_args)
             return wrapper
         return wrap
+
 
 class UnknownApiHandler(BaseHandler):
     """

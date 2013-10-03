@@ -49,6 +49,41 @@ _log = logging.getLogger("crest.api.homestead.provisioning")
 NULL_COLUMN_VALUE = ""
 
 
+def convert_uuid(this_uuid):
+    """Convert a uuid in various formats to a byte array."""
+
+    if isinstance(this_uuid, uuid.UUID):
+        # UUID has been passed as a UUID object.  Convert it to bytes.
+        return this_uuid.bytes
+    elif isinstance(this_uuid, basestring):
+        # UUID has been passed as a string.  It could either be a byte
+        # array, or a string of the form 123456-1234-1234-1234-1234567890ab
+        try:
+            return uuid.UUID(this_uuid).bytes
+        except ValueError:
+            pass
+
+        try:
+            return uuid.UUID(bytes=this_uuid).bytes
+        except ValueError:
+            pass
+
+    # Not got a valid UUID.
+    raise ValueError("Row key must be a UUID or a byte array " +
+                     "(got %s of type %s)" % (this_uuid, type(this_uuid)))
+
+
+def uuid_to_str(this_uuid):
+
+    if isinstance(this_uuid, basestring) and len(this_uuid == 16):
+        # Got a 16 length string, so this is probably the uuid as a byte stream.
+        return str(uuid.UUID(this_uuid))
+    else:
+        # Assume the UUID is already formatted correctly, or is a type that can
+        # be converted to str sensibly.
+        return str(this_uuid)
+
+
 class ProvisioningModel(CassandraModel):
     cass_keyspace = config.PROVISIONING_KEYSPACE
 
@@ -67,32 +102,8 @@ class ProvisioningModel(CassandraModel):
             yield self.get_columns()
         except:
             _log.debug("Row %s:%s does not exist" %
-                       (self.cass_table, self.row_key))
+                       (self.cass_table, self.row_key_str))
             raise
-
-    @staticmethod
-    def convert_uuid(this_uuid):
-        """Convert a uuid in various formats to a byte array."""
-
-        if isinstance(this_uuid, uuid.UUID):
-            # UUID has been passed as a UUID object.  Convert it to bytes.
-            return this_uuid.bytes
-        elif isinstance(this_uuid, basestring):
-            # UUID has been passed as a string.  It could either be a byte
-            # array, or a string of the form 123456-1234-1234-1234-1234567890ab
-            try:
-                return uuid.UUID(this_uuid).bytes
-            except ValueError:
-                pass
-
-            try:
-                return uuid.UUID(bytes=this_uuid).bytes
-            except ValueError:
-                pass
-
-        # Not got a valid UUID.
-        raise ValueError("Row key must be a UUID or a byte array " +
-                         "(got %s of type %s)" % (this_uuid, type(this_uuid)))
 
 
 class IRS(ProvisioningModel):
@@ -117,6 +128,10 @@ class IRS(ProvisioningModel):
 
     def __init__(self, row_key):
         super(IRS, self).__init__(self.convert_uuid(row_key))
+
+        # The row key is stored a byte array so need to explicitly store a human
+        # readable version.
+        self.row_key_str = uuid_to_str(row_key)
 
     @classmethod
     @defer.inlineCallbacks
@@ -170,7 +185,7 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
-        _log.debug("Delete IRS %s" % self.row_key)
+        _log.debug("Delete IRS %s" % self.row_key_str)
 
         sp_uuids = yield self.get_associated_service_profiles()
         for uuid in sp_uuids:
@@ -231,7 +246,7 @@ class IRS(ProvisioningModel):
         Rebuild the IMPI and IMPU tables in the cache when the IRS (or it's
         children are modified).
         """
-        _log.debug("Rebuild cache for IRS %s" % self.row_key)
+        _log.debug("Rebuild cache for IRS %s" % self.row_key_str)
 
         xml = yield self.build_imssubscription_xml()
         timestamp = self._cache.generate_timestamp()
@@ -280,7 +295,7 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def put_digest(self, digest):
-        _log.debug("Create private ID %s" % self.row_key)
+        _log.debug("Create private ID %s" % self.row_key_str)
 
         yield self.modify_columns({self.DIGEST_HA1: digest})
         yield self._cache.put_digest(self.row_key,
@@ -289,7 +304,7 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
-        _log.debug("Delete private ID %s" % self.row_key)
+        _log.debug("Delete private ID %s" % self.row_key_str)
 
         irs_uuids = yield self.get_irses()
         for uuid in irs_uuids:
@@ -316,7 +331,7 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def rebuild(self):
         """ Rebuild the IMPI table in the cache """
-        _log.debug("Rebuild cache for private ID %s" % self.row_key)
+        _log.debug("Rebuild cache for private ID %s" % self.row_key_str)
 
         # Get all the information we need to rebuild the cache.  Do this before
         # deleting any cache entries to minimize the time the cache is empty.
@@ -365,7 +380,7 @@ class PublicID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_publicidentity(self):
-        _log.debug("Create public ID %s" % self.row_key)
+        _log.debug("Create public ID %s" % self.row_key_str)
         xml = yield self.get_column_value(self.PUBLICIDENTITY)
         defer.returnValue(xml)
 
@@ -388,7 +403,7 @@ class PublicID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
-        _log.debug("Delete public ID %s" % self.row_key)
+        _log.debug("Delete public ID %s" % self.row_key_str)
         irs_uuid = yield self.get_irs()
         sp_uuid = yield self.get_sp()
 
@@ -421,6 +436,10 @@ class ServiceProfile(ProvisioningModel):
 
     def __init__(self, row_key):
         super(ServiceProfile, self).__init__(self.convert_uuid(row_key))
+
+        # The row key is stored a byte array so need to explicitly store a human
+        # readable version.
+        self.row_key_str = uuid_to_str(row_key)
 
     @classmethod
     @defer.inlineCallbacks
@@ -469,7 +488,7 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
-        _log.debug("Delete service profile %s" % self.row_key)
+        _log.debug("Delete service profile %s" % self.row_key_str)
         public_ids = yield self.get_public_ids()
         for pub_id in public_ids:
             yield PublicID(pub_id).delete()
@@ -482,6 +501,6 @@ class ServiceProfile(ProvisioningModel):
     @defer.inlineCallbacks
     def rebuild(self):
         _log.debug("Rebuild cache for parent of service profile %s" %
-                   self.row_key)
+                   self.row_key_str)
         irs_uuid = yield self.get_irs()
         yield IRS(irs_uuid).rebuild()

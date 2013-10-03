@@ -37,6 +37,7 @@ from twisted.internet import reactor
 from telephus.protocol import ManagedCassandraClientFactory
 
 from metaswitch.crest.api import PATH_PREFIX
+from metaswitch.crest.api.passthrough import PassthroughHandler
 from metaswitch.crest.api.homer.simservs import SimservsHandler
 from metaswitch.crest import settings
 
