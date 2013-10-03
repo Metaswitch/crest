@@ -288,7 +288,6 @@ class TestHSSPeerListener(unittest.TestCase):
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
         "<IMSSubscription>"
           "<PrivateID>priv</PrivateID>"
-          "</IMSSubscription>"
           "<ServiceProfile>"
             "<PublicIdentity>"
               "<Identity>pub</Identity>"

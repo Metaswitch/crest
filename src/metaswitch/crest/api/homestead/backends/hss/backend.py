@@ -44,7 +44,7 @@ _log = logging.getLogger("crest.api.homestead.hss")
 
 class HSSBackend(Backend):
     """
-    A backend that gets it's data from a real HSS.
+    A backend that gets its data from a real HSS.
 
     This class is responsible for querying the HSS and updating the cache with
     the returned results.  The actual communication with the HSS is handled by
@@ -59,8 +59,8 @@ class HSSBackend(Backend):
     def get_digest(self, private_id, public_id=None):
         if not public_id:
             # We can't query the HSS without a public ID.
-            _log.info("Cannot get digest for private ID '%s' " % private_id +
-                      "as no public ID has been supplied")
+            _log.error("Cannot get digest for private ID '%s' " % private_id +
+                       "as no public ID has been supplied")
             defer.returnValue(None)
         else:
             digest = yield self._hss_gateway.get_digest(private_id,

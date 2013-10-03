@@ -49,6 +49,9 @@ from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicI
 from .cache.db import IMPI, IMPU, CacheModel
 from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, ProvisioningModel
 
+# Regex that matches any path element (covers anything that isn't a slash).
+ANY = '([^/]+)'
+
 # Regex that matches a uuid.
 HEX = '[a-fA-F0-9]'
 UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
@@ -62,19 +65,19 @@ ROUTES = [
     # optionally validate whether a public ID is associated.
     #
     # /impi/<private ID>/digest?public_id=xxx
-    (r'/impi/([^/]+)/digest/?',  DigestHandler),
+    (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
 
     # IMPU: the read-only API for accessing the XMLSubscription associated with
     # a particular public ID.
     #
     # /impu/<public ID>?private_id=xxx
-    (r'/impu/([^/]+)/?',  IMSSubscriptionHandler),
+    (r'/impu/'+ANY+r'/?',  IMSSubscriptionHandler),
 
     # Private ID provisioning.
-    (r'/private/([^/]+)/?', PrivateHandler),
-    (r'/private/([^/]+)/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
-    (r'/private/([^/]+)/associated_implicit_registration_sets/'+UUID+r'/?', PrivateOneIrsHandler),
-    (r'/private/([^/]+)/associated_public_ids/?', PrivateAllPublicIdsHandler),
+    (r'/private/'+ANY+r'/?', PrivateHandler),
+    (r'/private/'+ANY+r'/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
+    (r'/private/'+ANY+r'/associated_implicit_registration_sets/'+UUID+r'/?', PrivateOneIrsHandler),
+    (r'/private/'+ANY+r'/associated_public_ids/?', PrivateAllPublicIdsHandler),
 
     # Implicit Registration Set provisioning.
     (r'/irs/?', AllIRSHandler),
@@ -90,14 +93,14 @@ ROUTES = [
     # profile).
     (r'/irs/'+UUID+r'/service_profiles/?', AllServiceProfilesHandler),
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/?', ServiceProfileHandler),
-    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids?', SPAllPublicIDsHandler),
-    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/([^/]+)?', SPPublicIDHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/?', SPAllPublicIDsHandler),
+    (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/'+ANY+r'/?', SPPublicIDHandler),
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/filter_criteria/?', SPFilterCriteriaHandler),
 
-    # Read-only privte ID interface.
-    (r'/public/([^/]+)/service_profile/?', PublicIDServiceProfileHandler),
-    (r'/public/([^/]+)/irs/?', PublicIDIRSHandler),
-    (r'/public/([^/]+)/associated_private_ids/?', PublicIDPrivateIDHandler),
+    # Read-only private ID interface.
+    (r'/public/'+ANY+r'/service_profile/?', PublicIDServiceProfileHandler),
+    (r'/public/'+ANY+r'/irs/?', PublicIDIRSHandler),
+    (r'/public/'+ANY+r'/associated_private_ids/?', PublicIDPrivateIDHandler),
 ]
 
 # List of all the tables used by homestead.

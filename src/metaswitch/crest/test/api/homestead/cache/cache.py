@@ -41,39 +41,13 @@ from twisted.internet import defer
 
 from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead.cache.db import CacheModel
+from metaswitch.crest.test.matchers import DictContaining, ListContaining
 
 def MockColumn(name, val):
     m = mock.MagicMock()
     m.column.name = name
     m.column.value = val
     return m
-
-class DictContaining(object):
-    """Matcher that checks a function argument is a dictionary containing the
-    specified key-value pairs (among others)"""
-    def __init__(self, mapping):
-        self._mapping = mapping
-
-    def __eq__(self, other):
-        try:
-            return all((other[k] == self._mapping[k]) for k in self._mapping)
-        except:
-            return False
-
-    def __repr__(self):
-        return "<Dictionary containing: %s>" % self._mapping
-
-class ListContaining(object):
-    """Matcher that checks a function argument is a list containing the
-    specified items (among others)"""
-    def __init__(self, items):
-        self._items = items
-
-    def __eq__(self, other):
-        return all(i in other for i in self._items)
-
-    def __repr__(self):
-        return "<List containing: %s>" % self._items
 
 class Result(object):
     def __init__(self, deferred):
