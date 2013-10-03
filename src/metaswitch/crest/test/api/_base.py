@@ -111,18 +111,25 @@ class TestBaseHandler(unittest.TestCase):
         self.assertTrue("Traceback" in "".join(data['exception']), data["exception"])
 
     def test_check_request_age_decorator(self):
+        """ Test the check_request_age decorator with a recent request"""
+        # Set the start time of the request to now
         self._start = time.time()
-        decorator = self.handler.check_request_age
+        # Call a mock function with the decorator - as the request is recent, the
+        # underlying function should be called as normal
+        decorator = self.handler.check_request_age(5)
         func = MagicMock()
         decorated = decorator(func)
         decorated(self, "arg1")
         func.assert_called_once_with(self, "arg1")
 
     def test_check_request_age_decorator_error(self):
+        """ Test the check_request_age decorator with an old request"""
         self.send_error = MagicMock()
         # Ensure that the request is too old
         self._start = time.time() - 1000
-        decorator = self.handler.check_request_age
+        # Call a mock function with the decorator - as the request is old, the decorator
+        # should send a 503 error and the underlying function should not be called.
+        decorator = self.handler.check_request_age(5)
         func = MagicMock()
         decorated = decorator(func)
         decorated(self, "arg")

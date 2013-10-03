@@ -62,6 +62,12 @@ class HSSNotFound(Exception):
     pass
 
 
+class HSSOverloaded(Exception):
+    """Exception to throw if a request cannot be completed because the HSS returns an
+    overloaded response"""
+    pass
+
+
 class HSSGateway(stack.ApplicationListener):
     """
     Gateway to real HSS. Abstracts away the underlying details of the Cx
@@ -190,8 +196,10 @@ class HSSPeerListener(stack.PeerListener):
             self.log_diameter_error(answer)
             # If the error is an Overload response, increment the HSS penalty counter
             if self.get_diameter_error_code(answer) == 3004:
-                _penaltycounter.incr_hss_penalty()
-            raise HSSNotFound() 
+                _penaltycounter.incr_hss_penalty_count()
+                raise HSSOverloaded()
+            else:
+                raise HSSNotFound() 
 
     @DeferTimeout.timeout(_loadmonitor.target_latency)
     @defer.inlineCallbacks
@@ -220,8 +228,10 @@ class HSSPeerListener(stack.PeerListener):
             self.log_diameter_error(answer)
             # If the error is an Overload response, increment the HSS penalty counter
             if self.get_diameter_error_code(answer) == 3004:
-                _penaltycounter.incr_hss_penalty()
-            raise HSSNotFound()
+                _penaltycounter.incr_hss_penalty_count()
+                raise HSSOverloaded()
+            else:
+                raise HSSNotFound()
 
         defer.returnValue(user_data.getOctetString())
 

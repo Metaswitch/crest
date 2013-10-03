@@ -1,3 +1,5 @@
+# This decorator is taken from https://gist.github.com/theduderog/735556
+
 from twisted.internet import defer, reactor
 
 class TimeoutError(Exception):

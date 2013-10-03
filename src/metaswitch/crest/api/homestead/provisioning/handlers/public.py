@@ -42,7 +42,6 @@ JSON_PRIVATE_IDS = "private_ids"
 
 
 class PublicIDServiceProfileHandler(BaseHandler):
-    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, public_id):
         try:
@@ -60,7 +59,6 @@ class PublicIDServiceProfileHandler(BaseHandler):
 
 
 class PublicIDIRSHandler(BaseHandler):
-    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, public_id):
         try:
@@ -74,7 +72,6 @@ class PublicIDIRSHandler(BaseHandler):
 
 
 class PublicIDPrivateIDHandler(BaseHandler):
-    @BaseHandler.check_request_age
     @defer.inlineCallbacks
     def get(self, public_id):
         try:

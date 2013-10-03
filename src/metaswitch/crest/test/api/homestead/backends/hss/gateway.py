@@ -46,7 +46,7 @@ from twisted.python.failure import Failure
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
-from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener
+from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener, HSSOverloaded
 
 class TestHSSGateway(unittest.TestCase):
     """
@@ -181,6 +181,9 @@ class TestHSSPeerListener(unittest.TestCase):
         settings.SPROUT_HOSTNAME = "sprout"
         settings.SPROUT_PORT = 1234
 
+        _penaltycounter._log = mock.MagicMock()
+        _penaltycounter.reset_hss_penalty_count()
+
     def test_get_diameter_error_code(self):
         mock_error = mock.MagicMock()
         mock_error.getInteger32.return_value = 1234
@@ -223,57 +226,13 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], "digest")
 
     def test_fetch_multimedia_auth_no_error_code(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub")
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic an error returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = None
-        deferred_errback = mock.MagicMock()
-        deferred.addErrback(deferred_errback)
-        inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, None, HSSNotFound, 0)
 
     def test_fetch_multimedia_auth_not_overload_error_code(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub")
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic an error returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = None
-        # Set the error code to a valid diamter error that isn't the overload response
-        err_code = mock.MagicMock()
-        err_code.return_value = 3005
-        self.peer_listener.get_diameter_error_code = err_code
-        deferred_errback = mock.MagicMock()
-        deferred.addErrback(deferred_errback)
-        inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
-        # The penalty counter should be at 0
-        self.assertEquals(_penaltycounter.get_hss_penalty(), 0)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3005, HSSNotFound, 0)
 
     def test_fetch_multimedia_auth_overload_error_code(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub")
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic an error returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = None
-        # Set the error code to the overload response
-        err_code = mock.MagicMock()
-        err_code.return_value = 3004
-        self.peer_listener.get_diameter_error_code = err_code
-        deferred_errback = mock.MagicMock()
-        deferred.addErrback(deferred_errback)
-        inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
-        # The penalty counter should be at 1
-        self.assertEquals(_penaltycounter.get_hss_penalty(), 1)
-        # Reset the penalty counts for later tests
-        _penaltycounter.reset_hss_penalty()
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3004, HSSOverloaded, 1)
 
     def test_fetch_server_assignment(self):
         mock_req = self.MockRequest()
@@ -367,57 +326,32 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], xml)
 
     def test_fetch_server_assignment_no_error_code(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic error returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = None
-        deferred_errback = mock.MagicMock()
-        deferred.addErrback(deferred_errback)
-        inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, None, HSSNotFound, 0)
 
     def test_fetch_server_assignment_not_overload_error_code(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic an error returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = None
-        # Set the error code to a valid diamter error that isn't the overload response
-        err_code = mock.MagicMock()
-        err_code.return_value = 3005
-        self.peer_listener.get_diameter_error_code = err_code
-        deferred_errback = mock.MagicMock()
-        deferred.addErrback(deferred_errback)
-        inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
-        # The penalty counter should be at 0
-        self.assertEquals(_penaltycounter.get_hss_penalty(), 0)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3005, HSSNotFound, 0)
 
     def test_fetch_server_assignment_overload_error_code(self):
+        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3004, HSSOverloaded, 1)
+
+    def common_test_hss(self, function, first_avp, error_code, expected_exception, expected_count):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
+        deferred = function("priv", "pub")
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic an error returning a value from the HSS
         mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = None
+        self.cx.findFirstAVP.return_value = first_avp
         # Set the error code to the overload response
         err_code = mock.MagicMock()
-        err_code.return_value = 3004
+        err_code.return_value = error_code
         self.peer_listener.get_diameter_error_code = err_code
         deferred_errback = mock.MagicMock()
         deferred.addErrback(deferred_errback)
         inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, HSSNotFound)
+        self.assertEquals(deferred_errback.call_args[0][0].type, expected_exception)
         # The penalty counter should be at 1
-        self.assertEquals(_penaltycounter.get_hss_penalty(), 1)
-        # Reset the penalty counts for later tests
-        _penaltycounter.reset_hss_penalty()
+        self.assertEquals(_penaltycounter.get_hss_penalty_count(), expected_count)
 
     def test_disconnected(self):
         self.assertEquals(self.peer_listener.peer, self.peer)

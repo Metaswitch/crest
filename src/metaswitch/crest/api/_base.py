@@ -55,28 +55,28 @@ class PenaltyCounter:
         
         # Set up counters for HSS and cache overload responses. Only HSS overload responses
         # are currently tracked. 
-        self.cache_penalty = 0
-        self.hss_penalty = 0
+        self.cache_penalty_count = 0
+        self.hss_penalty_count = 0
 
-    def reset_cache_penalty(self):
-        self.cache_penalty = 0
+    def reset_cache_penalty_count(self):
+        self.cache_penalty_count = 0
 
-    def reset_hss_penalty(self):
-        self.hss_penalty = 0
+    def reset_hss_penalty_count(self):
+        self.hss_penalty_count = 0
 
-    def incr_cache_penalty(self):
-        self.cache_penalty += 1
+    def incr_cache_penalty_count(self):
+        self.cache_penalty_count += 1
 
-    def incr_hss_penalty(self):
-        self.hss_penalty += 1
+    def incr_hss_penalty_count(self):
+        self.hss_penalty_count += 1
 
-    def get_cache_penalty(self):
-        _log.debug("%d cache overload penalties hit in adjustment period", self.cache_penalty)
-        return self.cache_penalty
+    def get_cache_penalty_count(self):
+        self._log.debug("%d cache overload penalties hit in current latency tracking period", self.cache_penalty_count)
+        return self.cache_penalty_count
 
-    def get_hss_penalty(self):
-        _log.debug("%d HSS overload penalties hit in adjustment period", self.hss_penalty)
-        return self.hss_penalty
+    def get_hss_penalty_count(self):
+        self._log.debug("%d HSS overload penalties hit in current latency tracking period", self.hss_penalty_count)
+        return self.hss_penalty_count
 
 
 class LeakyBucket:
@@ -159,7 +159,7 @@ class LoadMonitor:
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
-            if ((err > self.DECREASE_THRESHOLD) or (_penaltycounter.get_hss_penalty > 0)):
+            if ((err > self.DECREASE_THRESHOLD) or (_penaltycounter.get_hss_penalty_count > 0)):
                 # latency is above where we want it to be, or we are getting overload responses from the HSS, 
                 # so adjust the rate downwards by a multiplicative factor
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
@@ -177,8 +177,7 @@ class LoadMonitor:
                 _log.debug("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
                                 (accepted_percent, err, self.bucket.rate))
 
-        _penaltycounter.reset_cache_penalty()        
-        _penaltycounter.reset_HSS_penalty()
+        _penaltycounter.reset_HSS_penalty_count()
  
 # Create load monitor with target latency of 100ms, maximum bucket size of
 # 20 requests and initial token rate of 10 per second
@@ -350,15 +349,17 @@ class BaseHandler(cyclone.web.RequestHandler):
         return wrapper
  
     @staticmethod
-    def check_request_age(func):
-        """Decorator that returns a 503 error if the request is too old"""
-        def wrapper(handler, *pos_args, **kwd_args):
-            if time.time() - handler._start > _loadmonitor.target_latency:
-                handler.send_error(503, "Request too old")
-            else:
-                return func(handler, *pos_args, **kwd_args)
-        return wrapper
-
+    def check_request_age(secs):
+        """Decorator that sends a 503 error (and returns None) if the request
+        is too old"""
+        def wrap(func):
+            def wrapper(handler, *pos_args, **kwd_args):
+                if time.time() - handler._start > secs:
+                    handler.send_error(503, "Request too old")
+                else:
+                    return func(handler, *pos_args, **kwd_args)
+            return wrapper
+        return wrap
 
 class UnknownApiHandler(BaseHandler):
     """
