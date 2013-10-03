@@ -53,4 +53,4 @@ class SimservsHandler(PassthroughHandler):
     """
     @xsd.validate(SCHEMA_PATH)
     def put(self, *args):
-        PassthroughHandler.put(self, *args)
+        return PassthroughHandler.put(self, *args)
