@@ -276,6 +276,47 @@ class TestHSSPeerListener(unittest.TestCase):
         self.cx.findFirstAVP.assert_called_once_with(mock_answer, "User-Data")
         self.assertEquals(deferred_callback.call_args[0][0], xml)
 
+    def test_fetch_server_assignment_no_priv(self):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_server_assignment(None, "pub")
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Server-Assignment", True)
+        self.assertEquals(mock_req.avps,
+                          [{'Public-Identity': 'pub'},
+                           {'Server-Name': 'sip:sprout:1234'},
+                           {'Server-Assignment-Type': 0},
+                           {'Destination-Realm': 'domain'},
+                           {'User-Data-Already-Available': 0},
+                           {'Vendor-Specific-Application-Id': None},
+                           {'Auth-Session-State': 0}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        # Now mimic returning a value from the HSS
+        mock_answer = mock.MagicMock()
+        xml = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<IMSSubscription>"
+          "<PrivateID>priv</PrivateID>"
+          "<ServiceProfile>"
+            "<PublicIdentity>"
+              "<Identity>pub</Identity>"
+              "<Extension>"
+                "<IdentityType>0</IdentityType>"
+              "</Extension>"
+            "</PublicIdentity>"
+            "<InitialFilterCriteria>"
+              "ifc"
+            "</InitialFilterCriteria>"
+          "</ServiceProfile>"
+        "</IMSSubscription>")
+        self.cx.findFirstAVP.return_value = mock.MagicMock()
+        self.cx.findFirstAVP.return_value.getOctetString.return_value = xml
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        self.cx.findFirstAVP.assert_called_once_with(mock_answer, "User-Data")
+        self.assertEquals(deferred_callback.call_args[0][0], xml)
+
     def test_fetch_server_assignment_multi(self):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req

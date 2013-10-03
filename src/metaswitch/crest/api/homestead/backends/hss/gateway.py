@@ -204,13 +204,23 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(_loadmonitor.target_latency)
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id, public_id):
+        # Constants to match the enumerated values in 3GPP TS 29.229 s6.3.15
+        REGISTRATION = 1
+        NO_ASSIGNMENT = 0
+
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
         if private_id:
-            req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
-        req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(public_id))
+            # withOctetString takes a sequence of bytes, not a Unicode
+            # string, so call bytes() on private_id and public_id
+            req.addAVP(self.cx.getAVP('User-Name').withOctetString(bytes(private_id)))
+
+        req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(bytes(public_id)))
         req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
-        req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(1))
+        if private_id:
+            req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(REGISTRATION))
+        else:
+            req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(NO_ASSIGNMENT))
         req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.realm))
         req.addAVP(self.cx.getAVP('User-Data-Already-Available').withInteger32(0))
         req.addAVP(self.cx.getAVP('Vendor-Specific-Application-Id'))

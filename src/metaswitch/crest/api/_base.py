@@ -178,7 +178,7 @@ class LoadMonitor:
                 _log.debug("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
                                 (accepted_percent, err, self.bucket.rate))
 
-        _penaltycounter.reset_HSS_penalty_count()
+        _penaltycounter.reset_hss_penalty_count()
 
 # Create load monitor with target latency of 100ms, maximum bucket size of
 # 20 requests and initial token rate of 10 per second
