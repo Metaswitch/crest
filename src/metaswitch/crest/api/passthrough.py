@@ -56,16 +56,22 @@ class PassthroughHandler(BaseHandler):
     database
     """
 
-    def initialize(self, table, column):
+    cass_factories = {}
+
+    @classmethod
+    def add_cass_factory(cls, factory_name, factory):
+        cls.cass_factories[factory_name] = factory
+
+    def initialize(self, factory_name, table, column):
         """
-        The table and column are set as part of the Application router, see api/__init__.py
+        The factory_name, table and column are set as part of the Application router, see api/__init__.py
 
         The table corresponds to the cassandra table, while the column specifies the cassandra column to operate on
         The row to operate on is passed to each function, while the value is in the request body, if relevant
         """
         self.table = table
         self.column = column
-        self.cass = CassandraClient(self.application.cassandra_factory)
+        self.cass = CassandraClient(self.cass_factories[factory_name])
 
     @defer.inlineCallbacks
     def get(self, row):

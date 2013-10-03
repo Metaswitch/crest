@@ -58,7 +58,7 @@ ROUTES = [
     # /org.etsi.ngn.simservs/users/USER/simservs.xml
     (PATH_PREFIX + r'org.etsi.ngn.simservs/users/(' + USER + r')/simservs.xml/?$',
      SimservsHandler,
-     {"table": "simservs", "column": "value"}),
+     {"factory_name": "homer", "table": "simservs", "column": "value"}),
 ]
 
 # Initial Cassandra table creation. Whenever you add a route to the URLS above, add
@@ -70,7 +70,8 @@ CREATE_STATEMENTS = {KEYSPACE: [CREATE_SIMSERVS]}
 
 def initialize(application):
     """Module initialization"""
-    application.cassandra_factory = ManagedCassandraClientFactory(KEYSPACE)
+    factory = ManagedCassandraClientFactory(KEYSPACE)
     reactor.connectTCP(settings.CASS_HOST,
                        settings.CASS_PORT,
-                       application.cassandra_factory)
+                       factory)
+    PassthroughHandler.add_cass_factory("homer", factory)

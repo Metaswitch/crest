@@ -54,8 +54,12 @@ class TestPassthroughHandler(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
+        self.factory = mock.MagicMock()
+
+        passthrough.PassthroughHandler.add_cass_factory("factory", self.factory)
         self.handler = passthrough.PassthroughHandler(self.app,
                                                       self.request,
+                                                      factory_name="factory",
                                                       table="table",
                                                       column="col")
         self.mock_cass = mock.MagicMock()

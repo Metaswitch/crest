@@ -59,8 +59,12 @@ class TestSimservsHandler(unittest.TestCase):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
+        self.factory = mock.MagicMock()
+
+        simservs.SimservsHandler.add_cass_factory("homer", self.factory)
         self.handler = simservs.SimservsHandler(self.app,
                                                 self.request,
+                                                factory_name="homer",
                                                 table="table",
                                                 column="column")
 
