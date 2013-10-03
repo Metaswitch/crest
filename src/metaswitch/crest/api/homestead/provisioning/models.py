@@ -127,7 +127,7 @@ class IRS(ProvisioningModel):
     )
 
     def __init__(self, row_key):
-        super(IRS, self).__init__(self.convert_uuid(row_key))
+        super(IRS, self).__init__(convert_uuid(row_key))
 
         # The row key is stored a byte array so need to explicitly store a human
         # readable version.
@@ -435,7 +435,7 @@ class ServiceProfile(ProvisioningModel):
     )
 
     def __init__(self, row_key):
-        super(ServiceProfile, self).__init__(self.convert_uuid(row_key))
+        super(ServiceProfile, self).__init__(convert_uuid(row_key))
 
         # The row key is stored a byte array so need to explicitly store a human
         # readable version.
