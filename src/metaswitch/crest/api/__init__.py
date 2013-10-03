@@ -39,13 +39,16 @@ from metaswitch.crest.api.ping import PingHandler
 from metaswitch.crest import settings
 
 
-# Dynamically load routes (and assoicated CREATE statements) from configured modules
 def load_module(name):
+    """Dynamically load routes and database CREATE statements from configured
+    modules"""
     return __import__("metaswitch.crest.api.%s" % name,
                       fromlist=["ROUTES", "CREATE_STATEMENTS"])
 
 
 def get_routes():
+    """Get all the routes for the webserver.  This includes the default routes,
+    plus the routes for all the installed submodules"""
     return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
 
 
@@ -73,6 +76,7 @@ def initialize(application):
         except AttributeError:
             # No initializer for module
             pass
+
 
 PATH_PREFIX = "^/"
 

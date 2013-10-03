@@ -51,6 +51,14 @@ class ProvisioningBackend(Backend):
 
     @staticmethod
     def sync_return(value):
+        """Synchronously return a value from a function that is called as if it
+        returns asynchrnously.
+
+        In twisted asynchronous functions return a deferred.  There is therfore
+        an issue if a function implements an asynchronous interface but wants to
+        return synchronously.  The solve this, we create a new deferred, and
+        immediately pass it the value to return.  When this reaches the reactor
+        it will get processed immediately."""
         d = defer.Deferred()
         d.callback(value)
         return d

@@ -43,11 +43,29 @@ JSON_PUBLIC_IDS = "public_ids"
 
 
 def verify_relationships(start=None, finish=None):
+    """
+    Decorator that verifies that an IRS, service profile, and public ID are all
+    part of the same heirarchy.
+
+    This assumes that the first parameter is a handler object, and the
+    subsequent parameters are:
+    -  IRS.
+    -  service profile.
+    -  public ID.
+
+    The start and finish parameters are slice boundaries and specify which
+    subsequent parameters to check.  For example:
+
+    Checks that the service profile is a child of the IRS:
+        @verify_relationships()
+        def func1(self, irs_uuid, sp_uuid)
+
+    Check that the service profile a child of the IRS, but does not check the
+    public ID is a child of the service profile:
+        @verify_relationships(finish=-1)
+        def func2(self, irs_uuid, sp_uuid, private_id)
+    """
     def decorator(func):
-        """Decorator that verifies that:
-        -  Any supplied Service Profile is a child of the IRS.
-        -  Any supplied public ID is a child of the Service Profile.
-        """
         @defer.inlineCallbacks
         def wrapper(handler, *pos_args):
             try:
@@ -63,6 +81,7 @@ def verify_relationships(start=None, finish=None):
                 except IndexError:
                     pass
 
+                # If we've got a service profile, check it's a child of the IRS.
                 if sp_uuid:
                     parent_irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
                     if irs_uuid != parent_irs_uuid:
@@ -70,6 +89,8 @@ def verify_relationships(start=None, finish=None):
                                 403, "Service Profile not a child of IRS")
                         defer.returnValue(None)
 
+                # If we've got a public ID, check it's a child of the service
+                # profile.
                 if public_id:
                     parent_sp_uuid = yield PublicID(public_id).get_sp()
                     if sp_uuid != parent_sp_uuid:
@@ -77,10 +98,13 @@ def verify_relationships(start=None, finish=None):
                                 403, "Public ID not a child of Service Profile")
                         defer.returnValue(None)
 
+                # All is well.  Actually call the underlying function.
                 retval = yield func(handler, *pos_args)
                 defer.returnValue(retval)
 
             except NotFoundException:
+                # If we couldn't find a child object we were asked to check,
+                # just return a 404 immediately.
                 handler.send_error(404)
 
         return wrapper
@@ -124,6 +148,8 @@ class SPPublicIDHandler(BaseHandler):
     @defer.inlineCallbacks
     def put(self, irs_uuid, sp_uuid, public_id):
         try:
+            # Check the public identity specified in the XML document matches
+            # the public identity specified in the URL being PUT to.
             xml = self.request.body
             xml_root = ET.fromstring(xml)
             xml_public_id = xml_root.find("Identity").text

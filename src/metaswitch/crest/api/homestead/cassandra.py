@@ -53,13 +53,17 @@ class CassandraModel(object):
     """Simple representation of a Cassandra row"""
 
     # When doing a get Telephus does not distinguish between a row that doesn't
-    # exists, or a row where none of the columns matched the predicate.  It is
+    # exist, or a row where none of the columns matched the predicate.  It is
     # useful to know whether a row exists or not, so we add a column that is
     # always present and we can query to tell if this is the case.
     EXISTS_COLUMN = "_exists"
 
     @classmethod
     def start_connection(cls):
+        """Connect to cassandra.
+
+        This is done in a class method (rather than as part of class definition)
+        to make unit testing without a real cassandra database possible"""
         cls.cass_connection = CassandraConnection(cls.cass_keyspace)
         cls.client = cls.cass_connection.client
 
@@ -97,7 +101,6 @@ class CassandraModel(object):
     @defer.inlineCallbacks
     def get_column_value(self, column):
         """Gets the value of a single named column"""
-
         try:
             column_dict = yield self.get_columns([column])
             defer.returnValue(column_dict[column])
@@ -120,7 +123,7 @@ class CassandraModel(object):
         with the prefix stripped off the keys.
         Does not support super columns."""
         mapping = yield self.get_columns_with_prefix(prefix)
-        new_mapping = {key[len(prefix):] : value
+        new_mapping = {key[len(prefix):]: value
                        for key, value in mapping.iteritems()
                        if key.startswith(prefix)}
         defer.returnValue(new_mapping)

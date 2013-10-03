@@ -35,6 +35,7 @@
 import xml.etree.ElementTree as ET
 import StringIO
 import uuid
+import logging
 
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
@@ -43,13 +44,18 @@ from .. import config
 from metaswitch.crest.api import utils
 from ..cassandra import CassandraModel
 
+_log = logging.getLogger("crest.api.homestead.provisioning")
+
 NULL_COLUMN_VALUE = ""
+
 
 class ProvisioningModel(CassandraModel):
     cass_keyspace = config.PROVISIONING_KEYSPACE
 
     @classmethod
     def register_cache(cls, cache):
+        """Register the cache object so provisioning models can update it with
+        the result of provisioning operations"""
         cls._cache = cache
 
     @defer.inlineCallbacks
@@ -57,7 +63,12 @@ class ProvisioningModel(CassandraModel):
         """Checks if the row exists and if not raise NotFoundException"""
 
         # To check if the row exists, simply try to read all it's columns.
-        yield self.get_columns()
+        try:
+            yield self.get_columns()
+        except:
+            _log.debug("Row %s:%s does not exist" %
+                       (self.cass_table, self.row_key))
+            raise
 
     @staticmethod
     def convert_uuid(this_uuid):
@@ -111,6 +122,8 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def create(cls):
         irs_uuid = uuid.uuid4()
+        _log.debug("Create IRS %s" % irs_uuid)
+
         yield IRS(irs_uuid).touch()
         defer.returnValue(irs_uuid)
 
@@ -129,8 +142,8 @@ class IRS(ProvisioningModel):
         sp_uuids = yield self.get_associated_service_profiles()
 
         public_ids = utils.flatten(
-			[(yield ServiceProfile(uuid).get_public_ids())
-                         for uuid in sp_uuids])
+                                [(yield ServiceProfile(uuid).get_public_ids())
+                                 for uuid in sp_uuids])
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
@@ -157,6 +170,8 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
+        _log.debug("Delete IRS %s" % self.row_key)
+
         sp_uuids = yield self.get_associated_service_profiles()
         for uuid in sp_uuids:
             yield ServiceProfile(uuid).delete()
@@ -169,6 +184,8 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def build_imssubscription_xml(self):
+        """Create an IMS subscription document for this IRS"""
+
         # Create an IMS subscription mode with a dummy private ID node.
         root = ET.Element("IMSSubscription")
         root.set("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance")
@@ -177,11 +194,10 @@ class IRS(ProvisioningModel):
         priv_elem = ET.SubElement(root, "PrivateID")
         priv_elem.text = "Unspecified"
 
-        # Add a ServiceProfile node for each profile in this IRS.
         sp_uuids = yield self.get_associated_service_profiles()
         for sp_uuid in sp_uuids:
-            # Add the Initial Filer Criteria node for this profile. If not
-            # present just ignore the profile entirely.
+            # Add a ServiceProfile node for each profile in this IRS with iFCs.
+            # (ignore it entirely if it doesn't have any iFCs).
             try:
                 ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
                 ifc_xml_elem = ET.fromstring(ifc_xml)
@@ -215,6 +231,7 @@ class IRS(ProvisioningModel):
         Rebuild the IMPI and IMPU tables in the cache when the IRS (or it's
         children are modified).
         """
+        _log.debug("Rebuild cache for IRS %s" % self.row_key)
 
         xml = yield self.build_imssubscription_xml()
         timestamp = self._cache.generate_timestamp()
@@ -263,6 +280,8 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def put_digest(self, digest):
+        _log.debug("Create private ID %s" % self.row_key)
+
         yield self.modify_columns({self.DIGEST_HA1: digest})
         yield self._cache.put_digest(self.row_key,
                                      digest,
@@ -270,6 +289,8 @@ class PrivateID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
+        _log.debug("Delete private ID %s" % self.row_key)
+
         irs_uuids = yield self.get_irses()
         for uuid in irs_uuids:
             yield IRS(uuid).dissociate_private_id(self.row_key)
@@ -295,6 +316,7 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def rebuild(self):
         """ Rebuild the IMPI table in the cache """
+        _log.debug("Rebuild cache for private ID %s" % self.row_key)
 
         # Get all the information we need to rebuild the cache.  Do this before
         # deleting any cache entries to minimize the time the cache is empty.
@@ -343,6 +365,7 @@ class PublicID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def get_publicidentity(self):
+        _log.debug("Create public ID %s" % self.row_key)
         xml = yield self.get_column_value(self.PUBLICIDENTITY)
         defer.returnValue(xml)
 
@@ -365,6 +388,7 @@ class PublicID(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
+        _log.debug("Delete public ID %s" % self.row_key)
         irs_uuid = yield self.get_irs()
         sp_uuid = yield self.get_sp()
 
@@ -402,6 +426,8 @@ class ServiceProfile(ProvisioningModel):
     @defer.inlineCallbacks
     def create(self, irs_uuid):
         sp_uuid = uuid.uuid4()
+        _log.debug("Create service profile %s" % sp_uuid)
+
         yield ServiceProfile(sp_uuid).modify_columns(
                                             {self.IRS_COLUMN: str(irs_uuid)})
         yield IRS(irs_uuid).associate_service_profile(sp_uuid)
@@ -443,6 +469,7 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def delete(self):
+        _log.debug("Delete service profile %s" % self.row_key)
         public_ids = yield self.get_public_ids()
         for pub_id in public_ids:
             yield PublicID(pub_id).delete()
@@ -454,5 +481,7 @@ class ServiceProfile(ProvisioningModel):
 
     @defer.inlineCallbacks
     def rebuild(self):
+        _log.debug("Rebuild cache for parent of service profile %s" %
+                   self.row_key)
         irs_uuid = yield self.get_irs()
         yield IRS(irs_uuid).rebuild()

@@ -61,8 +61,13 @@ UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
 # passed to the the Handler.
 # - The Handler to process the request.
 ROUTES = [
-    # IMPI Digest: the API for getting/updating the digest of a private ID. Can
-    # optionally validate whether a public ID is associated.
+    #
+    # Routes for accessing the cache.
+    #
+
+    # IMPI: the read-only API for accessing the digest and associated public IDs
+    # for a private ID. Can optionally validate whether a specific public ID is
+    # associated.
     #
     # /impi/<private ID>/digest?public_id=xxx
     (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
@@ -73,33 +78,76 @@ ROUTES = [
     # /impu/<public ID>?private_id=xxx
     (r'/impu/'+ANY+r'/?',  IMSSubscriptionHandler),
 
+    #
     # Private ID provisioning.
+    #
+
+    # Get, create or destory a specific private ID.
     (r'/private/'+ANY+r'/?', PrivateHandler),
+
+    # List all the implicit registration sets a private ID can authenticate.
     (r'/private/'+ANY+r'/associated_implicit_registration_sets/?', PrivateAllIrsHandler),
+
+    # Associate / dissociate a private ID with an IRS.
     (r'/private/'+ANY+r'/associated_implicit_registration_sets/'+UUID+r'/?', PrivateOneIrsHandler),
+
+    # List all the public IDs associated with a private ID (i.e. those that are
+    # members of the private ID's implicit registration sets.
     (r'/private/'+ANY+r'/associated_public_ids/?', PrivateAllPublicIdsHandler),
 
+    #
     # Implicit Registration Set provisioning.
-    (r'/irs/?', AllIRSHandler),
-    (r'/irs/'+UUID+r'/?', IRSHandler),
-    (r'/irs/'+UUID+r'/public_ids/?', IRSAllPublicIDsHandler),
-    (r'/irs/'+UUID+r'/private_ids/?', IRSAllPrivateIDsHandler),
-    (r'/irs/'+UUID+r'/private_ids/?', IRSPrivateIDHandler),
+    #
 
+    # Create a new implicit registration set.
+    (r'/irs/?', AllIRSHandler),
+
+    # Delete a specific IRS.
+    (r'/irs/'+UUID+r'/?', IRSHandler),
+
+    # List all public IDs that are members of a specific IRS.
+    (r'/irs/'+UUID+r'/public_ids/?', IRSAllPublicIDsHandler),
+
+    # List all private IDs that can authenticate public IDs in this IRS.
+    (r'/irs/'+UUID+r'/private_ids/?', IRSAllPrivateIDsHandler),
+
+    # Associate a private ID with an IRS.
+    (r'/irs/'+UUID+r'/private_ids/'+ANY+r'/?', IRSPrivateIDHandler),
+
+    #
     # Service profile provisionng.
     #
     # In the class naming scheme, "all" refers to all objects in the parent
     # container (all service profiles in an IRS, or all public IDs in a
     # profile).
+    #
+
+    # Create a new service profile in the IRS.
     (r'/irs/'+UUID+r'/service_profiles/?', AllServiceProfilesHandler),
+
+    # Delete a specific service profile from the IRS.
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/?', ServiceProfileHandler),
+
+    # List all the public IDs in a specific service profile.
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/?', SPAllPublicIDsHandler),
+
+    # Create or delete a public ID (within a specific service profile).
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/public_ids/'+ANY+r'/?', SPPublicIDHandler),
+
+    # Set/get the initial filter criteria for a specific service profile.
     (r'/irs/'+UUID+r'/service_profiles/'+UUID+'/filter_criteria/?', SPFilterCriteriaHandler),
 
-    # Read-only private ID interface.
+    #
+    # Read-only public ID interface.
+    #
+
+    # Redirect to the public ID's service profile.
     (r'/public/'+ANY+r'/service_profile/?', PublicIDServiceProfileHandler),
+
+    # Redirect to the public ID's IRS.
     (r'/public/'+ANY+r'/irs/?', PublicIDIRSHandler),
+
+    # List all private IDs that can authenticate this public ID.
     (r'/public/'+ANY+r'/associated_private_ids/?', PublicIDPrivateIDHandler),
 ]
 

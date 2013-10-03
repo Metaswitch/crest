@@ -62,29 +62,41 @@ class Cache(object):
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
         digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)
+        _log.debug("Fetched digest for private ID '%s' from cache: %s" %
+                   (private_id, digest_ha1))
         defer.returnValue(digest_ha1)
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, public_id, private_id=None):
         xml = yield IMPU(public_id).get_ims_subscription()
+        _log.debug("Fetched XML for public ID '%s' from cache:\n%s" %
+                   (public_id, xml))
         defer.returnValue(xml)
 
     @defer.inlineCallbacks
     def put_digest(self, private_id, digest, timestamp):
+        _log.debug("Put private ID '%s' into cache with digest: %s" %
+                   (private_id, digest))
         yield IMPI(private_id).put_digest_ha1(digest, timestamp)
 
     @defer.inlineCallbacks
     def put_associated_public_id(self, private_id, public_id, timestamp):
+        _log.debug("Associate public ID '%s' with private ID '%s' in cache" %
+                   (public_id, private_id))
         yield IMPI(private_id).put_associated_public_id(public_id, timestamp)
 
     @defer.inlineCallbacks
     def put_ims_subscription(self, public_id, xml, timestamp):
+        _log.debug("Put public ID '%s' into cache with XML:\n%s" %
+                   (public_id, xml))
         yield IMPU(public_id).put_ims_subscription(xml, timestamp)
 
     @defer.inlineCallbacks
     def delete_private_id(self, private_id, timestamp):
+        _log.debug("Delete private ID '%s' from cache" % private_id)
         yield IMPI(private_id).delete_row(timestamp)
 
     @defer.inlineCallbacks
     def delete_public_id(self, public_id, timestamp):
+        _log.debug("Delete public ID '%s' from cache" % public_id)
         yield IMPU(public_id).delete_row(timestamp)

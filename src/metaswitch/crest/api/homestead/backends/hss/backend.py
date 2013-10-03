@@ -65,7 +65,12 @@ class HSSBackend(Backend):
         else:
             digest = yield self._hss_gateway.get_digest(private_id,
                                                         public_id)
+            _log.debug("Got digest %s for private ID %s from HSS" %
+                       (digest, private_id))
+
             if digest:
+                # Update the cache with the digest, and the fact that the
+                # private ID can authenticate the public ID.
                 timestamp = self._cache.generate_timestamp()
                 yield self._cache.put_digest(private_id,
                                              digest,
@@ -82,6 +87,9 @@ class HSSBackend(Backend):
         ims_subscription = yield self._hss_gateway.get_ims_subscription(
                                                                     private_id,
                                                                     public_id)
+        _log.debug("Got IMS subscription %s for private ID %s from HSS" %
+                   (ims_subscription, private_id))
+
         if ims_subscription:
             timestamp = self._cache.generate_timestamp()
             yield self._cache.put_ims_subscription(public_id,

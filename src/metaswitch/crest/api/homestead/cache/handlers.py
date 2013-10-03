@@ -54,12 +54,17 @@ class CacheApiHandler(BaseHandler):
 
     @staticmethod
     def sequential_getter(*funcs):
+        """Returns a function that calls a sequence of callables in turn until
+        one returns something other than None"""
         @defer.inlineCallbacks
         def getter(*pos_args, **kwd_args):
             for f in funcs:
                 retval = yield f(*pos_args, **kwd_args)
                 if retval:
+                    _log.debug("Got result from %s" % f)
                     defer.returnValue(retval)
+                else:
+                    _log.debug("No result from %s" % f)
         return getter
 
 
@@ -68,6 +73,7 @@ class DigestHandler(CacheApiHandler):
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
 
+        # Try the cache first.  If that fails go to the backend.
         getter = self.sequential_getter(self.application.cache.get_digest,
                                         self.application.backend.get_digest)
         retval = yield getter(private_id, public_id)
@@ -81,6 +87,7 @@ class IMSSubscriptionHandler(CacheApiHandler):
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
 
+        # Try the cache first.  If that fails go to the backend.
         getter = self.sequential_getter(
                                 self.application.cache.get_ims_subscription,
                                 self.application.backend.get_ims_subscription)

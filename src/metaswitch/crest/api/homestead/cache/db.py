@@ -33,6 +33,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 from twisted.internet import defer
+import logging
 
 from .. import config
 from ..cassandra import CassandraModel
@@ -40,6 +41,8 @@ from telephus.cassandra.ttypes import NotFoundException
 
 DIGEST_HA1 = "digest_ha1"
 PUBLIC_ID_PREFIX = "public_id_"
+
+_log = logging.getLogger("crest.api.homestead.cache")
 
 
 class CacheModel(CassandraModel):
@@ -68,13 +71,19 @@ class IMPI(CacheModel):
 
             columns = yield self.get_columns(query_columns)
 
-            if (DIGEST_HA1 in columns) and \
-               (public_id is None or public_id_column in columns):
-                defer.returnValue(columns[DIGEST_HA1])
+            # It the user has supplied a public ID, they care about whether the
+            # private ID can authenticate the public ID.  Only return a digest
+            # if the public ID is associated with the private ID.
+            if (DIGEST_HA1 in columns):
+                if (public_id is None or public_id_column in columns):
+                    defer.returnValue(columns[DIGEST_HA1])
+                else:
+                    _log.debug("Not returning digest for private ID %s as "
+                               "public ID %s is not in columns: %s" %
+                               (self.row_key, public_id, columns.keys()))
 
         except NotFoundException:
             pass
-
 
     @defer.inlineCallbacks
     def put_digest_ha1(self, digest, timestamp=None):
