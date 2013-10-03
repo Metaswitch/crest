@@ -75,7 +75,7 @@ def convert_uuid(this_uuid):
 
 def uuid_to_str(this_uuid):
 
-    if isinstance(this_uuid, basestring) and len(this_uuid == 16):
+    if isinstance(this_uuid, basestring) and (len(this_uuid) == 16):
         # Got a 16 length string, so this is probably the uuid as a byte stream.
         return str(uuid.UUID(this_uuid))
     else:
