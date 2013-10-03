@@ -37,7 +37,7 @@ import logging
 from cyclone.web import HTTPError
 from twisted.internet import defer
 
-from metaswitch.crest.api._base import BaseHandler
+from metaswitch.crest.api._base import BaseHandler, _loadmonitor
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
@@ -69,6 +69,7 @@ class CacheApiHandler(BaseHandler):
 
 
 class DigestHandler(CacheApiHandler):
+    @BaseHandler.check_request_age(_loadmonitor.target_latency)
     @defer.inlineCallbacks
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
@@ -83,6 +84,7 @@ class DigestHandler(CacheApiHandler):
 
 
 class IMSSubscriptionHandler(CacheApiHandler):
+    @BaseHandler.check_request_age(_loadmonitor.target_latency)
     @defer.inlineCallbacks
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)

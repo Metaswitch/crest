@@ -41,6 +41,8 @@ from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
 from metaswitch.crest import settings
+from metaswitch.crest.api._base import _penaltycounter, _loadmonitor
+from metaswitch.crest.api import DeferTimeout 
 from .io import HSSPeerIO
 
 _log = logging.getLogger("crest.api.homestead.hss")
@@ -57,6 +59,12 @@ class HSSNotEnabled(Exception):
 
 class HSSNotFound(Exception):
     """Exception to throw if a request cannot be completed because a resource is not found"""
+    pass
+
+
+class HSSOverloaded(Exception):
+    """Exception to throw if a request cannot be completed because the HSS returns an
+    overloaded response"""
     pass
 
 
@@ -162,6 +170,7 @@ class HSSPeerListener(stack.PeerListener):
         else:
             _log.info("HSS returned error (code unknown)")
 
+    @DeferTimeout.timeout(_loadmonitor.target_latency)
     @defer.inlineCallbacks
     def fetch_multimedia_auth(self, private_id, public_id):
         _log.debug("Sending Multimedia-Auth request for %s/%s" % (private_id, public_id))
@@ -185,8 +194,14 @@ class HSSPeerListener(stack.PeerListener):
             defer.returnValue(digest.getOctetString())
         else:
             self.log_diameter_error(answer)
-            raise HSSNotFound()
+            # If the error is an Overload response, increment the HSS penalty counter
+            if self.get_diameter_error_code(answer) == 3004:
+                _penaltycounter.incr_hss_penalty_count()
+                raise HSSOverloaded()
+            else:
+                raise HSSNotFound() 
 
+    @DeferTimeout.timeout(_loadmonitor.target_latency)
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id, public_id):
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
@@ -211,7 +226,12 @@ class HSSPeerListener(stack.PeerListener):
         user_data = self.cx.findFirstAVP(answer, "User-Data")
         if not user_data:
             self.log_diameter_error(answer)
-            raise HSSNotFound()
+            # If the error is an Overload response, increment the HSS penalty counter
+            if self.get_diameter_error_code(answer) == 3004:
+                _penaltycounter.incr_hss_penalty_count()
+                raise HSSOverloaded()
+            else:
+                raise HSSNotFound()
 
         defer.returnValue(user_data.getOctetString())
 

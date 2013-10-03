@@ -38,6 +38,7 @@
 import sys
 import unittest
 import uuid
+import time
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 from metaswitch.crest import settings
@@ -108,6 +109,32 @@ class TestBaseHandler(unittest.TestCase):
         data = self.handler.finish.call_args[0][0]
         self.assertTrue("exception" in data)
         self.assertTrue("Traceback" in "".join(data['exception']), data["exception"])
+
+    def test_check_request_age_decorator(self):
+        """ Test the check_request_age decorator with a recent request"""
+        # Set the start time of the request to now
+        self._start = time.time()
+        # Call a mock function with the decorator - as the request is recent, the
+        # underlying function should be called as normal
+        decorator = self.handler.check_request_age(5)
+        func = MagicMock()
+        decorated = decorator(func)
+        decorated(self, "arg1")
+        func.assert_called_once_with(self, "arg1")
+
+    def test_check_request_age_decorator_error(self):
+        """ Test the check_request_age decorator with an old request"""
+        self.send_error = MagicMock()
+        # Ensure that the request is too old
+        self._start = time.time() - 1000
+        # Call a mock function with the decorator - as the request is old, the decorator
+        # should send a 503 error and the underlying function should not be called.
+        decorator = self.handler.check_request_age(5)
+        func = MagicMock()
+        decorated = decorator(func)
+        decorated(self, "arg")
+        self.send_error.assert_called_once_with(503, "Request too old")
+        self.assertFalse(func.called)
 
 SIP_URI = "sip:1234567890@cw-ngv.com"
 OWNER_ID = uuid.uuid4()
