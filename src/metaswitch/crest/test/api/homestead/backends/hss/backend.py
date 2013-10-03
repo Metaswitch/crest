@@ -67,6 +67,9 @@ class TestHSSBackend(HSSBackendFixture):
         self.backend = HSSBackend(self.cache)
 
     def test_get_digest_nothing_returned(self):
+        """When no digest is returned from the HSS that backend returns None and
+        does not update the cache"""
+
         self.gateway.get_digest.return_value = defer.Deferred()
         get_deferred = self.backend.get_digest("priv", "pub")
 
@@ -81,6 +84,9 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertFalse(self.cache.method_calls)
 
     def test_get_digest_something_returned(self):
+        """When a digest is returned from the HSS the backend returns it and
+        updates the cache"""
+
         self.gateway.get_digest.return_value = defer.Deferred()
         self.cache.put_digest.return_value = defer.Deferred()
         self.cache.put_associated_public_id.return_value = defer.Deferred()
@@ -104,6 +110,9 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertEquals(get_callback.call_args[0][0], "some_digest")
 
     def test_get_digest_no_public_id(self):
+        """If a public is not supplied when trying to get a digest, the backend
+        does not query the HSS or update the cache"""
+
         get_deferred = self.backend.get_digest("priv")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
@@ -114,6 +123,9 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertFalse(self.cache.method_calls)
 
     def test_get_ims_subscription_nothing_returned(self):
+        """When no IMS subscription is returned from the HSS the backend returns
+        None and does not update the cache"""
+
         self.gateway.get_ims_subscription.return_value = defer.Deferred()
 
         get_deferred = self.backend.get_ims_subscription("pub", "priv")
@@ -128,6 +140,9 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertFalse(self.cache.method_calls)
 
     def test_get_ims_subscription_xml_returned(self):
+        """When an IMS subscription is returned from the HSS it is returned by
+        the backend, which also updates the cache"""
+
         self.gateway.get_ims_subscription.return_value = defer.Deferred()
         self.cache.put_ims_subscription.return_value = defer.Deferred()
 
@@ -145,6 +160,10 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertEquals(get_callback.call_args[0][0], "xml")
 
     def test_get_ims_subscription_no_priv_id(self):
+        """When getting an IMS subscription and no private ID is supplied, no
+        private ID is passed to the HSS.  The backend returns the result of the
+        HSS query"""
+
         self.gateway.get_ims_subscription.return_value = defer.Deferred()
 
         get_deferred = self.backend.get_ims_subscription("sip:pub")

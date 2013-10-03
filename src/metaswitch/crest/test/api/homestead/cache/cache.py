@@ -75,6 +75,8 @@ class TestCache(unittest.TestCase):
         self.timestamp = 1234
 
     def test_put_digest(self):
+        """Test a digest can be put into the cache"""
+
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
         res = Result(self.cache.put_digest("priv", "digest", self.timestamp))
         self.cass_client.batch_insert.assert_called_once_with(
@@ -88,6 +90,9 @@ class TestCache(unittest.TestCase):
 
 
     def test_put_associated_public_id(self):
+        """Test a public ID associated with the private ID can be put into the
+        cache"""
+
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
         res = Result(self.cache.put_associated_public_id("priv",
                                                          "kermit",
@@ -102,6 +107,7 @@ class TestCache(unittest.TestCase):
         self.assertEquals(res.value(), None)
 
     def test_put_ims_subscription(self):
+        """Test an IMS subscription can be put into the cache"""
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
         res = Result(self.cache.put_ims_subscription("pub",
                                                      "xml",
@@ -116,6 +122,8 @@ class TestCache(unittest.TestCase):
         self.assertEquals(res.value(), None)
 
     def test_get_ims_subscription(self):
+        """Test an IMS subscription can be fetched from the cache"""
+
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
         res = Result(self.cache.get_ims_subscription("pub"))
 
@@ -128,6 +136,9 @@ class TestCache(unittest.TestCase):
         self.assertEquals(res.value(), "xml")
 
     def test_get_digest_no_pub_id_supp(self):
+        """Test a digest can be got from the cache when no public ID is
+        supplied"""
+
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
         res = Result(self.cache.get_digest("priv"))
 
@@ -140,6 +151,10 @@ class TestCache(unittest.TestCase):
         self.assertEquals(res.value(), "digest")
 
     def test_get_digest_no_pub_id_assoc(self):
+        """Test that is you specify a required public ID when getting a digest,
+        that nothing is returned if that ID is not associated with the private
+        ID."""
+
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
         res = Result(self.cache.get_digest("priv", "miss_piggy"))
 
@@ -153,6 +168,10 @@ class TestCache(unittest.TestCase):
         self.assertEquals(res.value(), None)
 
     def test_get_digest_right_pub_id(self):
+        """Test that is you specify a required public ID when getting a digest,
+        that the digest IS returned if that ID IS associated with the private
+        ID."""
+
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
         res = Result(self.cache.get_digest("priv", "miss_piggy"))
 
