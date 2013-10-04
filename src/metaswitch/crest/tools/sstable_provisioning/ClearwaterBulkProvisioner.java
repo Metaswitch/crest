@@ -47,7 +47,7 @@ public class ClearwaterBulkProvisioner
            System.out.println("Only homer and homestead roles are supported");
         }
     }
- 
+
     private static void provision_homer(BufferedReader reader, String csvfile) throws IOException
     {
         String keyspace = "homer";
@@ -139,6 +139,7 @@ public class ClearwaterBulkProvisioner
         impiWriter.close();
         impuWriter.close();
         irsWriter.close();
+        spWriter.close();
         publicWriter.close();
         privateWriter.close();
     }
@@ -155,7 +156,7 @@ public class ClearwaterBulkProvisioner
             directory.mkdir();
 
         return new SSTableSimpleUnsortedWriter(directory,
-                                               new RandomPartitioner(),         
+                                               new RandomPartitioner(),
                                                keyspace_name,
                                                table_name,
                                                comparator,
@@ -182,9 +183,11 @@ public class ClearwaterBulkProvisioner
             private_id = columns[1].trim();
             digest = columns[2].trim();
             simservs = columns[3].trim();
-            ifc = columns[4].trim();
-            imssubscription = columns[5].trim();
-            irs_uuid_str = columns[6].trim();
+            publicidentity_xml = columns[4].trim();
+            ifc = columns[5].trim();
+            imssubscription = columns[6].trim();
+            irs_uuid_str = columns[7].trim();
+            sp_uuid_str = columns[8].trim();
 
             // Convert the string representation of UUID to a byte array.  Apache Commons' UUID class has this
             // as built in function (as getRawBytes) but we don't have access to that class here, so we roll our
