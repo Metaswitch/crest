@@ -51,6 +51,10 @@ Pre-requisites
     sudo apt-get install libxml2-dev libxslt-dev
     ```
 
+5. Python static analysis checker
+
+    sudo pip install flake8 mccabe pep8-naming
+
 Setting up a virtualenv
 =======================
 
