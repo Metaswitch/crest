@@ -61,9 +61,6 @@ case "$1" in
         # or init.d script won't work
         service homestead stop
         rm -rf $HOMESTEAD_DIR/env
-        rm -f /etc/iptables/rules.v4
-        [ ! -f /etc/iptables/rules.v4.pre-homestead ] || mv /etc/iptables/rules.v4.pre-homestead /etc/iptables/rules.v4
-        service iptables-persistent restart
     ;;
 
     failed-upgrade)

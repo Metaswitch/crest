@@ -68,13 +68,6 @@ case "$1" in
             $HOMER_DIR/env/bin/python $module/setup.py install
             cd -
         done
-        # If this install is on a node that already has ellis installed, do not replace the iprules - it needs port 80 more than homer
-        if ! dpkg-query -W -f='${Status} ${Version}\n' ellis > /dev/null 2>&1
-        then
-            [ ! -f /etc/iptables/rules.v4 ] || cp /etc/iptables/rules.v4 /etc/iptables/rules.v4.pre-homer
-            cp $HOMER_DIR/iptables.rules /etc/iptables/rules.v4
-            service iptables-persistent restart
-        fi
 
         /etc/clearwater/scripts/homer
         echo Connecting to Cassandra on localhost...

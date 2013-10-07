@@ -61,9 +61,6 @@ case "$1" in
         # or init.d script won't work
         service homer stop
         rm -rf $HOMER_DIR/env
-        rm -f /etc/iptables/rules.v4
-        [ ! -f /etc/iptables/rules.v4.pre-homer ] || mv /etc/iptables/rules.v4.pre-homer /etc/iptables/rules.v4
-        service iptables-persistent restart
     ;;
 
     failed-upgrade)
