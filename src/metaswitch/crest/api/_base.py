@@ -152,7 +152,7 @@ class LoadMonitor:
     def request_complete(self, latency):
         self.pending_count -= 1
         self.smoothed_latency = (7 * self.smoothed_latency + latency) / 8
-        self.smoothed_variability = (7 * self.smoothed_variability + math.abs(latency - self.smoothed_latency)) / 8 
+        self.smoothed_variability = (7 * self.smoothed_variability + abs(latency - self.smoothed_latency)) / 8 
         self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability) 
         self.adjust_count -= 1
 
