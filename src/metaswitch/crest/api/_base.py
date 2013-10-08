@@ -119,7 +119,10 @@ class LoadMonitor:
     INCREASE_THRESHOLD = -0.005
     INCREASE_FACTOR = 0.5
 
-    def __init__(self, target_latency, max_bucket_size, init_token_rate):
+    # How many deviations above the average latency is the max latency 
+    NUM_DEV = 4
+
+    def __init__(self, target_latency, max_bucket_size, init_token_rate, min_token_rate):
         _log = logging.getLogger("crest.api.loadmonitor")
         _log.debug("Creating load monitor")
         self.accepted = 0
@@ -128,8 +131,11 @@ class LoadMonitor:
         self.max_pending_count = 0
         self.target_latency = target_latency
         self.smoothed_latency = 0
+        self.smoothed_variability = target_latency
+        self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability) 
         self.bucket = LeakyBucket(max_bucket_size, init_token_rate)
         self.adjust_count = self.ADJUST_PERIOD
+        self.min_token_rate = min_token_rate
 
     def admit_request(self):
         if self.bucket.get_token():
@@ -146,7 +152,8 @@ class LoadMonitor:
     def request_complete(self, latency):
         self.pending_count -= 1
         self.smoothed_latency = (7 * self.smoothed_latency + latency) / 8
-
+        self.smoothed_variability = (7 * self.smoothed_variability + math.abs(latency - self.smoothed_latency)) / 8 
+        self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability) 
         self.adjust_count -= 1
 
         if self.adjust_count <= 0:
@@ -165,6 +172,8 @@ class LoadMonitor:
                 # latency is above where we want it to be, or we are getting overload responses from the HSS,
                 # so adjust the rate downwards by a multiplicative factor
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
+                if new_rate < self.min_token_rate:
+                    new_rate = self.min_token_rate
                 _log.debug("Accepted %f requests, latency error = %f, HSS overloads = %d, decrease rate %f to %f" %
                                  (accepted_percent, err, hss_overloads, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
@@ -182,8 +191,8 @@ class LoadMonitor:
         _penaltycounter.reset_hss_penalty_count()
 
 # Create load monitor with target latency of 100ms, maximum bucket size of
-# 20 requests and initial token rate of 10 per second
-_loadmonitor = LoadMonitor(0.1, 20, 10)
+# 20 requests, initial and minimum token rate of 10 per second
+_loadmonitor = LoadMonitor(0.1, 20, 10, 10)
 _penaltycounter = PenaltyCounter()
 
 
@@ -351,18 +360,19 @@ class BaseHandler(cyclone.web.RequestHandler):
         return wrapper
 
     @staticmethod
-    def check_request_age(secs):
+    def check_request_age(func):
         """Decorator that sends a 503 error (and returns None) if the request
         is too old"""
-        def wrap(func):
-            def wrapper(handler, *pos_args, **kwd_args):
-                if time.time() - handler._start > secs:
-                    handler.send_error(503, "Request too old")
-                else:
-                    return func(handler, *pos_args, **kwd_args)
-            return wrapper
-        return wrap
 
+        # Sprout times out requests that have taken over 500ms
+        MAX_REQUEST_TIME = 0.5
+
+        def wrapper(handler, *pos_args, **kwd_args):
+            if time.time() - handler._start > MAX_REQUEST_TIME:
+                handler.send_error(503, "Request too old")
+            else:
+                return func(handler, *pos_args, **kwd_args)
+        return wrapper 
 
 class UnknownApiHandler(BaseHandler):
     """

@@ -116,7 +116,7 @@ class TestBaseHandler(unittest.TestCase):
         self._start = time.time()
         # Call a mock function with the decorator - as the request is recent, the
         # underlying function should be called as normal
-        decorator = self.handler.check_request_age(5)
+        decorator = self.handler.check_request_age
         func = MagicMock()
         decorated = decorator(func)
         decorated(self, "arg1")
@@ -129,7 +129,7 @@ class TestBaseHandler(unittest.TestCase):
         self._start = time.time() - 1000
         # Call a mock function with the decorator - as the request is old, the decorator
         # should send a 503 error and the underlying function should not be called.
-        decorator = self.handler.check_request_age(5)
+        decorator = self.handler.check_request_age
         func = MagicMock()
         decorated = decorator(func)
         decorated(self, "arg")
