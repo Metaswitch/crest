@@ -51,8 +51,8 @@ _log = logging.getLogger("crest.api")
 
 class PenaltyCounter:
     def __init__(self):
-        _log = logging.getLogger("crest.api.penaltycounter")
-        _log.debug("Creating penalty counter")
+        self.log = logging.getLogger("crest.api.penaltycounter")
+        self.log.debug("Creating penalty counter")
 
         # Set up counters for HSS and cache overload responses. Only HSS overload responses
         # are currently tracked.
@@ -72,11 +72,11 @@ class PenaltyCounter:
         self.hss_penalty_count += 1
 
     def get_cache_penalty_count(self):
-        self._log.debug("%d cache overload penalties hit in current latency tracking period", self.cache_penalty_count)
+        self.log.debug("%d cache overload penalties hit in current latency tracking period", self.cache_penalty_count)
         return self.cache_penalty_count
 
     def get_hss_penalty_count(self):
-        self._log.debug("%d HSS overload penalties hit in current latency tracking period", self.hss_penalty_count)
+        self.log.debug("%d HSS overload penalties hit in current latency tracking period", self.hss_penalty_count)
         return self.hss_penalty_count
 
 
@@ -160,12 +160,13 @@ class LoadMonitor:
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
-            if ((err > self.DECREASE_THRESHOLD) or (_penaltycounter.get_hss_penalty_count > 0)):
+            hss_overloads = _penaltycounter.get_hss_penalty_count()
+            if ((err > self.DECREASE_THRESHOLD) or (hss_overloads > 0)):
                 # latency is above where we want it to be, or we are getting overload responses from the HSS,
                 # so adjust the rate downwards by a multiplicative factor
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
-                _log.debug("Accepted %f requests, latency error = %f, decrease rate %f to %f" %
-                                 (accepted_percent, err, self.bucket.rate, new_rate))
+                _log.debug("Accepted %f requests, latency error = %f, HSS overloads = %d, decrease rate %f to %f" %
+                                 (accepted_percent, err, hss_overloads, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
             elif err < self.INCREASE_THRESHOLD:
                 # latency is sufficiently below the target, so we can increase by an additive
