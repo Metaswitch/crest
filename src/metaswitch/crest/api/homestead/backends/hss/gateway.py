@@ -170,7 +170,7 @@ class HSSPeerListener(stack.PeerListener):
         else:
             _log.info("HSS returned error (code unknown)")
 
-    @DeferTimeout.timeout(_loadmonitor.target_latency)
+    @DeferTimeout.timeout(_loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_multimedia_auth(self, private_id, public_id):
         _log.debug("Sending Multimedia-Auth request for %s/%s" % (private_id, public_id))
@@ -201,7 +201,7 @@ class HSSPeerListener(stack.PeerListener):
             else:
                 raise HSSNotFound()
 
-    @DeferTimeout.timeout(_loadmonitor.target_latency)
+    @DeferTimeout.timeout(_loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id, public_id):
         # Constants to match the enumerated values in 3GPP TS 29.229 s6.3.15
