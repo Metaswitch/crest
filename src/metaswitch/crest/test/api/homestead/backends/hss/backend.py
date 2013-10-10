@@ -53,7 +53,7 @@ class TestHSSBackendInitialization(HSSBackendFixture):
     def test_backend_creates_gateway(self):
         self.cache = mock.MagicMock()
         self.backend = HSSBackend(self.cache)
-        self.HSSGateway.assert_called_once_with()
+        self.HSSGateway.assert_called_once()
 
 class TestHSSBackend(HSSBackendFixture):
     def setUp(self):
@@ -100,11 +100,12 @@ class TestHSSBackend(HSSBackendFixture):
 
         self.cache.put_digest.assert_called_once_with("priv",
                                                       "some_digest",
-                                                       self.timestamp)
+                                                      self.timestamp,
+                                                      ttl=30)
         self.cache.put_digest.return_value.callback(None)
 
         self.cache.put_associated_public_id.assert_called_once_with(
-                                                  "priv", "pub", self.timestamp)
+                                                  "priv", "pub", self.timestamp, ttl=3600)
         self.cache.put_associated_public_id.return_value.callback(None)
 
         self.assertEquals(get_callback.call_args[0][0], "some_digest")
@@ -154,7 +155,7 @@ class TestHSSBackend(HSSBackendFixture):
         self.gateway.get_ims_subscription.return_value.callback("xml")
 
         self.cache.put_ims_subscription.assert_called_once_with(
-                                                   "pub", "xml", self.timestamp)
+                                                   "pub", "xml", self.timestamp, ttl=(7 * 24 * 60 * 60))
         self.cache.put_ims_subscription.return_value.callback(None)
 
         self.assertEquals(get_callback.call_args[0][0], "xml")
