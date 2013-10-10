@@ -36,7 +36,7 @@ from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
 from telephus.client import CassandraClient, ConsistencyLevel
-from telephus.cassandra.ttypes import NotFoundException, UnavailableException
+from telephus.cassandra.ttypes import Column, NotFoundException, UnavailableException
 
 
 class CassandraConnection(object):
@@ -150,6 +150,18 @@ class CassandraModel(object):
                                        mapping=mapping,
                                        ttl=ttl,
                                        timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def modify_columns_multikeys(cls, keys, mapping, ttl=None, timestamp=None):
+        """Updates a set of rows to give the columns specified by the keys of
+        `mapping` their respective values."""
+        mutmap = {}
+        row = map(lambda x: Column(x, mapping[x], timestamp, ttl), mapping)
+        row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
+        for key in keys:
+            mutmap[key] = {cls.cass_table: row}
+        yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_row(self, timestamp=None):

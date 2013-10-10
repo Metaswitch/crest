@@ -111,8 +111,8 @@ class HSSBackend(Backend):
         # Iterate over all public IDs in the subscription, storing it against
         # each one.
         timestamp = self._cache.generate_timestamp()
-        for public_id in xml.iterfind('./PublicIdentity/Identity'):
-            yield self._cache.put_ims_subscription(public_id.text,
-                                                   ims_subscription,
-                                                   timestamp,
-                                                   ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
+        public_ids = [pi.text() for pi in xml.iterfind('./PublicIdentity/Identity')]
+        self._cache.put_multi_ims_subscription(public_ids,
+                                               ims_subscription,
+                                               timestamp,
+                                               ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)

@@ -124,3 +124,11 @@ class IMPU(CacheModel):
         yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription},
                                   ttl=ttl,
                                   timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def put_multi_ims_subscription(cls, public_ids, ims_subscription, ttl=None, timestamp=None):
+        yield cls.modify_columns_multikeys(public_ids,
+                                           {IMS_SUBSCRIPTION: ims_subscription},
+                                           ttl=ttl,
+                                           timestamp=timestamp)
