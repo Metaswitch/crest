@@ -38,14 +38,11 @@
 import os
 import unittest
 import mock
-from mock import ANY
-from mock import mock_open
 
 from lxml import etree
 from cyclone.web import HTTPError
 
 from metaswitch.crest.api import xsd
-from metaswitch.crest.test._base import AppTestCase
 
 XML_DIR_NAME = "test_xml"
 XML_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), XML_DIR_NAME)

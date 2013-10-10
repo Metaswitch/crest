@@ -36,7 +36,6 @@
 import json
 import unittest
 
-from metaswitch.crest import settings
 from metaswitch.crest.main import create_application
 
 class AppTestCase(unittest.TestCase):

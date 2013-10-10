@@ -38,11 +38,8 @@
 import unittest
 import mock
 import httplib
-from mock import ANY
-from cyclone.web import HTTPError
 from telephus.cassandra.ttypes import NotFoundException
 from twisted.internet import defer
-from twisted.python.failure import Failure
 
 from metaswitch.crest.api import passthrough
 

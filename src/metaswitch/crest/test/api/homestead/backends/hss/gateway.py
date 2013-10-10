@@ -35,13 +35,10 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-import httplib
 import mock
 import unittest
 
-from mock import ANY
 from twisted.internet import defer
-from twisted.python.failure import Failure
 
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter

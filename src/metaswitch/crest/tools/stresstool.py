@@ -41,7 +41,6 @@ import time
 import random
 
 from metaswitch.crest.logging_config import configure_logging
-from metaswitch.crest import settings
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 
@@ -196,6 +195,7 @@ def accumulate_request(req):
     if str(req.response.code)[0] == "2":
         success_histogram.accumulate(req.response_time)
     elif req.response.code == 499:
+        global timeout_count
         timeout_count += 1
     else:
         _log.warn("Request failed %s", req.response)
