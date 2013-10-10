@@ -68,12 +68,12 @@ class HSSOverloaded(Exception):
     pass
 
 
-class HSSGateway(stack.ApplicationListener):
+class HSSGateway(object):
     """
     Gateway to real HSS. Abstracts away the underlying details of the Cx
     interface to enable fetching of data in a more HTTP-like fashion
     """
-    def __init__(self):
+    def __init__(self, on_ims_subscription_change=None):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
 
@@ -82,7 +82,7 @@ class HSSGateway(stack.ApplicationListener):
         dstack.identity = "sip:%s" % settings.SIP_DIGEST_REALM
         dstack.realm = settings.SIP_DIGEST_REALM
 
-        app = HSSAppListener(dstack)
+        app = HSSAppListener(dstack, on_ims_subscription_change)
         self.peer_listener = HSSPeerListener(app,
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
@@ -122,7 +122,8 @@ class HSSAppListener(stack.ApplicationListener):
     response arrives, it correlates it with a pending request and injects the
     response into the pending request
     """
-    def __init__(self, stack):
+    def __init__(self, stack, on_ims_subscription_change=None):
+        self.on_ims_subscription_change = on_ims_subscription_change
         self._pending_responses = {}
         self.cx = stack.getDictionary("cx")
 
@@ -144,6 +145,14 @@ class HSSAppListener(stack.ApplicationListener):
             _log.debug("Executing callbacks for pending requests %s" % hash(key))
             for deferred in self._pending_responses.pop(key):
                 deferred.callback(answer)
+
+    def onRequest(self, peer, request):
+        if self.cx.isCommand(request, "Push-Profile"):
+            user_data = self.cx.findFirstAVP(request, "User-Data")
+            if user_data and self.on_ims_subscription_change:
+                self.on_ims_subscription_change(user_data.getOctetString())
+        answer = request.createAnswer()
+        peer.stack.sendByPeer(peer, answer)
 
 
 class HSSPeerListener(stack.PeerListener):

@@ -90,7 +90,7 @@ class IMPI(CacheModel):
         yield self.modify_columns({DIGEST_HA1: digest}, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def put_associated_public_id(self, public_id, timestamp=None):
+    def put_associated_public_id(self, public_id, ttl=None, timestamp=None):
         public_id_column = PUBLIC_ID_PREFIX + public_id
         yield self.modify_columns({public_id_column: ""}, ttl=ttl, timestamp=timestamp)
 
@@ -120,7 +120,7 @@ class IMPU(CacheModel):
             pass
 
     @defer.inlineCallbacks
-    def put_ims_subscription(self, ims_subscription, timestamp=None):
+    def put_ims_subscription(self, ims_subscription, ttl=None, timestamp=None):
         yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription},
                                   ttl=ttl,
                                   timestamp=timestamp)

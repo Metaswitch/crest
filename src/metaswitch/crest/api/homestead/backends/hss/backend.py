@@ -35,9 +35,11 @@
 import logging
 
 from twisted.internet import defer
+from xml.etree import ElementTree
 
 from ..backend import Backend
 from .gateway import HSSGateway
+from metaswitch.crest import settings
 
 _log = logging.getLogger("crest.api.homestead.hss")
 
@@ -53,7 +55,9 @@ class HSSBackend(Backend):
 
     def __init__(self, cache):
         self._cache = cache
-        self._hss_gateway = HSSGateway()
+        def on_ims_subscription_change(ims_subscription):
+            self.on_ims_subscription_change(ims_subscription)
+        self._hss_gateway = HSSGateway(on_ims_subscription_change)
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
@@ -75,11 +79,11 @@ class HSSBackend(Backend):
                 yield self._cache.put_digest(private_id,
                                              digest,
                                              timestamp,
-                                             ttl=HSS_AUTH_CACHE_PERIOD_SECS)
+                                             ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
                 yield self._cache.put_associated_public_id(private_id,
                                                            public_id,
                                                            timestamp,
-                                                           ttl=HSS_ASSOC_IMPU_CACHE_PERIOD_SECS)
+                                                           ttl=settings.HSS_ASSOC_IMPU_CACHE_PERIOD_SECS)
             defer.returnValue(digest)
 
     @defer.inlineCallbacks
@@ -97,6 +101,18 @@ class HSSBackend(Backend):
             yield self._cache.put_ims_subscription(public_id,
                                                    ims_subscription,
                                                    timestamp,
-                                                   ttl=HSS_IMS_SUB_CACHE_PERIOD_SECS)
+                                                   ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
 
         defer.returnValue(ims_subscription)
+
+    @defer.inlineCallbacks
+    def on_ims_subscription_change(self, ims_subscription):
+        xml = ElementTree.fromstring(ims_subscription)
+        # Iterate over all public IDs in the subscription, storing it against
+        # each one.
+        timestamp = self._cache.generate_timestamp()
+        for public_id in xml.iterfind('./PublicIdentity/Identity'):
+            yield self._cache.put_ims_subscription(public_id.text,
+                                                   ims_subscription,
+                                                   timestamp,
+                                                   ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
