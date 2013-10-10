@@ -74,10 +74,12 @@ class HSSBackend(Backend):
                 timestamp = self._cache.generate_timestamp()
                 yield self._cache.put_digest(private_id,
                                              digest,
-                                             timestamp)
+                                             timestamp,
+                                             ttl=HSS_AUTH_CACHE_PERIOD_SECS)
                 yield self._cache.put_associated_public_id(private_id,
                                                            public_id,
-                                                           timestamp)
+                                                           timestamp,
+                                                           ttl=HSS_ASSOC_IMPU_CACHE_PERIOD_SECS)
             defer.returnValue(digest)
 
     @defer.inlineCallbacks
@@ -94,6 +96,7 @@ class HSSBackend(Backend):
             timestamp = self._cache.generate_timestamp()
             yield self._cache.put_ims_subscription(public_id,
                                                    ims_subscription,
-                                                   timestamp)
+                                                   timestamp,
+                                                   ttl=HSS_IMS_SUB_CACHE_PERIOD_SECS)
 
         defer.returnValue(ims_subscription)
