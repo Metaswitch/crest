@@ -39,7 +39,6 @@ import argparse
 import logging
 import urllib
 
-from metaswitch.crest import settings
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 

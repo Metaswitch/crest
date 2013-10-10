@@ -37,11 +37,8 @@
 
 import unittest
 import mock
-from mock import ANY
 
 from metaswitch.crest.api import ping
-
-from metaswitch.crest.test._base import AppTestCase
 
 class TestPingHandler(unittest.TestCase):
     """

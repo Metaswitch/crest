@@ -37,7 +37,6 @@
 import mock
 import unittest
 
-from mock import ANY
 from twisted.internet import defer
 
 from metaswitch.crest.api.homestead.backends.hss import HSSBackend

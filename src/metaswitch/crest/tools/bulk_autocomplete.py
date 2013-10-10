@@ -57,7 +57,7 @@ user.  You can then pass this CSV file to bulk_create.py to generate scripts
 to bulk-provision these users.
 """
 
-import sys, string, csv, re
+import sys, string, csv, traceback
 from metaswitch.crest import settings
 from metaswitch.common import utils
 

@@ -54,7 +54,7 @@ If you have a CSV file with fewer columns, you can autocomplete the remaining
 columns using the bulk_autocomplete.py script.
 """
 
-import sys, string, csv, os, stat, uuid
+import sys, string, csv, os, stat, uuid, traceback
 from metaswitch.crest import settings
 from metaswitch.common import utils
 from metaswitch.common import ifcs

@@ -41,10 +41,9 @@ import uuid
 import time
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
-from metaswitch.crest import settings
 from metaswitch.crest.api import _base
 
-from mock import patch, MagicMock, ANY
+from mock import patch, MagicMock
 
 class TestBaseHandler(unittest.TestCase):
 
