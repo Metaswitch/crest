@@ -56,7 +56,7 @@ class HSSBackend(Backend):
     def __init__(self, cache):
         self._cache = cache
         def on_ims_subscription_change(ims_subscription):
-            self.on_ims_subscription_change(ims_subscription)
+            return self.on_ims_subscription_change(ims_subscription)
         self._hss_gateway = HSSGateway(on_ims_subscription_change)
 
     @defer.inlineCallbacks
@@ -111,8 +111,10 @@ class HSSBackend(Backend):
         # Iterate over all public IDs in the subscription, storing it against
         # each one.
         timestamp = self._cache.generate_timestamp()
-        public_ids = [pi.text() for pi in xml.iterfind('./PublicIdentity/Identity')]
-        self._cache.put_multi_ims_subscription(public_ids,
-                                               ims_subscription,
-                                               timestamp,
-                                               ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
+        public_ids = [pi.text for pi in xml.iterfind('./ServiceProfile/PublicIdentity/Identity')]
+        _log.debug("Updating IMS subscriptions for %s: %s" % (str(public_ids), ims_subscription))
+        yield self._cache.put_multi_ims_subscription(public_ids,
+                                                     ims_subscription,
+                                                     timestamp,
+                                                     ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
+        _log.debug("Updated IMS subscriptions")

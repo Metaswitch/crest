@@ -92,6 +92,12 @@ class Cache(object):
         yield IMPU(public_id).put_ims_subscription(xml, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
+    def put_multi_ims_subscription(self, public_ids, xml, timestamp, ttl=None):
+        _log.debug("Put public IDs %s into cache with XML:\n%s" %
+                   (str(public_ids), xml))
+        yield IMPU.put_multi_ims_subscription(public_ids, xml, ttl=ttl, timestamp=timestamp)
+
+    @defer.inlineCallbacks
     def delete_private_id(self, private_id, timestamp):
         _log.debug("Delete private ID '%s' from cache" % private_id)
         yield IMPI(private_id).delete_row(timestamp)

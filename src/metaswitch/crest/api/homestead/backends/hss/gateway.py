@@ -147,12 +147,24 @@ class HSSAppListener(stack.ApplicationListener):
                 deferred.callback(answer)
 
     def onRequest(self, peer, request):
-        if self.cx.isCommand(request, "Push-Profile"):
-            user_data = self.cx.findFirstAVP(request, "User-Data")
-            if user_data and self.on_ims_subscription_change:
-                self.on_ims_subscription_change(user_data.getOctetString())
-        answer = request.createAnswer()
-        peer.stack.sendByPeer(peer, answer)
+        try:
+            if self.cx.isCommand(request, "Push-Profile"):
+                user_data = self.cx.findFirstAVP(request, "User-Data")
+                if user_data and self.on_ims_subscription_change:
+                    _log.debug("Received Push-Profile containing User-Data: %s" % user_data.getOctetString())
+                    d = self.on_ims_subscription_change(user_data.getOctetString())
+                    def ignore_result(result):
+                        pass
+                    def log_exception(failure):
+                        _log.error("on_ims_subscription_change failed with %s" % failure)
+                    d.addCallback(ignore_result)
+                    d.addErrback(log_exception)
+            answer = request.createAnswer()
+            peer.stack.sendByPeer(peer, answer)
+        except:
+            # We must catch and handle any exception here, as otherwise it will
+            # propagate up to the Diameter stack and kill it.
+            _log.exception("Caught exception while processing DIAMETER request")
 
 
 class HSSPeerListener(stack.PeerListener):
