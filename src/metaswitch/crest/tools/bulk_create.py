@@ -128,18 +128,30 @@ def standalone():
                     irs_uuid = str(uuid.uuid4())
                     sp_uuid = str(uuid.uuid4())
 
+                    def create_row_command(table, row_key):
+                        """utility function that writes a row into a homestead
+                        keyspace with the required "_exists" field"""
+                        return "SET %s['%s']['_exists'] = '';\n" % (table, row_key))
+
                     # Add the user to the optimized cassandra cache.
+                    homestead_cache_casscli_file.write(
+                        create_row_command("impi", private_id))
                     homestead_cache_casscli_file.write(
                         "SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_cache_casscli_file.write(
                         "SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id,
                                                                       public_id,
                                                                       public_id))
+
+                    homestead_cache_casscli_file.write(
+                        create_row_command("impu", public_id))
                     homestead_cache_casscli_file.write(
                         "SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (public_id,
                                                                               ims_subscription_xml))
 
                     # Populate the provisioning tables for the user.
+                    homestead_prov_casscli_file.write(
+                        create_row_command("implicit_registration_sets", irs_uuid))
                     homestead_prov_casscli_file.write(
                         "SET implicit_registration_sets['%s']['service_profile_%s'] = '%s';\n" % (irs_uuid,
                                                                                                   sp_uuid,
@@ -149,6 +161,8 @@ def standalone():
                                                                                                      private_id,
                                                                                                      private_id))
 
+                    homestead_prov_casscli_file.write(
+                        create_row_command("service_profiles", sp_uuid))
                     homestead_prov_casscli_file.write(
                         "SET service_profiles['%s']['irs'] = '%s';\n" % (sp_uuid,
                                                                          irs_uuid))
@@ -161,12 +175,16 @@ def standalone():
                                                                                         public_id))
 
                     homestead_prov_casscli_file.write(
+                        create_row_command("public", public_id))
+                    homestead_prov_casscli_file.write(
                         "SET public['%s']['publicidentity'] = '%s';\n" % (public_id,
                                                                           public_identity_xml))
                     homestead_prov_casscli_file.write(
                         "SET public['%s']['service_profile'] = '%s';\n" % (public_id,
                                                                            sp_uuid))
 
+                    homestead_prov_casscli_file.write(
+                        create_row_command("private", private_id))
                     homestead_prov_casscli_file.write(
                         "SET private['%s']['digest_ha1'] = '%s';\n" % (private_id,
                                                                        hash))
