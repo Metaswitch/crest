@@ -183,8 +183,8 @@ def standalone():
                     print 'Error: row "%s" contains <4 entries - ignoring'
 
         # Make the created .sh files executable
-        os.chmod(homestead_filename, stat.S_IEXEC)
-        os.chmod(xdm_filename, stat.S_IEXEC)
+        os.chmod(homestead_filename, stat.S_IEXEC|stat.S_IWRITE|stat.S_IREAD)
+        os.chmod(xdm_filename, stat.S_IEXEC|stat.S_IWRITE|stat.S_IREAD)
 
         print "Generated bulk provisioning scripts written to"
         print "- %-46s - run this script on Homestead" % (homestead_filename)
