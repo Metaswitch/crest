@@ -90,6 +90,7 @@ CASS_PORT = 9160
 # Debian install will pick this up from /etc/clearwater/config
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
 SPROUT_PORT = 5058
+PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 
 # Cache period (in seconds) for authentication details retrieved from the HSS.
 # There is no way to be notified of changes over the Cx interface, so we must
