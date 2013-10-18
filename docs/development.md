@@ -93,6 +93,15 @@ For a homer node, you'll probably need the following instead.
     INSTALLED_HANDLERS = ["homer"]
     HTTP_PORT = 7888
 
+Logging
+=======
+
+The logging level is set to INFO by default. To also view DEBUG logs add the
+following to `src/metaswitch/crest/local_settings.py`.
+
+    LOG_LEVEL = logging.DEBUG
+
+
 Cassandra
 =========
 
