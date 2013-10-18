@@ -73,7 +73,7 @@ class HSSGateway(object):
     Gateway to real HSS. Abstracts away the underlying details of the Cx
     interface to enable fetching of data in a more HTTP-like fashion
     """
-    def __init__(self, on_ims_subscription_change=None):
+    def __init__(self, on_digest_change=None, on_ims_subscription_change=None):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
 
@@ -82,7 +82,7 @@ class HSSGateway(object):
         dstack.identity = "sip:%s" % settings.SIP_DIGEST_REALM
         dstack.realm = settings.SIP_DIGEST_REALM
 
-        app = HSSAppListener(dstack, on_ims_subscription_change)
+        app = HSSAppListener(dstack, on_digest_change, on_ims_subscription_change)
         self.peer_listener = HSSPeerListener(app,
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
@@ -122,7 +122,8 @@ class HSSAppListener(stack.ApplicationListener):
     response arrives, it correlates it with a pending request and injects the
     response into the pending request
     """
-    def __init__(self, stack, on_ims_subscription_change=None):
+    def __init__(self, stack, on_digest_change=None, on_ims_subscription_change=None):
+        self.on_digest_change = on_digest_change
         self.on_ims_subscription_change = on_ims_subscription_change
         self._pending_responses = {}
         self.cx = stack.getDictionary("cx")
@@ -149,15 +150,26 @@ class HSSAppListener(stack.ApplicationListener):
     def onRequest(self, peer, request):
         try:
             if self.cx.isCommand(request, "Push-Profile"):
+                # Got a Push-Profile-Request.  This can contain digest information,
+                # subscriber profile or both.  First check digest information.
+                private_id = self.cx.findFirstAVP(request, "User-Name")
+                digest = self.cx.findFirstAVP(request, "SIP-Auth-Data-Item",
+                                              "SIP-Digest-Authenticate AVP", "Digest-HA1")
+                if private_id and digest and self.on_digest_change:
+                    _log.debug("Received Push-Profile containing Digest-HA1 for user %s" %
+                               private_id.getOctetString())
+                    d = self.on_digest_change(private_id.getOctetString(), digest.getOctetString())
+                    def log_exception(failure):
+                        _log.error("on_digest_change failed with %s" % failure)
+                    d.addErrback(log_exception)
+                # Now check user data.
                 user_data = self.cx.findFirstAVP(request, "User-Data")
                 if user_data and self.on_ims_subscription_change:
-                    _log.debug("Received Push-Profile containing User-Data: %s" % user_data.getOctetString())
+                    _log.debug("Received Push-Profile containing User-Data: %s" %
+                               user_data.getOctetString())
                     d = self.on_ims_subscription_change(user_data.getOctetString())
-                    def ignore_result(result):
-                        pass
                     def log_exception(failure):
                         _log.error("on_ims_subscription_change failed with %s" % failure)
-                    d.addCallback(ignore_result)
                     d.addErrback(log_exception)
             answer = request.createAnswer()
             peer.stack.sendByPeer(peer, answer)

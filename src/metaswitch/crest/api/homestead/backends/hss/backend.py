@@ -55,9 +55,11 @@ class HSSBackend(Backend):
 
     def __init__(self, cache):
         self._cache = cache
+        def on_digest_change(private_id, digest):
+            return self.on_digest_change(private_id, digest)
         def on_ims_subscription_change(ims_subscription):
             return self.on_ims_subscription_change(ims_subscription)
-        self._hss_gateway = HSSGateway(on_ims_subscription_change)
+        self._hss_gateway = HSSGateway(on_digest_change, on_ims_subscription_change)
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
@@ -104,6 +106,12 @@ class HSSBackend(Backend):
                                                    ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
 
         defer.returnValue(ims_subscription)
+
+    def on_digest_change(self, private_id, digest):
+        return self._cache.put_digest(private_id,
+                                      digest,
+                                      timestamp,
+                                      ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
 
     @defer.inlineCallbacks
     def on_ims_subscription_change(self, ims_subscription):
