@@ -80,7 +80,7 @@ class HSSGateway(object):
         dstack = stack.Stack()
         dstack.loadDictionary("cx", DICT_PATH)
         dstack.identity = settings.PUBLIC_HOSTNAME
-        dstack.realm = settings.SIP_DIGEST_REALM
+        dstack.realm = settings.HS_HOSTNAME
 
         app = HSSAppListener(dstack, on_digest_change, on_ims_subscription_change)
         self.peer_listener = HSSPeerListener(app,
