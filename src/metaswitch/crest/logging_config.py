@@ -51,6 +51,6 @@ def configure_logging(task_id):
                                                    backupCount=settings.LOG_BACKUP_COUNT,
                                                    maxBytes=settings.LOG_FILE_MAX_BYTES)
     handler.setFormatter(fmt)
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(logging.INFO)
     root_log.addHandler(handler)
     print "Logging to %s" % log_file
