@@ -224,13 +224,13 @@ class BaseHandler(cyclone.web.RequestHandler):
             return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
-        _log.info("Sending response to %s - %s %s://%s%s - %s" %
-                   (self.request.remote_ip,
+        _log.info("Sending %s response to %s for %s %s://%s%s" %
+                   (self.get_status(),
+                    self.request.remote_ip,
                     self.request.method,
                     self.request.protocol,
                     self.request.host,
-                    self.request.uri,
-                    self.get_status()))
+                    self.request.uri))
 
         latency = time.time() - self._start
         _loadmonitor.request_complete(latency)
