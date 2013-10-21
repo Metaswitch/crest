@@ -55,11 +55,7 @@ class HSSBackend(Backend):
 
     def __init__(self, cache):
         self._cache = cache
-        def on_digest_change(private_id, digest):
-            return self.on_digest_change(private_id, digest)
-        def on_ims_subscription_change(ims_subscription):
-            return self.on_ims_subscription_change(ims_subscription)
-        self._hss_gateway = HSSGateway(on_digest_change, on_ims_subscription_change)
+        self._hss_gateway = HSSGateway(HSSBackend.Callbacks(cache))
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
@@ -107,22 +103,30 @@ class HSSBackend(Backend):
 
         defer.returnValue(ims_subscription)
 
-    def on_digest_change(self, private_id, digest):
-        return self._cache.put_digest(private_id,
-                                      digest,
-                                      timestamp,
-                                      ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
+    class Callbacks:
+        """
+        Inner class to bundle up callbacks invoked by HSSGateway when the HSS sends notification
+        of changes.
+        """
+        def __init__(self, cache):
+            self._cache = cache
 
-    @defer.inlineCallbacks
-    def on_ims_subscription_change(self, ims_subscription):
-        xml = ElementTree.fromstring(ims_subscription)
-        # Iterate over all public IDs in the subscription, storing it against
-        # each one.
-        timestamp = self._cache.generate_timestamp()
-        public_ids = [pi.text for pi in xml.iterfind('./ServiceProfile/PublicIdentity/Identity')]
-        _log.debug("Updating IMS subscriptions for %s: %s" % (str(public_ids), ims_subscription))
-        yield self._cache.put_multi_ims_subscription(public_ids,
-                                                     ims_subscription,
-                                                     timestamp,
-                                                     ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
-        _log.debug("Updated IMS subscriptions")
+        def on_digest_change(self, private_id, digest):
+            return self._cache.put_digest(private_id,
+                                          digest,
+                                          timestamp,
+                                          ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
+
+        @defer.inlineCallbacks
+        def on_ims_subscription_change(self, ims_subscription):
+            xml = ElementTree.fromstring(ims_subscription)
+            # Iterate over all public IDs in the subscription, storing it against
+            # each one.
+            timestamp = self._cache.generate_timestamp()
+            public_ids = [pi.text for pi in xml.iterfind('./ServiceProfile/PublicIdentity/Identity')]
+            _log.debug("Updating IMS subscriptions for %s: %s" % (str(public_ids), ims_subscription))
+            yield self._cache.put_multi_ims_subscription(public_ids,
+                                                         ims_subscription,
+                                                         timestamp,
+                                                         ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
+            _log.debug("Updated IMS subscriptions")
