@@ -74,22 +74,34 @@ class Cache(object):
         defer.returnValue(xml)
 
     @defer.inlineCallbacks
-    def put_digest(self, private_id, digest, timestamp):
+    def put_digest(self, private_id, digest, timestamp, ttl=None):
         _log.debug("Put private ID '%s' into cache with digest: %s" %
                    (private_id, digest))
-        yield IMPI(private_id).put_digest_ha1(digest, timestamp)
+        yield IMPI(private_id).put_digest_ha1(digest, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def put_associated_public_id(self, private_id, public_id, timestamp):
+    def put_associated_public_id(self, private_id, public_id, timestamp, ttl=None):
         _log.debug("Associate public ID '%s' with private ID '%s' in cache" %
                    (public_id, private_id))
-        yield IMPI(private_id).put_associated_public_id(public_id, timestamp)
+        yield IMPI(private_id).put_associated_public_id(public_id, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def put_ims_subscription(self, public_id, xml, timestamp):
+    def get_associated_public_ids(self, private_id):
+        public_ids = yield IMPI(private_id).get_associated_public_ids()
+        _log.debug("Got public IDs %s for private ID '%s' in cache" % (public_ids, private_id))
+        defer.returnValue(public_ids)
+
+    @defer.inlineCallbacks
+    def put_ims_subscription(self, public_id, xml, timestamp, ttl=None):
         _log.debug("Put public ID '%s' into cache with XML:\n%s" %
                    (public_id, xml))
-        yield IMPU(public_id).put_ims_subscription(xml, timestamp)
+        yield IMPU(public_id).put_ims_subscription(xml, ttl=ttl, timestamp=timestamp)
+
+    @defer.inlineCallbacks
+    def put_multi_ims_subscription(self, public_ids, xml, timestamp, ttl=None):
+        _log.debug("Put public IDs %s into cache with XML:\n%s" %
+                   (str(public_ids), xml))
+        yield IMPU.put_multi_ims_subscription(public_ids, xml, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
     def delete_private_id(self, private_id, timestamp):
@@ -100,3 +112,13 @@ class Cache(object):
     def delete_public_id(self, public_id, timestamp):
         _log.debug("Delete public ID '%s' from cache" % public_id)
         yield IMPU(public_id).delete_row(timestamp)
+
+    @defer.inlineCallbacks
+    def delete_multi_private_ids(self, private_ids, timestamp):
+        _log.debug("Delete private IDs %s from cache" % str(private_ids))
+        yield IMPI.delete_multi_private_ids(private_ids, timestamp=timestamp)
+
+    @defer.inlineCallbacks
+    def delete_multi_public_ids(self, public_ids, timestamp):
+        _log.debug("Delete public IDs %s" % str(public_ids))
+        yield IMPU.delete_multi_public_ids(public_ids, timestamp=timestamp)

@@ -66,11 +66,12 @@ class TestHSSGateway(unittest.TestCase):
         settings.HSS_ENABLED = True
         settings.HSS_IP = "example.com"
         settings.HSS_PORT = 3868
-        self.gateway = HSSGateway()
+        self.backend_callbacks = mock.MagicMock()
+        self.gateway = HSSGateway(self.backend_callbacks)
 
     def test_hss_enabled(self):
         settings.HSS_ENABLED = False
-        self.assertRaises(HSSNotEnabled, HSSGateway)
+        self.assertRaises(HSSNotEnabled, HSSGateway, self.backend_callbacks)
 
     # There is a fair amount of code here, for testing what is essentially a
     # pretty simple function. The verbosity comes from correctly mocking out
@@ -111,7 +112,8 @@ class TestHSSAppListener(unittest.TestCase):
         self.cx = mock.MagicMock()
         stack = mock.MagicMock()
         stack.getDictionary.return_value = self.cx
-        self.app_listener = HSSAppListener(stack)
+        self.backend_callbacks = mock.MagicMock()
+        self.app_listener = HSSAppListener(stack, self.backend_callbacks)
 
         self.request = mock.MagicMock()
         self.request.application_id = "app_id"

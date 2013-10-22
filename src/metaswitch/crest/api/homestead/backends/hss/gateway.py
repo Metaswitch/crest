@@ -50,6 +50,9 @@ _log = logging.getLogger("crest.api.homestead.hss")
 DICT_NAME = "dictionary.xml"
 DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
+DIAMETER_SUCCESS = 2001
+DIAMETER_COMMAND_UNSUPPORTED = 3001
+DIAMETER_UNABLE_TO_COMPLY = 5012
 
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
@@ -68,21 +71,21 @@ class HSSOverloaded(Exception):
     pass
 
 
-class HSSGateway(stack.ApplicationListener):
+class HSSGateway(object):
     """
     Gateway to real HSS. Abstracts away the underlying details of the Cx
     interface to enable fetching of data in a more HTTP-like fashion
     """
-    def __init__(self):
+    def __init__(self, backend_callbacks):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
 
         dstack = stack.Stack()
         dstack.loadDictionary("cx", DICT_PATH)
-        dstack.identity = "sip:%s" % settings.SIP_DIGEST_REALM
-        dstack.realm = settings.SIP_DIGEST_REALM
+        dstack.identity = settings.PUBLIC_HOSTNAME
+        dstack.realm = settings.HS_HOSTNAME
 
-        app = HSSAppListener(dstack)
+        app = HSSAppListener(dstack, backend_callbacks)
         self.peer_listener = HSSPeerListener(app,
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
@@ -122,7 +125,8 @@ class HSSAppListener(stack.ApplicationListener):
     response arrives, it correlates it with a pending request and injects the
     response into the pending request
     """
-    def __init__(self, stack):
+    def __init__(self, stack, backend_callbacks):
+        self.backend_callbacks = backend_callbacks
         self._pending_responses = {}
         self.cx = stack.getDictionary("cx")
 
@@ -144,6 +148,86 @@ class HSSAppListener(stack.ApplicationListener):
             _log.debug("Executing callbacks for pending requests %s" % hash(key))
             for deferred in self._pending_responses.pop(key):
                 deferred.callback(answer)
+
+    def onRequest(self, peer, request):
+        try:
+            if self.cx.isCommand(request, "Push-Profile"):
+                self.onPushProfileRequest(peer, request)
+            elif self.cx.isCommand(request, "Registration-Termination"):
+                self.onRegistrationTerminationRequest(peer, request)
+            else:
+                answer = request.createAnswer()
+                answer.addAVP(self.cx.getAVP("Result-Code").withInteger32(DIAMETER_COMMAND_UNSUPPORTED))
+                peer.stack.sendByPeer(peer, answer)
+        except:
+            # We must catch and handle any exception here, as otherwise it will
+            # propagate up to the Diameter stack and kill it.
+            _log.exception("Caught exception while processing DIAMETER request")
+
+    @defer.inlineCallbacks
+    def onPushProfileRequest(self, peer, request):
+        # Got a Push-Profile-Request.  This can contain digest information,
+        # subscriber profile or both.  First check digest information.
+        private_id = self.cx.findFirstAVP(request, "User-Name")
+        digest = self.cx.findFirstAVP(request, "SIP-Auth-Data-Item",
+                                      "SIP-Digest-Authenticate AVP", "Digest-HA1")
+        deferreds = []
+        if private_id and digest:
+            _log.debug("Received Push-Profile containing Digest-HA1 for user %s" %
+                       private_id.getOctetString())
+            d = self.backend_callbacks.on_digest_change(private_id.getOctetString(),
+                                                        digest.getOctetString())
+            deferreds.append(d)
+        # Now check user data.
+        user_data = self.cx.findFirstAVP(request, "User-Data")
+        if user_data:
+            _log.debug("Received Push-Profile containing User-Data: %s" %
+                       user_data.getOctetString())
+            d = self.backend_callbacks.on_ims_subscription_change(user_data.getOctetString())
+            deferreds.append(d)
+        # Build an answer and send it once all deferreds are complete.
+        answer = request.createAnswer()
+        answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
+        result_code = self.cx.getAVP("Result-Code")
+        try:
+            yield defer.DeferredList(deferreds, consumeErrors=True)
+            answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
+        except:
+            _log.exception("Push-Profile-Request cache update failed")
+            answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
+        answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
+        answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
+        answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
+        peer.stack.sendByPeer(peer, answer)
+
+    @defer.inlineCallbacks
+    def onRegistrationTerminationRequest(self, peer, request):
+        # Got a Registration-Termination-Request.  This tells us we won't get any
+        # further notifications, so we should flush the cache now.
+        answer = request.createAnswer()
+        answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
+        # Build a list of private IDs and copy it to the answer.
+        private_id = self.cx.findFirstAVP(request, "User-Name").getOctetString()
+        private_ids = [private_id]
+        answer.addAVP(self.cx.getAVP("Associated-Identities").withOctetString(private_id))
+        for avp in self.cx.findAVP(request, "Associated-Identities"):
+            private_ids.append(avp.getOctetString())
+            answer.addAVP(avp)
+        # Now get the public IDs.
+        public_ids = [avp.getOctetString() for avp in self.cx.findAVP(request, "Public-Identity")]
+        # Expire these private and public IDs.
+        result_code = self.cx.getAVP("Result-Code")
+        try:
+            yield self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
+            # TODO: Notify Sprout to force deregistration there? 
+            answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
+        except:
+            _log.exception("Registration-Termination-Request cache update failed")
+            answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
+        answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
+        answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
+        answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
+        peer.stack.sendByPeer(peer, answer)
 
 
 class HSSPeerListener(stack.PeerListener):

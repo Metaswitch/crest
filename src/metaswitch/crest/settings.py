@@ -90,6 +90,27 @@ CASS_PORT = 9160
 # Debian install will pick this up from /etc/clearwater/config
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
 SPROUT_PORT = 5058
+PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
+HS_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
+
+# Cache period (in seconds) for authentication details retrieved from the HSS.
+# There is no way to be notified of authentication changes over the Cx
+# interface, so we must explicitly expire/refresh the cache.
+HSS_AUTH_CACHE_PERIOD_SECS=30
+
+# Cache period (in seconds) for associated public user identities (IMPUs)
+# retrieved from the HSS.  As for authentication details, there's no way to be
+# notified of changes.  However, it's less of an issue if this is out-of-date
+# because it just means that an IMPU is linked with an old IMPI for a while.
+# This isn't as serious as using out-of-date authentication details.  As a
+# result, we can use a higher value here.
+HSS_ASSOC_IMPU_CACHE_PERIOD_SECS=60 * 60
+
+# Cache period (in seconds) for IMS subscriptions retrieved from the HSS.
+# Homestead receive notifications of changes, so the only reason to expire
+# entries from the cache is to tidy up when a subscriber is deprovisioned.  As
+# a result, we set this pretty high.
+HSS_IMS_SUB_CACHE_PERIOD_SECS=7 * 24 * 60 * 60
 
 # To avoid deploying with debug turned on, these settings should only ever be
 # changed by creating a local_settings.py file in this directory.
