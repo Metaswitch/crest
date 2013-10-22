@@ -36,7 +36,7 @@ from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
 from telephus.client import CassandraClient, ConsistencyLevel
-from telephus.cassandra.ttypes import Column, NotFoundException, UnavailableException
+from telephus.cassandra.ttypes import Column, Deletion, NotFoundException, UnavailableException
 
 
 class CassandraConnection(object):
@@ -169,6 +169,16 @@ class CassandraModel(object):
         yield self.client.remove(key=self.row_key,
                                  column_family=self.cass_table,
                                  timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def delete_rows(cls, keys, timestamp=None):
+        """Delete multiple row"""
+        mutmap = {}
+        row = [Deletion(timestamp)]
+        for key in keys:
+            mutmap[key] = {cls.cass_table: row}
+        yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_column(self, column_name, timestamp=None):

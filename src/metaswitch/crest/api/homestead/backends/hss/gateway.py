@@ -50,6 +50,9 @@ _log = logging.getLogger("crest.api.homestead.hss")
 DICT_NAME = "dictionary.xml"
 DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 
+DIAMETER_SUCCESS = 2001
+DIAMETER_COMMAND_UNSUPPORTED = 3001
+DIAMETER_UNABLE_TO_COMPLY = 5012
 
 # HSS-specific Exceptions
 class HSSNotEnabled(Exception):
@@ -73,7 +76,7 @@ class HSSGateway(object):
     Gateway to real HSS. Abstracts away the underlying details of the Cx
     interface to enable fetching of data in a more HTTP-like fashion
     """
-    def __init__(self, backend_callbacks=None):
+    def __init__(self, backend_callbacks):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
 
@@ -122,7 +125,7 @@ class HSSAppListener(stack.ApplicationListener):
     response arrives, it correlates it with a pending request and injects the
     response into the pending request
     """
-    def __init__(self, stack, backend_callbacks=None):
+    def __init__(self, stack, backend_callbacks):
         self.backend_callbacks = backend_callbacks
         self._pending_responses = {}
         self.cx = stack.getDictionary("cx")
@@ -148,37 +151,78 @@ class HSSAppListener(stack.ApplicationListener):
 
     def onRequest(self, peer, request):
         try:
-            if self.backend_callbacks:
-                if self.cx.isCommand(request, "Push-Profile"):
-                    # Got a Push-Profile-Request.  This can contain digest information,
-                    # subscriber profile or both.  First check digest information.
-                    private_id = self.cx.findFirstAVP(request, "User-Name")
-                    digest = self.cx.findFirstAVP(request, "SIP-Auth-Data-Item",
-                                                  "SIP-Digest-Authenticate AVP", "Digest-HA1")
-                    if private_id and digest:
-                        _log.debug("Received Push-Profile containing Digest-HA1 for user %s" %
-                                   private_id.getOctetString())
-                        d = self.backend_callbacks.on_digest_change(private_id.getOctetString(),
-                                                                    digest.getOctetString())
-                        def log_exception(failure):
-                            _log.error("on_digest_change failed with %s" % failure)
-                        d.addErrback(log_exception)
-                    # Now check user data.
-                    user_data = self.cx.findFirstAVP(request, "User-Data")
-                    if user_data:
-                        _log.debug("Received Push-Profile containing User-Data: %s" %
-                                   user_data.getOctetString())
-                        d = self.backend_callbacks.on_ims_subscription_change(
-                                                                       user_data.getOctetString())
-                        def log_exception(failure):
-                            _log.error("on_ims_subscription_change failed with %s" % failure)
-                        d.addErrback(log_exception)
-            answer = request.createAnswer()
-            peer.stack.sendByPeer(peer, answer)
+            if self.cx.isCommand(request, "Push-Profile"):
+                self.onPushProfileRequest(peer, request)
+            elif self.cx.isCommand(request, "Registration-Termination"):
+                self.onRegistrationTerminationRequest(peer, request)
+            else:
+                answer = request.createAnswer()
+                answer.addAVP(self.cx.getAVP("Result-Code").withInteger32(DIAMETER_COMMAND_UNSUPPORTED))
+                peer.stack.sendByPeer(peer, answer)
         except:
             # We must catch and handle any exception here, as otherwise it will
             # propagate up to the Diameter stack and kill it.
             _log.exception("Caught exception while processing DIAMETER request")
+
+    def onPushProfileRequest(self, peer, request):
+        # Got a Push-Profile-Request.  This can contain digest information,
+        # subscriber profile or both.  First check digest information.
+        private_id = self.cx.findFirstAVP(request, "User-Name")
+        digest = self.cx.findFirstAVP(request, "SIP-Auth-Data-Item",
+                                      "SIP-Digest-Authenticate AVP", "Digest-HA1")
+        deferreds = []
+        if private_id and digest:
+            _log.debug("Received Push-Profile containing Digest-HA1 for user %s" %
+                       private_id.getOctetString())
+            d = self.backend_callbacks.on_digest_change(private_id.getOctetString(),
+                                                        digest.getOctetString())
+            deferreds.append(d)
+        # Now check user data.
+        user_data = self.cx.findFirstAVP(request, "User-Data")
+        if user_data:
+            _log.debug("Received Push-Profile containing User-Data: %s" %
+                       user_data.getOctetString())
+            d = self.backend_callbacks.on_ims_subscription_change(user_data.getOctetString())
+            deferreds.append(d)
+        # Build an answer and send it once all deferreds are complete.
+        answer = request.createAnswer()
+        result_code = self.cx.getAVP("Result-Code")
+        d = defer.DeferredList(deferreds, fireOnOneErrback=True, consumeErrors=True)
+        def success():
+            answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
+            peer.stack.sendByPeer(peer, answer)
+        def failure(failure):
+            _log.error("Push-Profile-Request failed with %s" % failure)
+            answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
+            peer.stack.sendByPeer(peer, answer)
+        d.addCallbacks(success, failure)
+
+    def onRegistrationTerminationRequest(self, peer, request):
+        # Got a Registration-Termination-Request.  This tells us we won't get any
+        # further notifications, so we should flush the cache now.
+        answer = request.createAnswer()
+        # Build a list of private IDs and copy it to the answer.
+        private_id = self.cx.findFirstAVP(request, "User-Name").getOctetString()
+        private_ids = [private_id]
+        answer.addAVP(self.cx.getAVP("Associated-Identities").withOctetString(private_id))
+        for avp in self.cx.findAVP(request, "Associated-Identities"):
+            private_ids.append(avp.getOctetString())
+            answer.addAVP(avp)
+        # Now get the public IDs.
+        public_ids = [avp.getOctetString() for avp in self.cx.findAVP(request, "Public-Identity")]
+        # Expire these private and public IDs.
+        d = self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
+        # TODO: Notify Sprout to force deregistration there? 
+        # Send the answer once the deferred is complete.
+        result_code = self.cx.getAVP("Result-Code")
+        def success():
+            answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
+            peer.stack.sendByPeer(peer, answer)
+        def failure(failure):
+            _log.error("Registration-Termination-Request failed with %s" % failure)
+            answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
+            peer.stack.sendByPeer(peer, answer)
+        d.addCallbacks(success, failure)
 
 
 class HSSPeerListener(stack.PeerListener):

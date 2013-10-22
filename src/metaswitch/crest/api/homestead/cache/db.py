@@ -94,6 +94,15 @@ class IMPI(CacheModel):
         public_id_column = PUBLIC_ID_PREFIX + public_id
         yield self.modify_columns({public_id_column: ""}, ttl=ttl, timestamp=timestamp)
 
+    @defer.inlineCallbacks
+    def get_associated_public_ids(self):
+        columns = yield self.get_columns_with_prefix_stripped(PUBLIC_ID_PREFIX)
+        defer.returnValue(columns.keys())
+
+    @classmethod
+    @defer.inlineCallbacks
+    def delete_multi_private_ids(cls, private_ids, timestamp=None):
+        yield cls.delete_rows(private_ids, timestamp=timestamp)
 
 IMS_SUBSCRIPTION = "ims_subscription_xml"
 
@@ -132,3 +141,8 @@ class IMPU(CacheModel):
                                            {IMS_SUBSCRIPTION: ims_subscription},
                                            ttl=ttl,
                                            timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def delete_multi_public_ids(cls, public_ids, timestamp=None):
+        yield cls.delete_rows(public_ids, timestamp=timestamp)

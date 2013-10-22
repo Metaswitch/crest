@@ -114,7 +114,7 @@ class HSSBackend(Backend):
         def on_digest_change(self, private_id, digest):
             return self._cache.put_digest(private_id,
                                           digest,
-                                          timestamp,
+                                          self._cache.generate_timestamp(),
                                           ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
 
         @defer.inlineCallbacks
@@ -130,3 +130,22 @@ class HSSBackend(Backend):
                                                          timestamp,
                                                          ttl=settings.HSS_IMS_SUB_CACHE_PERIOD_SECS)
             _log.debug("Updated IMS subscriptions")
+
+        @defer.inlineCallbacks
+        def on_forced_expiry(self, private_ids, public_ids=None):
+            # If we weren't given a list of public IDs, look them up from the private IDs.
+            deferreds = []
+            if not public_ids:
+                # Query the public IDs associated with all public IDs.  This is quite internsive
+                # but we don't expect the list of private IDs to be long.
+                deferreds = [self._cache.get_associated_public_ids(id) for id in private_ids]
+                results = yield defer.DeferredList(deferreds, consumeErrors=True)
+                # Flatten the resulting list of lists.
+                public_ids = [item for sublist in results for item in sublist]
+                # Remove any duplicates.
+                public_ids = list(set(public_ids))
+            timestamp = self._cache.generate_timestamp()
+            yield defer.DeferredList([self._cache.delete_multi_private_ids(private_ids, timestamp=timestamp),
+                                      self._cache.delete_multi_public_ids(public_ids, timestamp=timestamp)],
+                                     fireOnOneErrback=True, consumeErrors=True)
+

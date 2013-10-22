@@ -86,6 +86,11 @@ class Cache(object):
         yield IMPI(private_id).put_associated_public_id(public_id, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
+    def get_associated_public_ids(self, private_id):
+        _log.debug("Get public IDs for private ID '%s' in cache" % private_id)
+        yield IMPI(private_id).get_associated_public_ids(private_id)
+
+    @defer.inlineCallbacks
     def put_ims_subscription(self, public_id, xml, timestamp, ttl=None):
         _log.debug("Put public ID '%s' into cache with XML:\n%s" %
                    (public_id, xml))
@@ -106,3 +111,13 @@ class Cache(object):
     def delete_public_id(self, public_id, timestamp):
         _log.debug("Delete public ID '%s' from cache" % public_id)
         yield IMPU(public_id).delete_row(timestamp)
+
+    @defer.inlineCallbacks
+    def delete_multi_private_ids(self, private_ids, timestamp):
+        _log.debug("Delete private IDs %s from cache" % str(private_ids))
+        yield IMPI.delete_multi_private_ids(private_ids, timestamp=timestamp)
+
+    @defer.inlineCallbacks
+    def delete_multi_public_ids(self, public_ids, timestamp):
+        _log.debug("Delete public IDs %s" % str(public_ids))
+        yield IMPU.delete_multi_public_ids(public_ids, timestamp=timestamp)
