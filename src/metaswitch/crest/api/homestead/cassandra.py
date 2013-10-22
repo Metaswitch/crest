@@ -156,11 +156,9 @@ class CassandraModel(object):
     def modify_columns_multikeys(cls, keys, mapping, ttl=None, timestamp=None):
         """Updates a set of rows to give the columns specified by the keys of
         `mapping` their respective values."""
-        mutmap = {}
         row = map(lambda x: Column(x, mapping[x], timestamp, ttl), mapping)
         row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
-        for key in keys:
-            mutmap[key] = {cls.cass_table: row}
+        mutmap = {(key, {cls.cass_table: row}) for key in keys}
         yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
@@ -176,8 +174,7 @@ class CassandraModel(object):
         """Delete multiple row"""
         mutmap = {}
         row = [Deletion(timestamp)]
-        for key in keys:
-            mutmap[key] = {cls.cass_table: row}
+        mutmap = {(key, {cls.cass_table: row}) for key in keys}
         yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks

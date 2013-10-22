@@ -164,6 +164,7 @@ class HSSAppListener(stack.ApplicationListener):
             # propagate up to the Diameter stack and kill it.
             _log.exception("Caught exception while processing DIAMETER request")
 
+    @defer.inlineCallbacks
     def onPushProfileRequest(self, peer, request):
         # Got a Push-Profile-Request.  This can contain digest information,
         # subscriber profile or both.  First check digest information.
@@ -186,21 +187,25 @@ class HSSAppListener(stack.ApplicationListener):
             deferreds.append(d)
         # Build an answer and send it once all deferreds are complete.
         answer = request.createAnswer()
+        answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
         result_code = self.cx.getAVP("Result-Code")
-        d = defer.DeferredList(deferreds, fireOnOneErrback=True, consumeErrors=True)
-        def success(result):
+        try:
+            yield defer.DeferredList(deferreds, consumeErrors=True)
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
-            peer.stack.sendByPeer(peer, answer)
-        def failure(failure):
-            _log.error("Push-Profile-Request failed with %s" % failure)
+        except:
+            _log.exception("Push-Profile-Request cache update failed")
             answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
-            peer.stack.sendByPeer(peer, answer)
-        d.addCallbacks(success, failure)
+        answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
+        answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
+        answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
+        peer.stack.sendByPeer(peer, answer)
 
+    @defer.inlineCallbacks
     def onRegistrationTerminationRequest(self, peer, request):
         # Got a Registration-Termination-Request.  This tells us we won't get any
         # further notifications, so we should flush the cache now.
         answer = request.createAnswer()
+        answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
         # Build a list of private IDs and copy it to the answer.
         private_id = self.cx.findFirstAVP(request, "User-Name").getOctetString()
         private_ids = [private_id]
@@ -211,18 +216,18 @@ class HSSAppListener(stack.ApplicationListener):
         # Now get the public IDs.
         public_ids = [avp.getOctetString() for avp in self.cx.findAVP(request, "Public-Identity")]
         # Expire these private and public IDs.
-        d = self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
-        # TODO: Notify Sprout to force deregistration there? 
-        # Send the answer once the deferred is complete.
         result_code = self.cx.getAVP("Result-Code")
-        def success(result):
+        try:
+            yield self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
+            # TODO: Notify Sprout to force deregistration there? 
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
-            peer.stack.sendByPeer(peer, answer)
-        def failure(failure):
-            _log.error("Registration-Termination-Request failed with %s" % failure)
+        except:
+            _log.exception("Registration-Termination-Request cache update failed")
             answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
-            peer.stack.sendByPeer(peer, answer)
-        d.addCallbacks(success, failure)
+        answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
+        answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
+        answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
+        peer.stack.sendByPeer(peer, answer)
 
 
 class HSSPeerListener(stack.PeerListener):

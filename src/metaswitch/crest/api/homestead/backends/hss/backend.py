@@ -40,6 +40,7 @@ from xml.etree import ElementTree
 from ..backend import Backend
 from .gateway import HSSGateway
 from metaswitch.crest import settings
+from metaswitch.crest.api import utils
 
 _log = logging.getLogger("crest.api.homestead.hss")
 
@@ -136,12 +137,11 @@ class HSSBackend(Backend):
             # If we weren't given a list of public IDs, look them up from the private IDs.
             deferreds = []
             if not public_ids:
-                # Query the public IDs associated with all public IDs.  This is quite internsive
+                # Query the public IDs associated with all public IDs.  This is quite intensive
                 # but we don't expect the list of private IDs to be long.
                 deferreds = [self._cache.get_associated_public_ids(id) for id in private_ids]
                 results = yield defer.gatherResults(deferreds, consumeErrors=True)
-                # Flatten the resulting list of lists.
-                public_ids = [item for sublist in results for item in sublist]
+                public_ids = utils.flatten(results)
                 # Remove any duplicates.
                 public_ids = list(set(public_ids))
                 _log.debug("Retrieved public IDs %s" % str(public_ids))
@@ -152,5 +152,5 @@ class HSSBackend(Backend):
             # flush these too.
             yield defer.DeferredList([self._cache.delete_multi_private_ids(private_ids, timestamp=timestamp),
                                       self._cache.delete_multi_public_ids(public_ids, timestamp=timestamp)],
-                                     fireOnOneErrback=True, consumeErrors=True)
+                                     consumeErrors=True)
 
