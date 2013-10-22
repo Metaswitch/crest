@@ -78,6 +78,6 @@ def validate(schema_path):
                 _validate(self.request.body, schema_path)
             except etree.XMLSyntaxError, e:
                 raise HTTPError(400, log_message=str(e))
-            func(self, *args, **kwargs)
+            return func(self, *args, **kwargs)
         return wrapper
     return validate_decorator
