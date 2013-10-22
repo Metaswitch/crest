@@ -149,8 +149,9 @@ class HSSBackend(Backend):
             # Delete all the public and private IDs from the cache.  Note that technically we
             # needn't flush private IDs if there are still public IDs remaining.  However, it's
             # simpler (and, given this is a rare operation, not too performance-impacting) just to
-            # flush these too.
+            # flush these too.  Note that we specify fireOnOneErrback here to ensure an exception
+            # is thrown if either Deferred fails.
             yield defer.DeferredList([self._cache.delete_multi_private_ids(private_ids, timestamp=timestamp),
                                       self._cache.delete_multi_public_ids(public_ids, timestamp=timestamp)],
-                                     consumeErrors=True)
+                                     fireOnOneErrback=True, consumeErrors=True)
 

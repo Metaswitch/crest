@@ -158,7 +158,7 @@ class CassandraModel(object):
         `mapping` their respective values."""
         row = map(lambda x: Column(x, mapping[x], timestamp, ttl), mapping)
         row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
-        mutmap = {(key, {cls.cass_table: row}) for key in keys}
+        mutmap = {key: {cls.cass_table: row} for key in keys}
         yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
@@ -174,7 +174,7 @@ class CassandraModel(object):
         """Delete multiple row"""
         mutmap = {}
         row = [Deletion(timestamp)]
-        mutmap = {(key, {cls.cass_table: row}) for key in keys}
+        mutmap = {key: {cls.cass_table: row} for key in keys}
         yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks

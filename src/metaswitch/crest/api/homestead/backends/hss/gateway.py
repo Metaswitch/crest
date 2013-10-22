@@ -149,12 +149,13 @@ class HSSAppListener(stack.ApplicationListener):
             for deferred in self._pending_responses.pop(key):
                 deferred.callback(answer)
 
+    @defer.inlineCallbacks
     def onRequest(self, peer, request):
         try:
             if self.cx.isCommand(request, "Push-Profile"):
-                self.onPushProfileRequest(peer, request)
+                yield self.onPushProfileRequest(peer, request)
             elif self.cx.isCommand(request, "Registration-Termination"):
-                self.onRegistrationTerminationRequest(peer, request)
+                yield self.onRegistrationTerminationRequest(peer, request)
             else:
                 answer = request.createAnswer()
                 answer.addAVP(self.cx.getAVP("Result-Code").withInteger32(DIAMETER_COMMAND_UNSUPPORTED))
@@ -190,7 +191,9 @@ class HSSAppListener(stack.ApplicationListener):
         answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
         result_code = self.cx.getAVP("Result-Code")
         try:
-            yield defer.DeferredList(deferreds, consumeErrors=True)
+            # We specify fireOnOneErrback here to ensure an exception is thrown if either
+            # Deferred fails.
+            yield defer.DeferredList(deferreds, fireOnOneErrback=True, consumeErrors=True)
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
         except:
             _log.exception("Push-Profile-Request cache update failed")

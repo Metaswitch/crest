@@ -64,6 +64,8 @@ class TestHSSBackend(HSSBackendFixture):
         self.gateway = mock.MagicMock()
         self.HSSGateway.return_value = self.gateway
         self.backend = HSSBackend(self.cache)
+        self.assertEqual(self.HSSGateway.call_count, 1)
+        self.backend_callbacks = self.HSSGateway.call_args[0][0]
 
     def test_get_digest_nothing_returned(self):
         """When no digest is returned from the HSS that backend returns None and
@@ -173,3 +175,99 @@ class TestHSSBackend(HSSBackendFixture):
         self.gateway.get_ims_subscription.assert_called_once_with(None, "sip:pub")
         self.gateway.get_ims_subscription.return_value.callback(None)
         self.assertEquals(get_callback.call_args[0][0], None)
+
+    def test_callback_on_digest_change(self):
+        """Test a callback from the gateway to update the digest"""
+        self.cache.put_digest.return_value = defer.Deferred()
+
+        deferred = self.backend_callbacks.on_digest_change("priv", "some_digest")
+        callback = mock.MagicMock()
+        deferred.addCallback(callback)
+
+        self.cache.put_digest.assert_called_once_with("priv",
+                                                      "some_digest",
+                                                      self.timestamp,
+                                                      ttl=30)
+        self.cache.put_digest.return_value.callback(None)
+
+        self.assertEqual(callback.call_count, 1)
+
+    def test_callback_on_ims_subscription_change(self):
+        """Test a callback from the gateway to update an IMS subscription"""
+        self.cache.put_multi_ims_subscription.return_value = defer.Deferred()
+
+        xml = (
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+        "<IMSSubscription>"
+          "<PrivateID>priv</PrivateID>"
+          "<ServiceProfile>"
+            "<PublicIdentity>"
+              "<Identity>pub1</Identity>"
+              "<Extension>"
+                "<IdentityType>0</IdentityType>"
+              "</Extension>"
+            "</PublicIdentity>"
+            "<PublicIdentity>"
+              "<Identity>pub2</Identity>"
+              "<Extension>"
+                "<IdentityType>0</IdentityType>"
+              "</Extension>"
+            "</PublicIdentity>"
+            "<InitialFilterCriteria>"
+              "ifc"
+            "</InitialFilterCriteria>"
+          "</ServiceProfile>"
+        "</IMSSubscription>")
+
+        deferred = self.backend_callbacks.on_ims_subscription_change(xml)
+        callback = mock.MagicMock()
+        deferred.addCallback(callback)
+
+        self.cache.put_multi_ims_subscription.assert_called_once_with(["pub1", "pub2"],
+                                                                      xml,
+                                                                      self.timestamp,
+                                                                      ttl=604800)
+        self.cache.put_multi_ims_subscription.return_value.callback(None)
+
+        self.assertEqual(callback.call_count, 1)
+
+    def test_callback_on_forced_expiry_public_ids(self):
+        """Test a callback from the gateway to force_expiry specifying public IDs"""
+        self.cache.delete_multi_private_ids.return_value = defer.Deferred()
+        self.cache.delete_multi_public_ids.return_value = defer.Deferred()
+
+        deferred = self.backend_callbacks.on_forced_expiry(["priv1", "priv2"], ["pub1", "pub2"])
+        callback = mock.MagicMock()
+        deferred.addCallback(callback)
+
+        self.cache.delete_multi_private_ids.assert_called_once_with(["priv1", "priv2"],
+                                                                    timestamp=self.timestamp)
+        self.cache.delete_multi_public_ids.assert_called_once_with(["pub1", "pub2"],
+                                                                   timestamp=self.timestamp)
+        self.cache.delete_multi_private_ids.return_value.callback(None)
+        self.cache.delete_multi_public_ids.return_value.callback(None)
+
+        self.assertEqual(callback.call_count, 1)
+
+    def test_callback_on_forced_expiry_all(self):
+        """Test a callback from the gateway to force_expiry specifying all public IDs"""
+        self.cache.get_associated_public_ids.return_value = defer.Deferred()
+        self.cache.delete_multi_private_ids.return_value = defer.Deferred()
+        self.cache.delete_multi_public_ids.return_value = defer.Deferred()
+
+        deferred = self.backend_callbacks.on_forced_expiry(["priv1", "priv2"], [])
+        callback = mock.MagicMock()
+        deferred.addCallback(callback)
+
+        self.cache.get_associated_public_ids.assert_has_calls([mock.call("priv1"), mock.call("priv2")])
+        self.cache.get_associated_public_ids.return_value.callback(["pub1", "pub2"])
+
+        self.cache.delete_multi_private_ids.assert_called_once_with(["priv1", "priv2"],
+                                                                    timestamp=self.timestamp)
+        self.assertEqual(self.cache.delete_multi_public_ids.call_count, 1)
+        self.assertEqual(sorted(self.cache.delete_multi_public_ids.call_args[0][0]), ["pub1", "pub2"])
+        self.assertEqual(self.cache.delete_multi_public_ids.call_args[1], {"timestamp": self.timestamp})
+        self.cache.delete_multi_private_ids.return_value.callback(None)
+        self.cache.delete_multi_public_ids.return_value.callback(None)
+
+        self.assertEqual(callback.call_count, 1)
