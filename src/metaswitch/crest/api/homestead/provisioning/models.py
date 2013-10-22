@@ -231,6 +231,9 @@ class IRS(ProvisioningModel):
             except NotFoundException:
                 pass
 
+            # Append the Service Profile to the IMS subscription.
+            root.append(sp_elem)
+
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()
         tree = ET.ElementTree(root)
