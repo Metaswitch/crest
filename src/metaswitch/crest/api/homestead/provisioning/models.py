@@ -213,12 +213,11 @@ class IRS(ProvisioningModel):
         for sp_uuid in sp_uuids:
             # Add a ServiceProfile node for each profile in this IRS with iFCs.
             # (ignore it entirely if it doesn't have any iFCs).
+            #
+            # Note that the IFC XML contains a wrapping <ServiceProfile> tag.
             try:
                 ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
-                ifc_xml_elem = ET.fromstring(ifc_xml)
-
-                sp_elem = ET.SubElement(root, "ServiceProfile")
-                sp_elem.append(ifc_xml_elem)
+                sp_elem = ET.fromstring(ifc_xml)
 
                 # Add a PublicIdentity node for each ID in this service
                 # profile. The contents of this node are stored in the
