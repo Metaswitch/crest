@@ -87,8 +87,9 @@ class Cache(object):
 
     @defer.inlineCallbacks
     def get_associated_public_ids(self, private_id):
-        _log.debug("Get public IDs for private ID '%s' in cache" % private_id)
-        yield IMPI(private_id).get_associated_public_ids(private_id)
+        public_ids = yield IMPI(private_id).get_associated_public_ids()
+        _log.debug("Got public IDs %s for private ID '%s' in cache" % (public_ids, private_id))
+        defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
     def put_ims_subscription(self, public_id, xml, timestamp, ttl=None):

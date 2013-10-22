@@ -188,7 +188,7 @@ class HSSAppListener(stack.ApplicationListener):
         answer = request.createAnswer()
         result_code = self.cx.getAVP("Result-Code")
         d = defer.DeferredList(deferreds, fireOnOneErrback=True, consumeErrors=True)
-        def success():
+        def success(result):
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
             peer.stack.sendByPeer(peer, answer)
         def failure(failure):
@@ -215,7 +215,7 @@ class HSSAppListener(stack.ApplicationListener):
         # TODO: Notify Sprout to force deregistration there? 
         # Send the answer once the deferred is complete.
         result_code = self.cx.getAVP("Result-Code")
-        def success():
+        def success(result):
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
             peer.stack.sendByPeer(peer, answer)
         def failure(failure):

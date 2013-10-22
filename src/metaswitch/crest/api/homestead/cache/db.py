@@ -96,8 +96,14 @@ class IMPI(CacheModel):
 
     @defer.inlineCallbacks
     def get_associated_public_ids(self):
-        columns = yield self.get_columns_with_prefix_stripped(PUBLIC_ID_PREFIX)
-        defer.returnValue(columns.keys())
+        try:
+            columns = yield self.get_columns_with_prefix_stripped(PUBLIC_ID_PREFIX)
+            _log.debug("Retrieved list of public IDs %s for private ID %s" %
+                       (str(columns.keys()), self.row_key))
+            defer.returnValue(columns.keys())
+        except NotFoundException:
+            _log.debug("No public IDs found for private ID %s" % self.row_key)
+            defer.returnValue([])
 
     @classmethod
     @defer.inlineCallbacks

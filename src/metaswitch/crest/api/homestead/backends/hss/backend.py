@@ -139,12 +139,17 @@ class HSSBackend(Backend):
                 # Query the public IDs associated with all public IDs.  This is quite internsive
                 # but we don't expect the list of private IDs to be long.
                 deferreds = [self._cache.get_associated_public_ids(id) for id in private_ids]
-                results = yield defer.DeferredList(deferreds, consumeErrors=True)
+                results = yield defer.gatherResults(deferreds, consumeErrors=True)
                 # Flatten the resulting list of lists.
                 public_ids = [item for sublist in results for item in sublist]
                 # Remove any duplicates.
                 public_ids = list(set(public_ids))
+                _log.debug("Retrieved public IDs %s" % str(public_ids))
             timestamp = self._cache.generate_timestamp()
+            # Delete all the public and private IDs from the cache.  Note that technically we
+            # needn't flush private IDs if there are still public IDs remaining.  However, it's
+            # simpler (and, given this is a rare operation, not too performance-impacting) just to
+            # flush these too.
             yield defer.DeferredList([self._cache.delete_multi_private_ids(private_ids, timestamp=timestamp),
                                       self._cache.delete_multi_public_ids(public_ids, timestamp=timestamp)],
                                      fireOnOneErrback=True, consumeErrors=True)
