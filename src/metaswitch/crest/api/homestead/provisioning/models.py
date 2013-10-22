@@ -228,11 +228,12 @@ class IRS(ProvisioningModel):
                     pub_id_xml_elem = ET.fromstring(pub_id_xml)
                     sp_elem.append(pub_id_xml_elem)
 
+                # Append the Service Profile to the IMS subscription.
+                root.append(sp_elem)
+
             except NotFoundException:
                 pass
 
-            # Append the Service Profile to the IMS subscription.
-            root.append(sp_elem)
 
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()
