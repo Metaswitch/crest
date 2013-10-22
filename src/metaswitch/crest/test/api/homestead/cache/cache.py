@@ -38,6 +38,7 @@ import mock
 import unittest
 
 from twisted.internet import defer
+from telephus.cassandra.ttypes import Column, Deletion, NotFoundException
 
 from metaswitch.crest.api.homestead.cache.cache import Cache
 from metaswitch.crest.api.homestead.cache.db import CacheModel
@@ -71,19 +72,20 @@ class TestCache(unittest.TestCase):
         CacheModel.start_connection()
         self.cache = Cache()
 
-        # Dummy timestamp used for cache puts.
+        # Dummy TTL and timestamp used for cache puts.
+        self.ttl = 123
         self.timestamp = 1234
 
     def test_put_digest(self):
         """Test a digest can be put into the cache"""
 
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
-        res = Result(self.cache.put_digest("priv", "digest", self.timestamp))
+        res = Result(self.cache.put_digest("priv", "digest", self.timestamp, ttl=self.ttl))
         self.cass_client.batch_insert.assert_called_once_with(
                                                key="priv",
                                                column_family="impi",
                                                mapping=DictContaining({"digest_ha1": "digest"}),
-                                               ttl=None,
+                                               ttl=self.ttl,
                                                timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
@@ -96,29 +98,69 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
         res = Result(self.cache.put_associated_public_id("priv",
                                                          "kermit",
-                                                         self.timestamp))
+                                                         self.timestamp,
+                                                         ttl=self.ttl))
         self.cass_client.batch_insert.assert_called_once_with(
                                              key="priv",
                                              column_family="impi",
                                              mapping=DictContaining({"public_id_kermit": ""}),
-                                             ttl=None,
+                                             ttl=self.ttl,
                                              timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
+
+    def test_get_associated_public_ids(self):
+        """Test retrieval of the public ids associated with the specified private ID"""
+        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
+        res = Result(self.cache.get_associated_public_ids("priv"))
+        self.cass_client.get_slice.assert_called_once_with(
+                                                 key="priv",
+                                                 column_family="impi",
+                                                 names=None)
+        get_slice.callback([MockColumn("digest_ha1", "digest"),
+                            MockColumn("public_id_sip:foo@bar.com", ""),
+                            MockColumn("public_id_sip:bar@baz.com", ""),
+                            MockColumn("_exists", "")])
+        self.assertEquals(res.value(), ["sip:foo@bar.com", "sip:bar@baz.com"])
+
+    def test_get_associated_public_ids_none(self):
+        """Test retrieval of the public ids associated with the specified private ID"""
+        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
+        res = Result(self.cache.get_associated_public_ids("priv"))
+        self.cass_client.get_slice.assert_called_once_with(
+                                                 key="priv",
+                                                 column_family="impi",
+                                                 names=None)
+        get_slice.errback(NotFoundException())
+        self.assertEquals(res.value(), [])
 
     def test_put_ims_subscription(self):
         """Test an IMS subscription can be put into the cache"""
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
         res = Result(self.cache.put_ims_subscription("pub",
                                                      "xml",
-                                                     self.timestamp))
+                                                     self.timestamp,
+                                                     ttl=self.ttl))
         self.cass_client.batch_insert.assert_called_once_with(
                                         key="pub",
                                         column_family="impu",
                                         mapping=DictContaining({"ims_subscription_xml": "xml"}),
-                                        ttl=None,
+                                        ttl=self.ttl,
                                         timestamp=self.timestamp)
         batch_insert.callback(None)
+        self.assertEquals(res.value(), None)
+
+    def test_put_multi_ims_subscription(self):
+        """Test multiple IMS subscriptions can be put into the cache"""
+        self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
+        res = Result(self.cache.put_multi_ims_subscription(["pub1", "pub2"],
+                                                           "xml",
+                                                           ttl=self.ttl,
+                                                           timestamp=self.timestamp))
+        row = {"impu": [Column("ims_subscription_xml", "xml", self.timestamp, self.ttl),
+                        Column("_exists", "", self.timestamp, self.ttl)]}
+        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row})
+        batch_mutate.callback(None)
         self.assertEquals(res.value(), None)
 
     def test_get_ims_subscription(self):
@@ -183,3 +225,21 @@ class TestCache(unittest.TestCase):
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", "")])
         self.assertEquals(res.value(), "digest")
+
+    def test_delete_multi_private_ids(self):
+        """Test deleting multiple private IDs from the cache"""
+        self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
+        res = Result(self.cache.delete_multi_private_ids(["priv1", "priv2"], self.timestamp))
+        row = {"impi": [Deletion(self.timestamp)]}
+        self.cass_client.batch_mutate.assert_called_once_with({"priv1": row, "priv2": row})
+        batch_mutate.callback(None)
+        self.assertEquals(res.value(), None)
+
+    def test_delete_multi_public_ids(self):
+        """Test deleting multiple public IDs from the cache"""
+        self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
+        res = Result(self.cache.delete_multi_public_ids(["pub1", "pub2"], self.timestamp))
+        row = {"impu": [Deletion(self.timestamp)]}
+        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row})
+        batch_mutate.callback(None)
+        self.assertEquals(res.value(), None)
