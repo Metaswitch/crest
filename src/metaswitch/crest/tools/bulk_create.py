@@ -58,6 +58,7 @@ import sys, string, csv, os, stat, uuid, traceback
 from metaswitch.crest import settings
 from metaswitch.common import utils
 from metaswitch.common import ifcs
+from metaswitch.crest.tools.utils import create_imssubscription_xml
 
 INITIAL_FILTER_CRITERIA = ifcs.generate_ifcs(settings.SIP_DIGEST_REALM)
 with open(settings.XDM_DEFAULT_SIMSERVS_FILE, "rb") as simservs_file:
@@ -116,15 +117,7 @@ def standalone():
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
 
                     public_identity_xml = "<PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity></PublicIdentity>" % public_id
-
-                    ims_subscription_xml = """<?xml version="1.0" encoding="UTF-8"?>
-<IMSSubscription xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"CxDataType.xsd\">
-<PrivateID>%s</PrivateID>
-<ServiceProfile>
-%s
-%s</ServiceProfile></IMSSubscription>""" % (private_id,
-                                            public_identity_xml,
-                                            INITIAL_FILTER_CRITERIA)
+                    ims_subscription_xml = create_imssubscription_xml(private_id, public_identity_xml, INITIAL_FILTER_CRITERIA)
                     irs_uuid = str(uuid.uuid4())
                     sp_uuid = str(uuid.uuid4())
 
