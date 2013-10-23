@@ -33,6 +33,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import os
+import logging
 
 """
 This file contains default settings for Homer.  To override a setting
@@ -64,10 +65,11 @@ DATA_DIR = os.path.join(PROJECT_DIR, "data")
 LOGS_DIR = os.path.join(PROJECT_DIR, "logs")
 CERTS_DIR = os.path.join(PROJECT_DIR, "certificates")
 
-# Logging - log files will have names homer-XXX.log, where XXX is the task id
+# Logging - log files will have names homer-<task id>.log
 LOG_FILE_PREFIX = "homer"
 LOG_FILE_MAX_BYTES = 10000000
 LOG_BACKUP_COUNT = 10
+LOG_LEVEL = logging.INFO
 PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
 
 # Ports.

@@ -51,7 +51,7 @@ class HSSPeerIOTwisted(Protocol):
     def connectionMade(self):
         self.peer._protocol = self
         self.peer.feed(None, 0)
-        _log.debug("Connection made")
+        _log.info("HSS connection made")
 
     def dataReceived(self, data):
         self.in_buffer += data
@@ -68,12 +68,12 @@ class TwistedClientFactory(Factory):
         self.client_peer = client_peer
 
     def buildProtocol(self, addr):
-        _log.debug("IO connected!")
+        _log.info("IO connected!")
         return HSSPeerIOTwisted(self.client_peer)
 
     def delayedConnect(self, endpoint):
         d = endpoint.connect(self)
-        _log.debug("Retrying connection")
+        _log.info("Retrying connection")
         d.addErrback(self.failure, endpoint)
 
     def failure(self, err, endpoint):
@@ -87,7 +87,7 @@ class TwistedServerFactory(Factory):
 
     def buildProtocol(self, addr):
         client_peer = self.stack.serverV4Accept(self.server_peer, "1.1.1", 11)
-        _log.debug("New client accepted")
+        _log.info("New client accepted")
         return HSSPeerIOTwisted(client_peer)
 
 
@@ -102,7 +102,7 @@ class HSSPeerIO(peer.PeerIOCallbacks):
     def connectV4(self, peer, host, port):
         factory = TwistedClientFactory(peer)
         endpoint = endpoints.TCP4ClientEndpoint(reactor, host, port)
-        _log.debug("Connecting to %s:%d" % (host, port))
+        _log.info("Connecting to %s:%d" % (host, port))
         d = endpoint.connect(factory)
         d.addErrback(factory.failure, endpoint)
         pass
@@ -110,7 +110,7 @@ class HSSPeerIO(peer.PeerIOCallbacks):
     def listenV4(self, peer, host, port):
         factory = TwistedServerFactory(peer)
         endpoint = endpoints.TCP4ServerEndpoint(reactor, port, 50, host)
-        _log.debug("Listening on %s:%d" % (host, port))
+        _log.info("Listening on %s:%d" % (host, port))
         endpoint.listen(factory)
 
     def close(self, peer):

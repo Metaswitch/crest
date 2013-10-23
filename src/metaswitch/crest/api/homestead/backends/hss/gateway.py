@@ -241,7 +241,7 @@ class HSSPeerListener(stack.PeerListener):
         self.cx = stack.getDictionary("cx")
 
     def connected(self, peer):
-        _log.debug("Peer %s connected" % peer.identity)
+        _log.info("Peer %s connected" % peer.identity)
         self.peer = peer
 
     def get_diameter_error_code(self, request):

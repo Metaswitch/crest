@@ -51,9 +51,6 @@ _log = logging.getLogger("crest.api")
 
 class PenaltyCounter:
     def __init__(self):
-        self.log = logging.getLogger("crest.api.penaltycounter")
-        self.log.debug("Creating penalty counter")
-
         # Set up counters for HSS and cache overload responses. Only HSS overload responses
         # are currently tracked.
         self.cache_penalty_count = 0
@@ -72,11 +69,11 @@ class PenaltyCounter:
         self.hss_penalty_count += 1
 
     def get_cache_penalty_count(self):
-        self.log.debug("%d cache overload penalties hit in current latency tracking period", self.cache_penalty_count)
+        _log.debug("%d cache overload penalties hit in current latency tracking period", self.cache_penalty_count)
         return self.cache_penalty_count
 
     def get_hss_penalty_count(self):
-        self.log.debug("%d HSS overload penalties hit in current latency tracking period", self.hss_penalty_count)
+        _log.debug("%d HSS overload penalties hit in current latency tracking period", self.hss_penalty_count)
         return self.hss_penalty_count
 
 
@@ -119,12 +116,10 @@ class LoadMonitor:
     INCREASE_THRESHOLD = -0.005
     INCREASE_FACTOR = 0.5
 
-    # How many deviations above the average latency is the max latency 
+    # How many deviations above the average latency is the max latency
     NUM_DEV = 4
 
     def __init__(self, target_latency, max_bucket_size, init_token_rate, min_token_rate):
-        _log = logging.getLogger("crest.api.loadmonitor")
-        _log.debug("Creating load monitor")
         self.accepted = 0
         self.rejected = 0
         self.pending_count = 0
@@ -132,7 +127,7 @@ class LoadMonitor:
         self.target_latency = target_latency
         self.smoothed_latency = 0
         self.smoothed_variability = target_latency
-        self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability) 
+        self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability)
         self.bucket = LeakyBucket(max_bucket_size, init_token_rate)
         self.adjust_count = self.ADJUST_PERIOD
         self.min_token_rate = min_token_rate
@@ -152,8 +147,8 @@ class LoadMonitor:
     def request_complete(self, latency):
         self.pending_count -= 1
         self.smoothed_latency = (7 * self.smoothed_latency + latency) / 8
-        self.smoothed_variability = (7 * self.smoothed_variability + abs(latency - self.smoothed_latency)) / 8 
-        self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability) 
+        self.smoothed_variability = (7 * self.smoothed_variability + abs(latency - self.smoothed_latency)) / 8
+        self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability)
         self.adjust_count -= 1
 
         if self.adjust_count <= 0:
@@ -174,18 +169,18 @@ class LoadMonitor:
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
                 if new_rate < self.min_token_rate:
                     new_rate = self.min_token_rate
-                _log.debug("Accepted %f requests, latency error = %f, HSS overloads = %d, decrease rate %f to %f" %
+                _log.info("Accepted %f requests, latency error = %f, HSS overloads = %d, decrease rate %f to %f" %
                                  (accepted_percent, err, hss_overloads, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
             elif err < self.INCREASE_THRESHOLD:
                 # latency is sufficiently below the target, so we can increase by an additive
                 # factor - weighted by how far below target we are.
                 new_rate = self.bucket.rate + (-err) * self.bucket.max_size * self.INCREASE_FACTOR
-                _log.debug("Accepted %f%% of requests, latency error = %f, increase rate %f to %f" %
+                _log.info("Accepted %f%% of requests, latency error = %f, increase rate %f to %f" %
                                 (accepted_percent, err, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
             else:
-                _log.debug("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
+                _log.info("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
                                 (accepted_percent, err, self.bucket.rate))
 
         _penaltycounter.reset_hss_penalty_count()
@@ -222,13 +217,21 @@ class BaseHandler(cyclone.web.RequestHandler):
     def prepare(self):
         # timestamp the request
         self._start = time.time()
-        _log.debug("Received request from %s - %s %s://%s%s" %
+        _log.info("Received request from %s - %s %s://%s%s" %
                    (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri))
         if not _loadmonitor.admit_request():
-            _log.debug("Rejecting request because of overload")
+            _log.warning("Rejecting request because of overload")
             return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
+        _log.info("Sending %s response to %s for %s %s://%s%s" %
+                   (self.get_status(),
+                    self.request.remote_ip,
+                    self.request.method,
+                    self.request.protocol,
+                    self.request.host,
+                    self.request.uri))
+
         latency = time.time() - self._start
         _loadmonitor.request_complete(latency)
 
@@ -238,8 +241,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             _log.debug("Responding with msgpack")
             self.set_header("Content-Type", "application/x-msgpack")
             chunk = msgpack.dumps(chunk)
-        _log.debug("Sending response to %s - %s %s://%s%s = %s" %
-                   (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri, chunk))
+        _log.debug("Writing response body: %s" % chunk)
         cyclone.web.RequestHandler.write(self, chunk)
 
     def _query_data(self, args):
@@ -259,17 +261,17 @@ class BaseHandler(cyclone.web.RequestHandler):
             if e.log_message:
                 format = "%d %s: " + e.log_message
                 args = [e.status_code, self._request_summary()] + list(e.args)
-                logging.warning(format, *args)
+                _log.warning(format, *args)
             if e.status_code not in httplib.responses:
-                logging.error("Bad HTTP status code: %d", e.status_code)
+                _log.warning("Bad HTTP status code: %d", e.status_code)
                 cyclone.web.RequestHandler._handle_request_exception(self, e)
             else:
-                logging.debug("Sending HTTP error: %d", e.status_code)
+                _log.debug("Sending HTTP error: %d", e.status_code)
                 self.send_error(e.status_code, httplib.responses[e.status_code], exception=e)
         else:
-            logging.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
-            logging.error("Exception: %s" % repr(e))
-            logging.error(e.getTraceback())
+            _log.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
+            _log.error("Exception: %s" % repr(e))
+            _log.error(e.getTraceback())
             cyclone.web.RequestHandler._handle_request_exception(self, e)
 
     @property
@@ -372,7 +374,7 @@ class BaseHandler(cyclone.web.RequestHandler):
                 handler.send_error(503, "Request too old")
             else:
                 return func(handler, *pos_args, **kwd_args)
-        return wrapper 
+        return wrapper
 
 class UnknownApiHandler(BaseHandler):
     """

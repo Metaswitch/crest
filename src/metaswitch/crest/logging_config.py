@@ -40,6 +40,8 @@ import logging.handlers
 from metaswitch.crest import settings
 
 def configure_logging(task_id):
+    # Configure the root logger to accept all messages. We control the log level
+    # through the handler attached to it (see below).
     root_log = logging.getLogger()
     root_log.setLevel(logging.DEBUG)
     for h in root_log.handlers:
@@ -51,6 +53,6 @@ def configure_logging(task_id):
                                                    backupCount=settings.LOG_BACKUP_COUNT,
                                                    maxBytes=settings.LOG_FILE_MAX_BYTES)
     handler.setFormatter(fmt)
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(settings.LOG_LEVEL)
     root_log.addHandler(handler)
     print "Logging to %s" % log_file
