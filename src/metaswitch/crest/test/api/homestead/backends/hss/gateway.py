@@ -35,10 +35,13 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
+import os
 import mock
 import unittest
 
 from twisted.internet import defer
+from twisted.python import failure
+from diameter import stack
 
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter
@@ -66,11 +69,12 @@ class TestHSSGateway(unittest.TestCase):
         settings.HSS_ENABLED = True
         settings.HSS_IP = "example.com"
         settings.HSS_PORT = 3868
-        self.gateway = HSSGateway()
+        self.backend_callbacks = mock.MagicMock()
+        self.gateway = HSSGateway(self.backend_callbacks)
 
     def test_hss_enabled(self):
         settings.HSS_ENABLED = False
-        self.assertRaises(HSSNotEnabled, HSSGateway)
+        self.assertRaises(HSSNotEnabled, HSSGateway, self.backend_callbacks)
 
     # There is a fair amount of code here, for testing what is essentially a
     # pretty simple function. The verbosity comes from correctly mocking out
@@ -111,7 +115,8 @@ class TestHSSAppListener(unittest.TestCase):
         self.cx = mock.MagicMock()
         stack = mock.MagicMock()
         stack.getDictionary.return_value = self.cx
-        self.app_listener = HSSAppListener(stack)
+        self.backend_callbacks = mock.MagicMock()
+        self.app_listener = HSSAppListener(stack, self.backend_callbacks)
 
         self.request = mock.MagicMock()
         self.request.application_id = "app_id"
@@ -133,6 +138,102 @@ class TestHSSAppListener(unittest.TestCase):
         deferred.addCallback(callback)
         self.app_listener.onAnswer(None, self.request)
         self.assertEquals(callback.call_args[0][0], self.request)
+
+class TestHSSAppListenerRequests(unittest.TestCase):
+    """Tests HSSAppListener handling received requests - we use a live diameter for this"""
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.stack = stack.Stack()
+        self.stack.identity = "ut-host"
+        self.stack.realm = "ut-realm"
+        self.stack.loadDictionary("cx", os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../../../api/homestead/backends/hss/dictionary.xml"))
+        self.backend_callbacks = mock.MagicMock()
+        self.app_listener = HSSAppListener(self.stack, self.backend_callbacks)
+        self.cx = self.stack.getDictionary("cx")
+        self.peer = mock.MagicMock()
+        self.peer.stack = mock.MagicMock()
+        self.peer.stack.sendByPeer = self.sendByPeer = mock.MagicMock()
+
+    def send_request_in(self, command, avps=[]):
+        self.request = self.cx.getCommandRequest(self.stack, command, True)
+        self.request.addAVP(self.cx.getAVP("Vendor-Specific-Application-Id").withInteger32(1))
+        self.request.addAVP(self.cx.getAVP("Auth-Session-State").withInteger32(1))
+        self.request.addAVP(self.cx.getAVP("User-Name").withOctetString("priv"))
+        for avp in avps:
+            self.request.addAVP(avp)
+        deferred = self.app_listener.onRequest(self.peer, self.request)
+        self.on_request_callback = mock.MagicMock()
+        deferred.addCallback(self.on_request_callback)
+
+    def get_and_check_answer(self, result_code):
+        self.assertEqual(self.sendByPeer.call_count, 1)
+        answer = self.sendByPeer.call_args[0][1]
+        self.assertEqual(self.request.command_code, answer.command_code)
+        self.assertEqual(self.cx.findFirstAVP(answer, "Result-Code").getInteger32(), result_code)
+        self.assertEqual(self.on_request_callback.call_count, 1)
+        return answer
+
+    def test_receive_push_profile_request_digest(self):
+        self.backend_callbacks.on_digest_change.return_value = on_digest_change = defer.Deferred()
+        avp = self.cx.getAVP("SIP-Auth-Data-Item").withAVP(
+                self.cx.getAVP("SIP-Digest-Authenticate AVP").withAVP(
+                  self.cx.getAVP("Digest-HA1").withOctetString(
+                    "0123456789abcdef")))
+        callback = self.send_request_in("Push-Profile", [avp])
+        self.backend_callbacks.on_digest_change.assert_called_once_with("priv", "0123456789abcdef")
+        on_digest_change.callback(None)
+        self.get_and_check_answer(2001) # success
+
+    def test_receive_push_profile_request_digest_fail(self):
+        self.backend_callbacks.on_digest_change.return_value = on_digest_change = defer.Deferred()
+        avp = self.cx.getAVP("SIP-Auth-Data-Item").withAVP(
+                self.cx.getAVP("SIP-Digest-Authenticate AVP").withAVP(
+                  self.cx.getAVP("Digest-HA1").withOctetString(
+                    "0123456789abcdef")))
+        callback = self.send_request_in("Push-Profile", [avp])
+        self.backend_callbacks.on_digest_change.assert_called_once_with("priv", "0123456789abcdef")
+        on_digest_change.errback(failure.Failure(Exception()))
+        self.get_and_check_answer(5012) # can't comply
+
+    def test_receive_push_profile_request_user_data(self):
+        self.backend_callbacks.on_ims_subscription_change.return_value = on_ims_subscription_change = defer.Deferred()
+        callback = self.send_request_in("Push-Profile",
+                                        [self.cx.getAVP("User-Data").withOctetString("xml")])
+        self.backend_callbacks.on_ims_subscription_change.assert_called_once_with("xml")
+        on_ims_subscription_change.callback(None)
+        self.get_and_check_answer(2001) # success
+        
+    def test_receive_push_profile_request_user_data_fail(self):
+        self.backend_callbacks.on_ims_subscription_change.return_value = on_ims_subscription_change = defer.Deferred()
+        callback = self.send_request_in("Push-Profile",
+                                        [self.cx.getAVP("User-Data").withOctetString("xml")])
+        self.backend_callbacks.on_ims_subscription_change.assert_called_once_with("xml")
+        on_ims_subscription_change.errback(failure.Failure(Exception()))
+        self.get_and_check_answer(5012) # can't comply
+
+    def test_receive_registration_termination_request(self):
+        self.backend_callbacks.on_forced_expiry.return_value = on_forced_expiry = defer.Deferred()
+        callback = self.send_request_in("Registration-Termination",
+                                        [self.cx.getAVP("Associated-Identities").withOctetString("priv2"),
+                                         self.cx.getAVP("Public-Identity").withOctetString("pub1"),
+                                         self.cx.getAVP("Public-Identity").withOctetString("pub2")])
+        self.backend_callbacks.on_forced_expiry.assert_called_once_with(["priv", "priv2"], ["pub1", "pub2"])
+        on_forced_expiry.callback(None)
+        self.get_and_check_answer(2001) # success
+        
+    def test_receive_registration_termination_request_fail(self):
+        self.backend_callbacks.on_forced_expiry.return_value = on_forced_expiry = defer.Deferred()
+        callback = self.send_request_in("Registration-Termination",
+                                        [self.cx.getAVP("Associated-Identities").withOctetString("priv2"),
+                                         self.cx.getAVP("Public-Identity").withOctetString("pub1"),
+                                         self.cx.getAVP("Public-Identity").withOctetString("pub2")])
+        self.backend_callbacks.on_forced_expiry.assert_called_once_with(["priv", "priv2"], ["pub1", "pub2"])
+        on_forced_expiry.errback(failure.Failure(Exception()))
+        self.get_and_check_answer(5012) # can't comply
+
+    def test_receive_unsupported_command(self):
+        self.send_request_in("Multimedia-Auth")
+        self.get_and_check_answer(3001) # unsupported
 
 class TestHSSPeerListener(unittest.TestCase):
     class MockRequest(mock.MagicMock):

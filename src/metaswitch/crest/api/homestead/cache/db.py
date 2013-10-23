@@ -86,14 +86,29 @@ class IMPI(CacheModel):
             pass
 
     @defer.inlineCallbacks
-    def put_digest_ha1(self, digest, timestamp=None):
-        yield self.modify_columns({DIGEST_HA1: digest}, timestamp=timestamp)
+    def put_digest_ha1(self, digest, ttl=None, timestamp=None):
+        yield self.modify_columns({DIGEST_HA1: digest}, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
-    def put_associated_public_id(self, public_id, timestamp=None):
+    def put_associated_public_id(self, public_id, ttl=None, timestamp=None):
         public_id_column = PUBLIC_ID_PREFIX + public_id
-        yield self.modify_columns({public_id_column: ""}, timestamp=timestamp)
+        yield self.modify_columns({public_id_column: ""}, ttl=ttl, timestamp=timestamp)
 
+    @defer.inlineCallbacks
+    def get_associated_public_ids(self):
+        try:
+            columns = yield self.get_columns_with_prefix_stripped(PUBLIC_ID_PREFIX)
+            _log.debug("Retrieved list of public IDs %s for private ID %s" %
+                       (str(columns.keys()), self.row_key))
+            defer.returnValue(columns.keys())
+        except NotFoundException:
+            _log.debug("No public IDs found for private ID %s" % self.row_key)
+            defer.returnValue([])
+
+    @classmethod
+    @defer.inlineCallbacks
+    def delete_multi_private_ids(cls, private_ids, timestamp=None):
+        yield cls.delete_rows(private_ids, timestamp=timestamp)
 
 IMS_SUBSCRIPTION = "ims_subscription_xml"
 
@@ -120,6 +135,20 @@ class IMPU(CacheModel):
             pass
 
     @defer.inlineCallbacks
-    def put_ims_subscription(self, ims_subscription, timestamp=None):
+    def put_ims_subscription(self, ims_subscription, ttl=None, timestamp=None):
         yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription},
+                                  ttl=ttl,
                                   timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def put_multi_ims_subscription(cls, public_ids, ims_subscription, ttl=None, timestamp=None):
+        yield cls.modify_columns_multikeys(public_ids,
+                                           {IMS_SUBSCRIPTION: ims_subscription},
+                                           ttl=ttl,
+                                           timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def delete_multi_public_ids(cls, public_ids, timestamp=None):
+        yield cls.delete_rows(public_ids, timestamp=timestamp)

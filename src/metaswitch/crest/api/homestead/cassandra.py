@@ -36,7 +36,7 @@ from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
 from telephus.client import CassandraClient, ConsistencyLevel
-from telephus.cassandra.ttypes import NotFoundException, UnavailableException
+from telephus.cassandra.ttypes import Column, Deletion, NotFoundException, UnavailableException
 
 
 class CassandraConnection(object):
@@ -151,12 +151,31 @@ class CassandraModel(object):
                                        ttl=ttl,
                                        timestamp=timestamp)
 
+    @classmethod
+    @defer.inlineCallbacks
+    def modify_columns_multikeys(cls, keys, mapping, ttl=None, timestamp=None):
+        """Updates a set of rows to give the columns specified by the keys of
+        `mapping` their respective values."""
+        row = map(lambda x: Column(x, mapping[x], timestamp, ttl), mapping)
+        row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
+        mutmap = {key: {cls.cass_table: row} for key in keys}
+        yield cls.client.batch_mutate(mutmap)
+
     @defer.inlineCallbacks
     def delete_row(self, timestamp=None):
         """Delete this entire row"""
         yield self.client.remove(key=self.row_key,
                                  column_family=self.cass_table,
                                  timestamp=timestamp)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def delete_rows(cls, keys, timestamp=None):
+        """Delete multiple row"""
+        mutmap = {}
+        row = [Deletion(timestamp)]
+        mutmap = {key: {cls.cass_table: row} for key in keys}
+        yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_column(self, column_name, timestamp=None):
