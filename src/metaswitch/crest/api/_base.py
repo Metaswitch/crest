@@ -220,7 +220,7 @@ class BaseHandler(cyclone.web.RequestHandler):
         _log.info("Received request from %s - %s %s://%s%s" %
                    (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri))
         if not _loadmonitor.admit_request():
-            _log.info("Rejecting request because of overload")
+            _log.warning("Rejecting request because of overload")
             return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
