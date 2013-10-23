@@ -37,11 +37,20 @@ import StringIO
 
 def create_imssubscription_xml(private_id, publicidentity_xml, ifc_xml):
     """
-    Create an IMS subscription documetn containing one private identity, one
-    public identity, and some IFCs. The IFC XML may contain multiple IFCs and
-    must be enclosed in a ServiceProfile tag.
+    Create an IMS subscription document containing one private identity, one
+    public identity, and some IFCs.
 
-    This method is closely realted to IRS.build_imssubscription_xml. They should
+    The IFC XML may contain multiple IFCs. They must all be enclosed in a
+    <ServiceProfile> tag. In addition the XML may be a complete document with an
+    XML header. For example:
+
+    <?xml version="1.0" encoding="UTF-8"?>
+    <ServiceProfile>
+      <InitialFilterCriteria>...</InitialFilterCriteria>
+      <InitialFilterCriteria>...</InitialFilterCriteria>
+    </ServiceProfile>
+
+    This method is closely related to IRS.build_imssubscription_xml. They should
     be kept in sync. (TODO: refactor these into one method).
     """
 
