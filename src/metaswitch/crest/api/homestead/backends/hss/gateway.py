@@ -40,6 +40,8 @@ from diameter import stack
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
+from cyclone.web import HTTPError
+
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter, _loadmonitor
 from metaswitch.crest.api import DeferTimeout
@@ -60,9 +62,15 @@ class HSSNotEnabled(Exception):
     pass
 
 
-class HSSNotFound(Exception):
-    """Exception to throw if a request cannot be completed because a resource is not found"""
-    pass
+class HSSNotFound(HTTPError):
+    """Exception to throw if a request cannot be completed because a
+    resource is not found. Subclassed from HTTPError so that it gets
+    treated as a 404, without the additional overhead of try-catch-reraise
+    blocks.
+
+    """
+    def __init__(*args, **kwargs):
+        super(HSSNotFound, self).__init__(404, args, kwargs)
 
 
 class HSSOverloaded(Exception):
@@ -222,7 +230,7 @@ class HSSAppListener(stack.ApplicationListener):
         result_code = self.cx.getAVP("Result-Code")
         try:
             yield self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
-            # TODO: Notify Sprout to force deregistration there? 
+            # TODO: Notify Sprout to force deregistration there?
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
         except:
             _log.exception("Registration-Termination-Request cache update failed")
