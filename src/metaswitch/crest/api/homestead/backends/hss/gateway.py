@@ -40,8 +40,6 @@ from diameter import stack
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
-from cyclone.web import HTTPError
-
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter, _loadmonitor
 from metaswitch.crest.api import DeferTimeout
@@ -288,7 +286,7 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                # Translated intoa 404 higher up the stack
+                # Translated into a 404 higher up the stack
                 defer.returnValue(None)
 
     @DeferTimeout.timeout(_loadmonitor.max_latency)
@@ -331,7 +329,7 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                # Translated intoa 404 higher up the stack
+                # Translated into a 404 higher up the stack
                 defer.returnValue(None)
 
         defer.returnValue(user_data.getOctetString())
