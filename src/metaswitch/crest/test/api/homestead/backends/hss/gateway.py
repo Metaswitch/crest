@@ -324,13 +324,17 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], "digest")
 
     def test_fetch_multimedia_auth_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, None, None, None, 0)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth)
 
     def test_fetch_multimedia_auth_not_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3005, None, None, 0)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+                             error_code=3005)
 
     def test_fetch_multimedia_auth_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3004, HSSOverloaded, None, 1)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+                             error_code=3004,
+                             expected_exception=HSSOverloaded,
+                             expected_count=1)
 
     def test_fetch_server_assignment(self):
         mock_req = self.MockRequest()
@@ -464,21 +468,26 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], xml)
 
     def test_fetch_server_assignment_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, None, None, None, 0)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment)
 
     def test_fetch_server_assignment_not_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3005, None, None, 0)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment,
+                             error_code=3005)
 
     def test_fetch_server_assignment_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3004, HSSOverloaded, None, 1)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment,
+                             error_code=3004,
+                             expected_exception=HSSOverloaded,
+                             expected_count=1)
 
     def common_test_hss(self,
                         function,
-                        first_avp,
-                        error_code,
-                        expected_exception,
-                        expected_retval,
-                        expected_count):
+                        first_avp=None,
+                        error_code=None,
+                        expected_exception=None,
+                        # Use a sentinel value here because we want to expect None
+                        expected_retval="_default",
+                        expected_count=0):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
         deferred = function("priv", "pub")
@@ -490,15 +499,22 @@ class TestHSSPeerListener(unittest.TestCase):
         err_code = mock.MagicMock()
         err_code.return_value = error_code
         self.peer_listener.get_diameter_error_code = err_code
+
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        deferred_errback = mock.MagicMock()
+        deferred.addErrback(deferred_errback)
+        inner_deferred.callback(mock_answer)
+
         if expected_exception:
-            deferred_errback = mock.MagicMock()
-            deferred.addErrback(deferred_errback)
-            inner_deferred.callback(mock_answer)
+            self.assertEquals(deferred_callback.called, False)
+            self.assertEquals(deferred_errback.called, True)
             self.assertEquals(deferred_errback.call_args[0][0].type, expected_exception)
         else:
-            deferred_callback = mock.MagicMock()
-            deferred.addCallback(deferred_callback)
-            inner_deferred.callback(mock_answer)
+            self.assertEquals(deferred_callback.called, True)
+            self.assertEquals(deferred_errback.called, False)
+
+        if expected_retval != "_default":
             self.assertEquals(deferred_callback.call_args[0][0], expected_retval)
 
         # The penalty counter should be at 1
