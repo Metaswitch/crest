@@ -69,7 +69,7 @@ class HSSNotFound(HTTPError):
     blocks.
 
     """
-    def __init__(*args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(HSSNotFound, self).__init__(404, args, kwargs)
 
 
