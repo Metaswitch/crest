@@ -46,7 +46,7 @@ from diameter import stack
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
-from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotFound, HSSNotEnabled, HSSPeerListener, HSSOverloaded
+from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
 
 class TestHSSGateway(unittest.TestCase):
     """
@@ -95,10 +95,10 @@ class TestHSSGateway(unittest.TestCase):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_digest("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
-        get_errback = mock.MagicMock()
-        get_deferred.addErrback(get_errback)
-        self.peer_listener.fetch_multimedia_auth.return_value.errback(HSSNotFound())
-        self.assertEquals(get_errback.call_args[0][0].type, HSSNotFound)
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        self.peer_listener.fetch_multimedia_auth.return_value.callback(None)
+        self.assertEquals(get_callback.call_args[0][0], None)
 
     def test_get_digest_timeout(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
@@ -202,7 +202,7 @@ class TestHSSAppListenerRequests(unittest.TestCase):
         self.backend_callbacks.on_ims_subscription_change.assert_called_once_with("xml")
         on_ims_subscription_change.callback(None)
         self.get_and_check_answer(2001) # success
-        
+
     def test_receive_push_profile_request_user_data_fail(self):
         self.backend_callbacks.on_ims_subscription_change.return_value = on_ims_subscription_change = defer.Deferred()
         callback = self.send_request_in("Push-Profile",
@@ -220,7 +220,7 @@ class TestHSSAppListenerRequests(unittest.TestCase):
         self.backend_callbacks.on_forced_expiry.assert_called_once_with(["priv", "priv2"], ["pub1", "pub2"])
         on_forced_expiry.callback(None)
         self.get_and_check_answer(2001) # success
-        
+
     def test_receive_registration_termination_request_fail(self):
         self.backend_callbacks.on_forced_expiry.return_value = on_forced_expiry = defer.Deferred()
         callback = self.send_request_in("Registration-Termination",
@@ -324,13 +324,13 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], "digest")
 
     def test_fetch_multimedia_auth_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, None, HSSNotFound, 0)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, None, None, None, 0)
 
     def test_fetch_multimedia_auth_not_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3005, HSSNotFound, 0)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3005, None, None, 0)
 
     def test_fetch_multimedia_auth_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3004, HSSOverloaded, 1)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth, None, 3004, HSSOverloaded, None, 1)
 
     def test_fetch_server_assignment(self):
         mock_req = self.MockRequest()
@@ -464,15 +464,21 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], xml)
 
     def test_fetch_server_assignment_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, None, HSSNotFound, 0)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, None, None, None, 0)
 
     def test_fetch_server_assignment_not_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3005, HSSNotFound, 0)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3005, None, None, 0)
 
     def test_fetch_server_assignment_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3004, HSSOverloaded, 1)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment, None, 3004, HSSOverloaded, None, 1)
 
-    def common_test_hss(self, function, first_avp, error_code, expected_exception, expected_count):
+    def common_test_hss(self,
+                        function,
+                        first_avp,
+                        error_code,
+                        expected_exception,
+                        expected_retval,
+                        expected_count):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
         deferred = function("priv", "pub")
@@ -484,10 +490,17 @@ class TestHSSPeerListener(unittest.TestCase):
         err_code = mock.MagicMock()
         err_code.return_value = error_code
         self.peer_listener.get_diameter_error_code = err_code
-        deferred_errback = mock.MagicMock()
-        deferred.addErrback(deferred_errback)
-        inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_errback.call_args[0][0].type, expected_exception)
+        if expected_exception:
+            deferred_errback = mock.MagicMock()
+            deferred.addErrback(deferred_errback)
+            inner_deferred.callback(mock_answer)
+            self.assertEquals(deferred_errback.call_args[0][0].type, expected_exception)
+        else:
+            deferred_callback = mock.MagicMock()
+            deferred.addCallback(deferred_callback)
+            inner_deferred.callback(mock_answer)
+            self.assertEquals(deferred_callback.call_args[0][0], expected_retval)
+
         # The penalty counter should be at 1
         self.assertEquals(_penaltycounter.get_hss_penalty_count(), expected_count)
 
