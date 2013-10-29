@@ -382,4 +382,4 @@ class UnknownApiHandler(BaseHandler):
     """
     def get(self):
         _log.info("Request for unknown API")
-        self.send_error(404, "API Not Known")
+        self.send_error(403)
