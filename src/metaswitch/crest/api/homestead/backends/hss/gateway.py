@@ -62,17 +62,6 @@ class HSSNotEnabled(Exception):
     pass
 
 
-class HSSNotFound(HTTPError):
-    """Exception to throw if a request cannot be completed because a
-    resource is not found. Subclassed from HTTPError so that it gets
-    treated as a 404, without the additional overhead of try-catch-reraise
-    blocks.
-
-    """
-    def __init__(self, *args, **kwargs):
-        super(HSSNotFound, self).__init__(404, args, kwargs)
-
-
 class HSSOverloaded(Exception):
     """Exception to throw if a request cannot be completed because the HSS returns an
     overloaded response"""
@@ -294,7 +283,8 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                raise HSSNotFound()
+                # Translated intoa 404 higher up the stack
+                defer.returnValue(None)
 
     @DeferTimeout.timeout(_loadmonitor.max_latency)
     @defer.inlineCallbacks
@@ -336,7 +326,8 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                raise HSSNotFound()
+                # Translated intoa 404 higher up the stack
+                defer.returnValue(None)
 
         defer.returnValue(user_data.getOctetString())
 

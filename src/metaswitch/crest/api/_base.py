@@ -381,4 +381,5 @@ class UnknownApiHandler(BaseHandler):
     Handler that sends a 404 JSON/msgpack/etc response to all requests.
     """
     def get(self):
-        self.send_error(404)
+        _log.info("Request for unknown API")
+        self.send_error(404, "API Not Known")
