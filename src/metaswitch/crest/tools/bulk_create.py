@@ -132,9 +132,8 @@ def standalone():
                     homestead_cache_casscli_file.write(
                         "SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_cache_casscli_file.write(
-                        "SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id,
-                                                                      public_id,
-                                                                      public_id))
+                        "SET impi['%s']['public_id_%s'] = '';\n" % (private_id,
+                                                                    public_id))
 
                     homestead_cache_casscli_file.write(
                         create_row_command("impu", public_id))
