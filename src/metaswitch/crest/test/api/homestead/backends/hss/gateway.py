@@ -44,6 +44,7 @@ from twisted.python import failure
 from diameter import stack
 
 from metaswitch.crest import settings
+from metaswitch.crest.test import matchers
 from metaswitch.crest.api._base import _penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
@@ -324,11 +325,15 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], "digest")
 
     def test_fetch_multimedia_auth_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth)
+        self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+                             expected_retval=matchers.MatchesNone())
+
 
     def test_fetch_multimedia_auth_not_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
-                             error_code=3005)
+                             error_code=3005,
+                             expected_retval=matchers.MatchesNone())
+
 
     def test_fetch_multimedia_auth_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
@@ -468,11 +473,14 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], xml)
 
     def test_fetch_server_assignment_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment)
+        self.common_test_hss(self.peer_listener.fetch_server_assignment,
+                             expected_retval=matchers.MatchesNone())
 
     def test_fetch_server_assignment_not_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_server_assignment,
-                             error_code=3005)
+                             error_code=3005,
+                             expected_retval=matchers.MatchesNone())
+
 
     def test_fetch_server_assignment_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_server_assignment,
@@ -485,8 +493,7 @@ class TestHSSPeerListener(unittest.TestCase):
                         first_avp=None,
                         error_code=None,
                         expected_exception=None,
-                        # Use a sentinel value here because we want to expect None
-                        expected_retval="_default",
+                        expected_retval=matchers.MatchesAnything(),
                         expected_count=0):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
@@ -513,8 +520,6 @@ class TestHSSPeerListener(unittest.TestCase):
         else:
             self.assertEquals(deferred_callback.called, True)
             self.assertEquals(deferred_errback.called, False)
-
-        if expected_retval != "_default":
             self.assertEquals(deferred_callback.call_args[0][0], expected_retval)
 
         # The penalty counter should be at 1

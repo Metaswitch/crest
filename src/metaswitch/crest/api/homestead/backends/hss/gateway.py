@@ -97,20 +97,19 @@ class HSSGateway(object):
         tick = LoopingCall(dstack.tick)
         tick.start(1)
 
-    # Gets the SIP digest from the HSS with a Multimedia-Auth-Request.
-    # Returns None if the subscriber is not found.
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id):
+        """Gets the SIP digest from the HSS with a Multimedia-Auth-Request.
+        Returns None if the subscriber is not found."""
         _log.debug("Getting auth for priv:%s pub:%s" % (private_id, public_id))
         result = yield self.peer_listener.fetch_multimedia_auth(private_id,
                                                                 public_id)
         defer.returnValue(result)
 
-    # Gets the IMS subscription information from the HSS with a
-    # Server-Assignment_request. Returns None if the subscriber is not
-    # found.
     @defer.inlineCallbacks
     def get_ims_subscription(self, private_id, public_id):
+        """Gets the IMS subscription information from the HSS with a
+        Server-Assignment_request. Returns None if the subscriber is not found."""
         _log.debug("Getting IMS subscription for priv:%s, pub:%s" %
                    (private_id, public_id))
         result = yield self.peer_listener.fetch_server_assignment(private_id,
