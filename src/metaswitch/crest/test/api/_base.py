@@ -149,7 +149,7 @@ class TestUnknownApiHandler(unittest.TestCase):
     def test_get(self):
         self.handler.send_error = MagicMock()
         self.handler.get()
-        self.handler.send_error.assert_called_once_with(404)
+        self.handler.send_error.assert_called_once_with(404, "Invalid API")
 
 if __name__ == "__main__":
     unittest.main()
