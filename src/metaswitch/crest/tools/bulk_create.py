@@ -138,8 +138,9 @@ def standalone():
                     homestead_cache_casscli_file.write(
                         create_row_command("impu", public_id))
                     homestead_cache_casscli_file.write(
-                        "SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (public_id,
-                                                                              ims_subscription_xml))
+                        "SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (
+                            public_id,
+                            ims_subscription_xml.replace("'", "\\'")))
 
                     # Populate the provisioning tables for the user.
                     homestead_prov_casscli_file.write(
