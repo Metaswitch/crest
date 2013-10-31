@@ -79,19 +79,21 @@ override file from `src/metaswitch/crest/local_settings.py`.  The file is
 executed in the context of `settings.py` after `settings.py` completes.  Anything
 that could be put at the bottom of `settings.py` can be put in `local_settings.py`.
 
-For a homestead node, you'll probably need at least the following in `local_settings.py`.
+For a homestead node, you'll probably need at least the following in
+`local_settings.py` (replacing `example.com` with the correct domain).
 
     LOG_FILE_PREFIX = "homestead"
     INSTALLED_HANDLERS = ["homestead"]
     HTTP_PORT = 8888
     HSS_ENABLED = False
-    PASSWORD_ENCRYPTION_KEY = "secret"
+    SIP_DIGEST_REALM = example.com
 
 For a homer node, you'll probably need the following instead.
 
     LOG_FILE_PREFIX = "homer"
     INSTALLED_HANDLERS = ["homer"]
     HTTP_PORT = 7888
+    SIP_DIGEST_REALM = example.com
 
 Logging
 =======
@@ -123,8 +125,8 @@ Next, to actually create the database run the `create_db.py` script:
 The easiest way to examine what is in the database is to use cqlsh, e.g.
 
     cqlsh -3
-    use homestead;
-    SELECT * FROM sip_digests;
+    use homestead_cache;
+    SELECT * FROM impi;
 
 For details of the CQL syntax, see [the CQL documentation](http://cassandra.apache.org/doc/cql3/CQL.html).
 
