@@ -6,7 +6,7 @@ check process homestead pidfile /var/run/homestead.pid
   start program = "/etc/monit/run_logged /etc/init.d/homestead start"
   stop program = "/etc/monit/run_logged /etc/init.d/homestead stop"
   if failed host localhost port 8888 type TCP protocol http
-    and use the request "/ping" then restart
+    and use the request "/ping" then exec "/etc/monit/run_logged /etc/init.d/homestead abort-restart"
 # TODO monitor HTTPS as well as HTTP.
 #  if failed host localhost port 8443 type TCPSSL protocol http
 #    and use the request "/ping" then restart
