@@ -273,6 +273,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             _log.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
             _log.error("Exception: %s" % repr(e))
             _log.error(e.getTraceback())
+            utils.write_core_file(settings.LOG_FILE_PREFIX, traceback.format_exc())
             cyclone.web.RequestHandler._handle_request_exception(self, e)
 
     @property
@@ -376,11 +377,6 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 return func(handler, *pos_args, **kwd_args)
         return wrapper
-
-    def _handle_request_exception(self, e):
-        _log.exception("Unhandled exception handling %s" % self.request.uri)
-        utils.write_core_file(settings.LOG_FILE_PREFIX, traceback.format_exc())
-        cyclone.web.RequestHandler._handle_request_exception(self, e)
 
 class UnknownApiHandler(BaseHandler):
     """
