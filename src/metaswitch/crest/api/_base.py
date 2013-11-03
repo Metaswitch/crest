@@ -45,6 +45,7 @@ from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 
 from metaswitch.common import utils
+from metaswitch.crest import settings
 
 _log = logging.getLogger("crest.api")
 
@@ -375,6 +376,11 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 return func(handler, *pos_args, **kwd_args)
         return wrapper
+
+    def _handle_request_exception(self, e):
+        _log.exception("Unhandled exception handling %s" % self.request.uri)
+        utils.write_core_file(settings.LOG_FILE_PREFIX, traceback.format_exc())
+        cyclone.web.RequestHandler._handle_request_exception(self, e)
 
 class UnknownApiHandler(BaseHandler):
     """

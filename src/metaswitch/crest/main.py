@@ -97,6 +97,8 @@ def standalone():
     with open(settings.PID_FILE, "w") as pidfile:
         pidfile.write(str(pid) + "\n")
 
+    utils.install_sigusr1_handler(settings.LOG_FILE_PREFIX)
+
     if args.shared_http_fd:
         reactor.adoptStreamPort(args.shared_http_fd, AF_INET, application)
     else:
