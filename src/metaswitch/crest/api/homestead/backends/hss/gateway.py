@@ -35,6 +35,7 @@
 
 import os
 import logging
+import traceback
 
 from diameter import stack
 from twisted.internet import defer
@@ -43,6 +44,7 @@ from twisted.internet.task import LoopingCall
 from metaswitch.crest import settings
 from metaswitch.crest.api._base import _penaltycounter, _loadmonitor
 from metaswitch.crest.api import DeferTimeout
+from metaswitch.common import utils
 from .io import HSSPeerIO
 
 _log = logging.getLogger("crest.api.homestead.hss")
@@ -142,11 +144,17 @@ class HSSAppListener(stack.ApplicationListener):
         return (request.application_id, request.command_code, request.eTe)
 
     def onAnswer(self, peer, answer):
-        key = self.request_hash(answer)
-        if key in self._pending_responses:
-            _log.debug("Executing callbacks for pending requests %s" % hash(key))
-            for deferred in self._pending_responses.pop(key):
-                deferred.callback(answer)
+        try:
+            key = self.request_hash(answer)
+            if key in self._pending_responses:
+                _log.debug("Executing callbacks for pending requests %s" % hash(key))
+                for deferred in self._pending_responses.pop(key):
+                    deferred.callback(answer)
+        except:
+            utils.write_core_file(settings.LOG_FILE_PREFIX,
+                                  traceback.format_exc())
+            _log.exception("Caught exception while processing DIAMETER response")
+
 
     @defer.inlineCallbacks
     def onRequest(self, peer, request):
@@ -162,6 +170,8 @@ class HSSAppListener(stack.ApplicationListener):
         except:
             # We must catch and handle any exception here, as otherwise it will
             # propagate up to the Diameter stack and kill it.
+            utils.write_core_file(settings.LOG_FILE_PREFIX,
+                                  traceback.format_exc())
             _log.exception("Caught exception while processing DIAMETER request")
 
     @defer.inlineCallbacks
