@@ -101,7 +101,7 @@ def standalone():
     logging_config.configure_logging(args.process_id)
  
     # setup accumulators and counters for statistics gathering
-    api._base.setupStats(args.process_id, args.worker_processes)
+    api.base.setupStats(args.process_id, args.worker_processes)
 
     if args.shared_http_fd:
         reactor.adoptStreamPort(args.shared_http_fd, AF_INET, application)

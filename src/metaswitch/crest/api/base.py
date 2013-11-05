@@ -1,4 +1,4 @@
-# @file _base.py
+# @file base.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -138,7 +138,7 @@ class LoadMonitor:
             # Got a token from the bucket, so admit the request
             self.accepted += 1
             self.pending_count += 1
-            _queue_size_accumulator.accumulate(self.pending_count)
+            queue_size_accumulator.accumulate(self.pending_count)
             if self.pending_count > self.max_pending_count:
                 self.max_pending_count = self.pending_count
             return True
@@ -164,7 +164,7 @@ class LoadMonitor:
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
-            hss_overloads = _penaltycounter.get_hss_penalty_count()
+            hss_overloads = penaltycounter.get_hss_penalty_count()
             if ((err > self.DECREASE_THRESHOLD) or (hss_overloads > 0)):
                 # latency is above where we want it to be, or we are getting overload responses from the HSS,
                 # so adjust the rate downwards by a multiplicative factor
@@ -185,36 +185,36 @@ class LoadMonitor:
                 _log.info("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
                                 (accepted_percent, err, self.bucket.rate))
 
-        _penaltycounter.reset_hss_penalty_count()
+        penaltycounter.reset_hss_penalty_count()
 
 # Create load monitor with target latency of 100ms, maximum bucket size of
 # 20 requests, initial and minimum token rate of 10 per second
-_loadmonitor = LoadMonitor(0.1, 20, 10, 10)
-_penaltycounter = PenaltyCounter()
+loadmonitor = LoadMonitor(0.1, 20, 10, 10)
+penaltycounter = PenaltyCounter()
 
 # Create the accumulators and counters
-_zmq = LastValueCache()
-_latency_accumulator = Accumulator("H_latency_us")
-_queue_size_accumulator = Accumulator("H_queue_size")
-_incoming_requests = Counter("H_incoming_requests")
-_overload_counter = Counter("H_rejected_overload")
-_hss_latency_accumulator = Accumulator("H_hss_latency_us")
-_cache_latency_accumulator = Accumulator("H_cache_latency_us")
-_digest_latency_accumulator = Accumulator("H_hss_digest_latency_us")
-_subscription_latency_accumulator = Accumulator("H_hss_subscription_latency_us")
+zmq = LastValueCache()
+latency_accumulator = Accumulator("H_latency_us")
+queue_size_accumulator = Accumulator("H_queue_size")
+incoming_requests = Counter("H_incoming_requests")
+overload_counter = Counter("H_rejected_overload")
+hss_latency_accumulator = Accumulator("H_hss_latency_us")
+cache_latency_accumulator = Accumulator("H_cache_latency_us")
+digest_latency_accumulator = Accumulator("H_hss_digest_latency_us")
+subscription_latency_accumulator = Accumulator("H_hss_subscription_latency_us")
 
 # Update the accumulators and counters when the process id is known, 
 # and set up the zmq bindings
 def setupStats(p_id, worker_proc):
-    _zmq.bind(p_id, worker_proc)
-    _latency_accumulator.set_process_id(p_id)
-    _queue_size_accumulator.set_process_id(p_id)
-    _incoming_requests.set_process_id(p_id)
-    _overload_counter.set_process_id(p_id)
-    _hss_latency_accumulator.set_process_id(p_id)
-    _cache_latency_accumulator.set_process_id(p_id)
-    _digest_latency_accumulator.set_process_id(p_id)
-    _subscription_latency_accumulator.set_process_id(p_id)
+    zmq.bind(p_id, worker_proc)
+    latency_accumulator.set_process_id(p_id)
+    queue_size_accumulator.set_process_id(p_id)
+    incoming_requests.set_process_id(p_id)
+    overload_counter.set_process_id(p_id)
+    hss_latency_accumulator.set_process_id(p_id)
+    cache_latency_accumulator.set_process_id(p_id)
+    digest_latency_accumulator.set_process_id(p_id)
+    subscription_latency_accumulator.set_process_id(p_id)
          
 def _guess_mime_type(body):
     if (body == "null" or
@@ -241,15 +241,15 @@ class BaseHandler(cyclone.web.RequestHandler):
 
     def prepare(self):
         # Increment the request counter
-        _incoming_requests.increment()
+        incoming_requests.increment()
 
         # timestamp the request
         self._start = time.time()
         _log.info("Received request from %s - %s %s://%s%s" %
                    (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri))
-        if not _loadmonitor.admit_request():
+        if not loadmonitor.admit_request():
             _log.warning("Rejecting request because of overload")
-            _overload_counter.increment()
+            overload_counter.increment()
             return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
@@ -262,10 +262,10 @@ class BaseHandler(cyclone.web.RequestHandler):
                     self.request.uri))
 
         latency = time.time() - self._start
-        _loadmonitor.request_complete(latency)
+        loadmonitor.request_complete(latency)
 
         # Track the latency of the requests (in usec)
-        _latency_accumulator.accumulate(latency * 1000000)
+        latency_accumulator.accumulate(latency * 1000000)
 
     def write(self, chunk):
         if (isinstance(chunk, dict) and

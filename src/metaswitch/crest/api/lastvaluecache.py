@@ -91,11 +91,13 @@ class LastValueCache:
     def forward(self):
         # Continually poll for updates
         while True:
+            # Poll returns a dictionary of sockets
             answer = yield self.last_cache()
   
             if self.subscriber in dict(answer):
                 # A stat has been updated in the ipc file. Update
-                # the cache, and publish the new stat. 
+                # the cache, and publish the new stat. The stat will 
+                # be of the form [stat_name, "OK", values...]
                 msg = yield self.subscriber.recv_multipart()
                 self.cache[msg[0]] = msg
                 self.broadcaster.send_multipart(msg)
@@ -103,6 +105,9 @@ class LastValueCache:
                 # A new subscription for a stat has occurred. Immediately
                 # send the value stored in the cache (if it exists)
                 event = yield self.broadcaster.recv()
+          
+                # The first element is whether this is a subscripion (1) 
+                # or to unsubscriber (0)  
                 if event[0] == b'\x01':
                     topic = event[1:]
                     if topic in self.cache:

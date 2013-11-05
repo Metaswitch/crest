@@ -45,7 +45,7 @@ from diameter import stack
 
 from metaswitch.crest import settings
 from metaswitch.crest.test import matchers
-from metaswitch.crest.api._base import _penaltycounter
+from metaswitch.crest.api.base import _penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
 

@@ -35,7 +35,7 @@
 import time
 import logging 
 import abc
-import _base
+import base
 
 # Collect stats every 5 seconds
 STATS_PERIOD = 5 
@@ -48,6 +48,10 @@ class Collector(object):
     """
 
     __metaclass__ = abc.ABCMeta
+
+    def __init__(self, stat_name):
+        self.stat_name = stat_name
+        self.start_time = time.time()
 
     @abc.abstractmethod
     def refresh(self):
@@ -64,25 +68,17 @@ class Collector(object):
         """
         pass
 
-    @abc.abstractmethod
     def set_process_id(self, process_id):
-        """
-        Update the stat name when the process id is known
-        """
-        pass
+        self.stat_name += "_" + str(process_id)
 
-class Counter:
+class Counter(Collector):
     """
     Counters track how many times a particular event happens over a period
     """
 
     def __init__(self, stat_name):
-        self.stat_name = stat_name
+        super(Counter, self).__init__(stat_name)
         self.current = 0
-        self.start_time = time.time()
-
-    def set_process_id(self, process_id):
-        self.stat_name += "_" + str(process_id)
 
     def increment(self):
         self.current += 1
@@ -92,31 +88,27 @@ class Counter:
         time_difference = time.time() - self.start_time
 
         if time_difference > STATS_PERIOD:
-            _base._zmq.report([self.current], self.stat_name)
+            base.zmq.report([self.current], self.stat_name)
             self.reset()
 
     def reset(self):
         self.current = 0
         self.start_time = time.time()
  
-class Accumulator:
+class Accumulator(Collector):
     """
     Accumulators track how many times a particular event happens over a period, 
     as well as the mean, variance, hwm and lwm values for the stat. 
     """
 
     def __init__(self, stat_name):
-        self.stat_name = stat_name
+        super(Accumulator, self).__init__(stat_name)
         self.current = 0
         self.sigma = 0
         self.sigma_squared = 0
         self.lwm = 0
         self.hwm = 0
-        self.start_time = time.time()     
  
-    def set_process_id(self, process_id):
-        self.stat_name += "_" + str(process_id)
-
     def accumulate(self, latency):
         self.current += 1
         self.sigma += latency
@@ -142,7 +134,7 @@ class Accumulator:
                 mean = self.sigma / self.current
                 variance = (self.sigma_squared / self.current) - (mean * mean)
 
-            _base._zmq.report([n, mean, variance, self.lwm, self.hwm], self.stat_name)
+            base.zmq.report([n, mean, variance, self.lwm, self.hwm], self.stat_name)
             self.reset()
 
     def reset(self):
