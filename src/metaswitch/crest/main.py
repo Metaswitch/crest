@@ -50,7 +50,6 @@ from metaswitch.crest import settings, logging_config
 from metaswitch.common import utils
 
 _log = logging.getLogger("crest")
-logging_config.configure_logging(0)
 
 def create_application():
     app_settings = {
@@ -75,6 +74,7 @@ def standalone():
     parser.add_argument("--background", action="store_true", help="Detach and run server in background")
     parser.add_argument("--worker-processes", default=1, type=int)
     parser.add_argument("--shared-http-fd", default=None, type=int)
+    parser.add_argument("--process-id", default=0, type=int)
     args = parser.parse_args()
 
     # We don't initialize logging until we fork because we want each child to
@@ -97,6 +97,12 @@ def standalone():
     with open(settings.PID_FILE, "w") as pidfile:
         pidfile.write(str(pid) + "\n")
 
+    # Setup logging
+    logging_config.configure_logging(args.process_id)
+ 
+    # setup accumulators and counters for statistics gathering
+    api._base.setupStats(args.process_id, args.worker_processes)
+
     if args.shared_http_fd:
         reactor.adoptStreamPort(args.shared_http_fd, AF_INET, application)
     else:
@@ -104,8 +110,10 @@ def standalone():
         _log.info("Going to listen for HTTP on port %s", settings.HTTP_PORT)
         http_port = reactor.listenTCP(settings.HTTP_PORT, application, interface="0.0.0.0")
 
-        for _ in range(1, args.worker_processes):
-            reactor.spawnProcess(None, executable, [executable, __file__, "--shared-http-fd", str(http_port.fileno())],
+        for process_id in range(1, args.worker_processes):
+            reactor.spawnProcess(None, executable, [executable, __file__, 
+                                 "--shared-http-fd", str(http_port.fileno()),
+                                 "--process-id", str(process_id)],
                                  childFDs={0: 0, 1: 1, 2: 2, http_port.fileno(): http_port.fileno()},
                                  env = os.environ)
 

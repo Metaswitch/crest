@@ -45,9 +45,10 @@ from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 
 from metaswitch.common import utils
+from metaswitch.crest.api.statistics import Accumulator, Counter
+from metaswitch.crest.api.lastvaluecache import LastValueCache
 
 _log = logging.getLogger("crest.api")
-
 
 class PenaltyCounter:
     def __init__(self):
@@ -137,6 +138,7 @@ class LoadMonitor:
             # Got a token from the bucket, so admit the request
             self.accepted += 1
             self.pending_count += 1
+            _queue_size_accumulator.accumulate(self.pending_count)
             if self.pending_count > self.max_pending_count:
                 self.max_pending_count = self.pending_count
             return True
@@ -190,7 +192,30 @@ class LoadMonitor:
 _loadmonitor = LoadMonitor(0.1, 20, 10, 10)
 _penaltycounter = PenaltyCounter()
 
+# Create the accumulators and counters
+_zmq = LastValueCache()
+_latency_accumulator = Accumulator("H_latency_us")
+_queue_size_accumulator = Accumulator("H_queue_size")
+_incoming_requests = Counter("H_incoming_requests")
+_overload_counter = Counter("H_rejected_overload")
+_hss_latency_accumulator = Accumulator("H_hss_latency_us")
+_cache_latency_accumulator = Accumulator("H_cache_latency_us")
+_digest_latency_accumulator = Accumulator("H_hss_digest_latency_us")
+_subscription_latency_accumulator = Accumulator("H_hss_subscription_latency_us")
 
+# Update the accumulators and counters when the process id is known, 
+# and set up the zmq bindings
+def setupStats(p_id, worker_proc):
+    _zmq.bind(p_id, worker_proc)
+    _latency_accumulator.set_process_id(p_id)
+    _queue_size_accumulator.set_process_id(p_id)
+    _incoming_requests.set_process_id(p_id)
+    _overload_counter.set_process_id(p_id)
+    _hss_latency_accumulator.set_process_id(p_id)
+    _cache_latency_accumulator.set_process_id(p_id)
+    _digest_latency_accumulator.set_process_id(p_id)
+    _subscription_latency_accumulator.set_process_id(p_id)
+         
 def _guess_mime_type(body):
     if (body == "null" or
         (body[0] == "{" and
@@ -215,12 +240,16 @@ class BaseHandler(cyclone.web.RequestHandler):
         self.__request_data = None
 
     def prepare(self):
+        # Increment the request counter
+        _incoming_requests.increment()
+
         # timestamp the request
         self._start = time.time()
         _log.info("Received request from %s - %s %s://%s%s" %
                    (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri))
         if not _loadmonitor.admit_request():
             _log.warning("Rejecting request because of overload")
+            _overload_counter.increment()
             return Failure(HTTPError(httplib.SERVICE_UNAVAILABLE))
 
     def on_finish(self):
@@ -234,6 +263,9 @@ class BaseHandler(cyclone.web.RequestHandler):
 
         latency = time.time() - self._start
         _loadmonitor.request_complete(latency)
+
+        # Track the latency of the requests (in usec)
+        _latency_accumulator.accumulate(latency * 1000000)
 
     def write(self, chunk):
         if (isinstance(chunk, dict) and

@@ -35,13 +35,14 @@
 
 import os
 import logging
+import time
 
 from diameter import stack
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
 from metaswitch.crest import settings
-from metaswitch.crest.api._base import _penaltycounter, _loadmonitor
+from metaswitch.crest.api._base import _penaltycounter, _loadmonitor, _digest_latency_accumulator, _subscription_latency_accumulator
 from metaswitch.crest.api import DeferTimeout
 from .io import HSSPeerIO
 
@@ -270,6 +271,7 @@ class HSSPeerListener(stack.PeerListener):
         req.addAVP(self.cx.getAVP('SIP-Number-Auth-Items').withInteger32(1))
         req.addAVP(self.cx.getAVP('SIP-Auth-Data-Item').withAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('SIP Digest')))
         # Send off message to HSS
+        start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
         # Hook up our deferred to the callback
         d = defer.Deferred()
@@ -277,6 +279,8 @@ class HSSPeerListener(stack.PeerListener):
         answer = yield d
         # Have response, parse out digest
         digest = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-HA1")
+        # Track how long it took (in usec)
+        _digest_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
         if digest:
             defer.returnValue(digest.getOctetString())
         else:
@@ -313,6 +317,7 @@ class HSSPeerListener(stack.PeerListener):
         req.addAVP(self.cx.getAVP('Vendor-Specific-Application-Id'))
         req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(0))
         # Send off message to HSS
+        start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
         # Hook up our deferred to the callback
         d = defer.Deferred()
@@ -321,6 +326,9 @@ class HSSPeerListener(stack.PeerListener):
 
         _log.debug("Received Server-Assignment response for %s:" % private_id)
         user_data = self.cx.findFirstAVP(answer, "User-Data")
+
+        # Track how long it took (in usec)
+        _subscription_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
         if not user_data:
             self.log_diameter_error(answer)
             # If the error is an Overload response, increment the HSS penalty counter

@@ -1,0 +1,118 @@
+# @file lastvaluecache.py
+#
+# Project Clearwater - IMS in the Cloud
+# Copyright (C) 2013  Metaswitch Networks Ltd
+#
+# This program is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or (at your
+# option) any later version, along with the "Special Exception" for use of
+# the program along with SSL, set forth below. This program is distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details. You should have received a copy of the GNU General Public
+# License along with this program.  If not, see
+# <http://www.gnu.org/licenses/>.
+#
+# The author can be reached by email at clearwater@metaswitch.com or by
+# post at Metaswitch Networks Ltd, 100 Church St, Enfield EN2 6BQ, UK
+#
+# Special Exception
+# Metaswitch Networks Ltd  grants you permission to copy, modify,
+# propagate, and distribute a work formed by combining OpenSSL with The
+# Software, or a work derivative of such a combination, even if such
+# copying, modification, propagation, or distribution would otherwise
+# violate the terms of the GPL. You must comply with the GPL in all
+# respects for all of the code used other than OpenSSL.
+# "OpenSSL" means OpenSSL toolkit software distributed by the OpenSSL
+# Project and licensed under the OpenSSL Licenses, or a work based on such
+# software and licensed under the OpenSSL Licenses.
+# "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License
+# under which the OpenSSL Project distributes the OpenSSL toolkit software,
+# as those licenses appear in the file LICENSE-OPENSSL.
+
+import logging
+import zmq
+from twisted.internet import defer, threads
+
+_log = logging.getLogger("crest.api")
+VALID_STATS = ["H_latency_us",
+               "H_queue_size",
+               "H_incoming_requests",
+               "H_rejected_overload",
+               "H_hss_latency_us",
+               "H_cache_latency_us",
+               "H_hss_digest_latency_us",
+               "H_hss_subscription_latency_us"]
+
+
+class LastValueCache:
+    def __init__(self):
+        # Set up the cache.
+        self.cache = {}
+
+    def bind(self, p_id, worker_proc):
+        context = zmq.Context()
+
+        # Connect to the ipc file where all stats are published.
+        self.publisher = context.socket(zmq.PUB)
+        self.publisher.connect("ipc:///tmp/stats0")
+
+        # If this is the parent process, then subscribe to the ipc file.
+        if p_id == 0:
+            self.subscriber = context.socket(zmq.SUB)
+            self.subscriber.bind("ipc:///tmp/stats0")
+            for process_id in range (0, worker_proc): 
+                for stat in VALID_STATS:
+                    self.subscriber.setsockopt(zmq.SUBSCRIBE, 
+                                               stat + "_" + str(process_id))
+
+            # Set up a tcp connection to publish all stats
+            self.broadcaster = context.socket(zmq.XPUB)
+            self.broadcaster.bind("tcp://*:6666")
+
+            # Set up a poller to listen for new stats published to the 
+            # ipc file and for new external subscriptions
+            self.poller = zmq.Poller()
+            self.poller.register(self.subscriber, zmq.POLLIN)
+            self.poller.register(self.broadcaster, zmq.POLLIN)
+
+            self.forward()
+
+    @defer.inlineCallbacks
+    def last_cache(self):
+        # Poll
+        d = threads.deferToThread(self.poller.poll)
+        answer = yield d
+        defer.returnValue(answer)
+
+    @defer.inlineCallbacks
+    def forward(self):
+        # Continually poll for updates
+        while True:
+            answer = yield self.last_cache()
+  
+            if self.subscriber in dict(answer):
+                # A stat has been updated in the ipc file. Update
+                # the cache, and publish the new stat. 
+                msg = yield self.subscriber.recv_multipart()
+                self.cache[msg[0]] = msg
+                self.broadcaster.send_multipart(msg)
+            if self.broadcaster in dict(answer):
+                # A new subscription for a stat has occurred. Immediately
+                # send the value stored in the cache (if it exists)
+                event = yield self.broadcaster.recv()
+                if event[0] == b'\x01':
+                    topic = event[1:]
+                    if topic in self.cache:
+                        self.broadcaster.send_multipart(self.cache[topic])
+
+    def report(self, new_value, stat_name):
+        # Publish the updated stat to the ipc file
+        self.publisher.send(stat_name, zmq.SNDMORE)
+        self.publisher.send("OK", zmq.SNDMORE)
+
+        for index in range(len(new_value) - 1):
+            self.publisher.send(str(new_value[index]), zmq.SNDMORE)
+        self.publisher.send(str(new_value[-1]))
