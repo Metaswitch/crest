@@ -120,7 +120,7 @@ class Accumulator:
     def accumulate(self, latency):
         self.current += 1
         self.sigma += latency
-        self.sigma += latency * latency
+        self.sigma_squared += (latency * latency)
 
         if (self.lwm > latency or self.lwm == 0):
             self.lwm = latency
@@ -136,13 +136,13 @@ class Accumulator:
         variance = 0
 
         if time_difference > STATS_PERIOD:
-            self.current = self.current * STATS_PERIOD / time_difference
+            n = self.current * STATS_PERIOD / time_difference
 
             if self.current > 0:
                 mean = self.sigma / self.current
                 variance = (self.sigma_squared / self.current) - (mean * mean)
 
-            _base._zmq.report([self.current, mean, variance, self.lwm, self.hwm], self.stat_name)
+            _base._zmq.report([n, mean, variance, self.lwm, self.hwm], self.stat_name)
             self.reset()
 
     def reset(self):
