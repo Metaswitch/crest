@@ -34,7 +34,7 @@
 
 import collections
 
-from metaswitch.crest.api import _base
+from metaswitch.crest.api import base
 from metaswitch.crest.api.ping import PingHandler
 from metaswitch.crest import settings
 
@@ -86,5 +86,5 @@ ROUTES = [
     (PATH_PREFIX + r'ping/?$', PingHandler),
 
     # JSON 404 page for API calls.
-    (PATH_PREFIX + r'.*$', _base.UnknownApiHandler),
+    (PATH_PREFIX + r'.*$', base.UnknownApiHandler),
 ]

@@ -33,11 +33,12 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
+import time
 
 from cyclone.web import HTTPError
 from twisted.internet import defer
 
-from metaswitch.crest.api._base import BaseHandler
+from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator 
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
@@ -58,13 +59,16 @@ class CacheApiHandler(BaseHandler):
         one returns something other than None"""
         @defer.inlineCallbacks
         def getter(*pos_args, **kwd_args):
-            for f in funcs:
-                retval = yield f(*pos_args, **kwd_args)
+            for getter_function, accumulator_function in funcs:
+                # Track the latency of each request (in usec)
+                start_time = time.time()
+                retval = yield getter_function(*pos_args, **kwd_args)
+                accumulator_function.accumulate((time.time() - start_time) * 1000000)
                 if retval:
-                    _log.debug("Got result from %s" % f)
+                    _log.debug("Got result from %s" % getter_function)
                     defer.returnValue(retval)
                 else:
-                    _log.debug("No result from %s" % f)
+                    _log.debug("No result from %s" % getter_function)
         return getter
 
 
@@ -75,8 +79,9 @@ class DigestHandler(CacheApiHandler):
         public_id = self.get_argument("public_id", default=None)
 
         # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter(self.application.cache.get_digest,
-                                        self.application.backend.get_digest)
+        getter = self.sequential_getter(
+                 [self.application.cache.get_digest, cache_latency_accumulator],
+                 [self.application.backend.get_digest, hss_latency_accumulator])
         retval = yield getter(private_id, public_id)
 
         retval = {JSON_DIGEST_HA1: retval} if retval else None
@@ -91,7 +96,7 @@ class IMSSubscriptionHandler(CacheApiHandler):
 
         # Try the cache first.  If that fails go to the backend.
         getter = self.sequential_getter(
-                                self.application.cache.get_ims_subscription,
-                                self.application.backend.get_ims_subscription)
+                 [self.application.cache.get_ims_subscription, cache_latency_accumulator],
+                 [self.application.backend.get_ims_subscription, hss_latency_accumulator])
         retval = yield getter(public_id, private_id)
         self.send_error_or_response(retval)

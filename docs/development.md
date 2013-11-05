@@ -53,7 +53,15 @@ Pre-requisites
 
 5. Python static analysis checker
 
-    sudo pip install flake8 mccabe pep8-naming
+   ```
+   sudo pip install flake8 mccabe pep8-naming
+   ```
+
+6. ZMQ libraries
+
+   ```
+   sudo apt-get install python-zmq libzmq3-dev 
+   ```
 
 Setting up a virtualenv
 =======================
