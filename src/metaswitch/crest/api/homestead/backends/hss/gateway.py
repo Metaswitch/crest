@@ -61,11 +61,6 @@ class HSSNotEnabled(Exception):
     pass
 
 
-class HSSNotFound(Exception):
-    """Exception to throw if a request cannot be completed because a resource is not found"""
-    pass
-
-
 class HSSOverloaded(Exception):
     """Exception to throw if a request cannot be completed because the HSS returns an
     overloaded response"""
@@ -105,6 +100,8 @@ class HSSGateway(object):
 
     @defer.inlineCallbacks
     def get_digest(self, private_id, public_id):
+        """Gets the SIP digest from the HSS with a Multimedia-Auth-Request.
+        Returns None if the subscriber is not found."""
         _log.debug("Getting auth for priv:%s pub:%s" % (private_id, public_id))
         result = yield self.peer_listener.fetch_multimedia_auth(private_id,
                                                                 public_id)
@@ -112,6 +109,8 @@ class HSSGateway(object):
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, private_id, public_id):
+        """Gets the IMS subscription information from the HSS with a
+        Server-Assignment_request. Returns None if the subscriber is not found."""
         _log.debug("Getting IMS subscription for priv:%s, pub:%s" %
                    (private_id, public_id))
         result = yield self.peer_listener.fetch_server_assignment(private_id,
@@ -223,7 +222,7 @@ class HSSAppListener(stack.ApplicationListener):
         result_code = self.cx.getAVP("Result-Code")
         try:
             yield self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
-            # TODO: Notify Sprout to force deregistration there? 
+            # TODO: Notify Sprout to force deregistration there?
             answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
         except:
             _log.exception("Registration-Termination-Request cache update failed")
@@ -290,7 +289,8 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                raise HSSNotFound()
+                # Translated into a 404 higher up the stack
+                defer.returnValue(None)
 
     @DeferTimeout.timeout(_loadmonitor.max_latency)
     @defer.inlineCallbacks
@@ -336,7 +336,8 @@ class HSSPeerListener(stack.PeerListener):
                 _penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
             else:
-                raise HSSNotFound()
+                # Translated into a 404 higher up the stack
+                defer.returnValue(None)
 
         defer.returnValue(user_data.getOctetString())
 

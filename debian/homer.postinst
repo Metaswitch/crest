@@ -69,7 +69,7 @@ case "$1" in
             cd -
         done
 
-        /etc/clearwater/scripts/homer
+        /usr/share/clearwater/infrastructure/scripts/homer
         echo Connecting to Cassandra on localhost...
         if echo "describe KEYSPACE homer;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homer"
         then

@@ -61,3 +61,12 @@ class ListContaining(object):
     def __repr__(self):
         return "<List containing: %s>" % self._items
 
+
+class MatchesAnything(object):
+    def __eq__(self, other):
+        return True
+
+class MatchesNone(object):
+    def __eq__(self, other):
+        return (other is None)
+

@@ -132,15 +132,15 @@ def standalone():
                     homestead_cache_casscli_file.write(
                         "SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_cache_casscli_file.write(
-                        "SET impi['%s']['public_id_%s'] = '%s';\n" % (private_id,
-                                                                      public_id,
-                                                                      public_id))
+                        "SET impi['%s']['public_id_%s'] = '';\n" % (private_id,
+                                                                    public_id))
 
                     homestead_cache_casscli_file.write(
                         create_row_command("impu", public_id))
                     homestead_cache_casscli_file.write(
-                        "SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (public_id,
-                                                                              ims_subscription_xml))
+                        "SET impu['%s']['ims_subscription_xml'] = '%s';\n" % (
+                            public_id,
+                            ims_subscription_xml.replace("'", "\\'")))
 
                     # Populate the provisioning tables for the user.
                     homestead_prov_casscli_file.write(
@@ -194,8 +194,9 @@ def standalone():
                     print 'Error: row "%s" contains <4 entries - ignoring'
 
         # Make the created .sh files executable
-        os.chmod(homestead_filename, stat.S_IEXEC)
-        os.chmod(xdm_filename, stat.S_IEXEC)
+        permissions = stat.S_IEXEC | stat.S_IREAD | stat.S_IWRITE
+        os.chmod(homestead_filename, permissions)
+        os.chmod(xdm_filename, permissions)
 
         print "Generated bulk provisioning scripts written to"
         print "- %-46s - run this script on Homestead" % (homestead_filename)
