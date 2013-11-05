@@ -45,7 +45,7 @@ from diameter import stack
 
 from metaswitch.crest import settings
 from metaswitch.crest.test import matchers
-from metaswitch.crest.api.base import _penaltycounter
+from metaswitch.crest.api.base import penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
 
@@ -280,8 +280,8 @@ class TestHSSPeerListener(unittest.TestCase):
         settings.SPROUT_HOSTNAME = "sprout"
         settings.SPROUT_PORT = 1234
 
-        _penaltycounter._log = mock.MagicMock()
-        _penaltycounter.reset_hss_penalty_count()
+        penaltycounter._log = mock.MagicMock()
+        penaltycounter.reset_hss_penalty_count()
 
     def test_get_diameter_error_code(self):
         mock_error = mock.MagicMock()
@@ -523,7 +523,7 @@ class TestHSSPeerListener(unittest.TestCase):
             self.assertEquals(deferred_callback.call_args[0][0], expected_retval)
 
         # The penalty counter should be at 1
-        self.assertEquals(_penaltycounter.get_hss_penalty_count(), expected_count)
+        self.assertEquals(penaltycounter.get_hss_penalty_count(), expected_count)
 
     def test_disconnected(self):
         self.assertEquals(self.peer_listener.peer, self.peer)
