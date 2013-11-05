@@ -43,3 +43,5 @@ do
   nodetool describering $keyspace >>$describering_file
   echo >>$describering_file
 done
+
+cp $(find /usr/share/clearwater/homestead/env -name local_settings.py) $CURRENT_DUMP_DIR
