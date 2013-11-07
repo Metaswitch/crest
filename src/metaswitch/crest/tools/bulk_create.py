@@ -163,9 +163,9 @@ def standalone():
                         "SET service_profiles['%s']['initialfiltercriteria'] = '%s';\n" % (sp_uuid,
                                                                                            INITIAL_FILTER_CRITERIA))
                     homestead_prov_casscli_file.write(
-                        "SET service_profiles['%s']['public_identity_%s'] = '%s';\n" % (sp_uuid,
-                                                                                        public_id,
-                                                                                        public_id))
+                        "SET service_profiles['%s']['public_id_%s'] = '%s';\n" % (sp_uuid,
+                                                                                  public_id,
+                                                                                  public_id))
 
                     homestead_prov_casscli_file.write(
                         create_row_command("public", public_id))
