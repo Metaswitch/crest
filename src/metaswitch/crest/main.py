@@ -97,9 +97,11 @@ def standalone():
     with open(settings.PID_FILE, "w") as pidfile:
         pidfile.write(str(pid) + "\n")
 
+    utils.install_sigusr1_handler(settings.LOG_FILE_PREFIX)
+
     # Setup logging
     logging_config.configure_logging(args.process_id)
- 
+
     # setup accumulators and counters for statistics gathering
     api.base.setupStats(args.process_id, args.worker_processes)
 
@@ -111,7 +113,7 @@ def standalone():
         http_port = reactor.listenTCP(settings.HTTP_PORT, application, interface="0.0.0.0")
 
         for process_id in range(1, args.worker_processes):
-            reactor.spawnProcess(None, executable, [executable, __file__, 
+            reactor.spawnProcess(None, executable, [executable, __file__,
                                  "--shared-http-fd", str(http_port.fileno()),
                                  "--process-id", str(process_id)],
                                  childFDs={0: 0, 1: 1, 2: 2, http_port.fileno(): http_port.fileno()},

@@ -45,6 +45,7 @@ from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 
 from metaswitch.common import utils
+from metaswitch.crest import settings
 from metaswitch.crest.api.statistics import Accumulator, Counter
 from metaswitch.crest.api.lastvaluecache import LastValueCache
 
@@ -203,7 +204,7 @@ cache_latency_accumulator = Accumulator("H_cache_latency_us")
 digest_latency_accumulator = Accumulator("H_hss_digest_latency_us")
 subscription_latency_accumulator = Accumulator("H_hss_subscription_latency_us")
 
-# Update the accumulators and counters when the process id is known, 
+# Update the accumulators and counters when the process id is known,
 # and set up the zmq bindings
 def setupStats(p_id, worker_proc):
     zmq.bind(p_id, worker_proc)
@@ -215,7 +216,7 @@ def setupStats(p_id, worker_proc):
     cache_latency_accumulator.set_process_id(p_id)
     digest_latency_accumulator.set_process_id(p_id)
     subscription_latency_accumulator.set_process_id(p_id)
-         
+
 def _guess_mime_type(body):
     if (body == "null" or
         (body[0] == "{" and
@@ -304,6 +305,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             _log.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
             _log.error("Exception: %s" % repr(e))
             _log.error(e.getTraceback())
+            utils.write_core_file(settings.LOG_FILE_PREFIX, traceback.format_exc())
             cyclone.web.RequestHandler._handle_request_exception(self, e)
 
     @property

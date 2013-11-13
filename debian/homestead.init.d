@@ -115,6 +115,26 @@ do_stop()
 	return "$RETVAL"
 }
 
+#
+# Function that aborts the daemon/service
+#
+# This is very similar to do_stop except it sends SIGUSR1 to dump a stack.
+#
+do_abort()
+{
+        # Return
+        #   0 if daemon has been stopped
+        #   1 if daemon was already stopped
+        #   2 if daemon could not be stopped
+        #   other if a failure occurred
+        start-stop-daemon --stop --quiet --retry=USR1/5/TERM/30/KILL/5 --exec $DAEMON
+        RETVAL="$?"
+        [ "$RETVAL" = 2 ] && return 2
+        # Many daemons don't delete their pidfiles when they exit.
+        rm -f $PIDFILE
+        return "$RETVAL"
+}
+
 case "$1" in
   start)
     [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC " "$NAME"
@@ -166,6 +186,24 @@ case "$1" in
 		;;
 	esac
 	;;
+  abort-restart)
+        log_daemon_msg "Abort-Restarting $DESC" "$NAME"
+        do_abort
+        case "$?" in
+          0|1)
+                do_start
+                case "$?" in
+                        0) log_end_msg 0 ;;
+                        1) log_end_msg 1 ;; # Old process is still running
+                        *) log_end_msg 1 ;; # Failed to start
+                esac
+                ;;
+          *)
+                # Failed to stop
+                log_end_msg 1
+                ;;
+        esac
+        ;;
   *)
 	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
 	echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
