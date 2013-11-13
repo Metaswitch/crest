@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# @file _base.py
+# @file base.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -41,7 +41,7 @@ import uuid
 import time
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
-from metaswitch.crest.api import _base
+from metaswitch.crest.api import base
 
 from mock import patch, MagicMock
 
@@ -53,7 +53,7 @@ class TestBaseHandler(unittest.TestCase):
         self.request = MagicMock()
         self.request.method = "GET"
         self.request.headers = {}
-        self.handler = _base.BaseHandler(self.app, self.request)
+        self.handler = base.BaseHandler(self.app, self.request)
 
     def test_prepare(self):
         self.request.headers = {}
@@ -144,7 +144,7 @@ class TestUnknownApiHandler(unittest.TestCase):
         super(TestUnknownApiHandler, self).setUp()
         self.app = MagicMock()
         self.request = MagicMock()
-        self.handler = _base.UnknownApiHandler(self.app, self.request)
+        self.handler = base.UnknownApiHandler(self.app, self.request)
 
     def test_get(self):
         self.handler.send_error = MagicMock()

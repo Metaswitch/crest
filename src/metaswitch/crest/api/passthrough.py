@@ -41,7 +41,7 @@ from telephus.client import CassandraClient
 from telephus.cassandra.ttypes import NotFoundException, UnavailableException, ConsistencyLevel
 from twisted.internet import defer
 
-from metaswitch.crest.api._base import BaseHandler
+from metaswitch.crest.api.base import BaseHandler
 
 _log = logging.getLogger("crest.api")
 
