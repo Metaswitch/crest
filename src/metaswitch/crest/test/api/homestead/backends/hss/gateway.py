@@ -46,6 +46,7 @@ from diameter import stack
 from metaswitch.crest import settings
 from metaswitch.crest.test import matchers
 from metaswitch.crest.api.base import penaltycounter, digest_latency_accumulator, subscription_latency_accumulator
+from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
 
@@ -83,16 +84,27 @@ class TestHSSGateway(unittest.TestCase):
     # more complex than standard functions - even if they appear similar.
     # These tests also act as a good example of testing inlineCallback functions,
     # with the same techniques applied to more complicated functions later
-    def test_get_digest(self):
+    def test_get_av_digest(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_digest("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
-        self.peer_listener.fetch_multimedia_auth.return_value.callback("digest")
-        self.assertEquals(get_callback.call_args[0][0], "digest")
+        auth = DigestAuthVector("ha1", "example.com", "auth")
+        self.peer_listener.fetch_multimedia_auth.return_value.callback(auth)
+        self.assertEquals(get_callback.call_args[0][0], auth)
 
-    def test_get_digest_not_found(self):
+    def test_get_av_aka(self):
+        self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
+        get_deferred = self.gateway.get_digest("priv", "pub")
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        auth = AKAAuthVector("challenge", "response", "ck", "ik")
+        self.peer_listener.fetch_multimedia_auth.return_value.callback(auth)
+        self.assertEquals(get_callback.call_args[0][0], auth)
+
+    def test_get_av_not_found(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_digest("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
@@ -101,7 +113,7 @@ class TestHSSGateway(unittest.TestCase):
         self.peer_listener.fetch_multimedia_auth.return_value.callback(None)
         self.assertEquals(get_callback.call_args[0][0], None)
 
-    def test_get_digest_timeout(self):
+    def test_get_av_timeout(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_digest("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
