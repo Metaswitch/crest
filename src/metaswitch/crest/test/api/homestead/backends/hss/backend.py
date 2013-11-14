@@ -135,11 +135,11 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertFalse(self.cache.put_associated_public_id.called)
         self.assertEquals(get_callback.call_args[0][0], auth)
 
-    def test_get_digest_no_public_id(self):
+    def test_get_av_no_public_id(self):
         """If a public is not supplied when trying to get a digest, the backend
         does not query the HSS or update the cache"""
 
-        get_deferred = self.backend.get_digest("priv")
+        get_deferred = self.backend.get_av("priv")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         self.assertEquals(get_callback.call_args[0][0], None)
@@ -202,17 +202,19 @@ class TestHSSBackend(HSSBackendFixture):
 
     def test_callback_on_digest_change(self):
         """Test a callback from the gateway to update the digest"""
-        self.cache.put_digest.return_value = defer.Deferred()
+        auth = DigestAuthVector("ha1", "realm", "qop")
 
-        deferred = self.backend_callbacks.on_digest_change("priv", "some_digest")
+        self.cache.put_av.return_value = defer.Deferred()
+
+        deferred = self.backend_callbacks.on_digest_change("priv", auth)
         callback = mock.MagicMock()
         deferred.addCallback(callback)
 
-        self.cache.put_digest.assert_called_once_with("priv",
-                                                      "some_digest",
+        self.cache.put_av.assert_called_once_with("priv",
+                                                      auth,
                                                       self.timestamp,
                                                       ttl=30)
-        self.cache.put_digest.return_value.callback(None)
+        self.cache.put_av.return_value.callback(None)
 
         self.assertEqual(callback.call_count, 1)
 
