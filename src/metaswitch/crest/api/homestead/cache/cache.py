@@ -37,6 +37,7 @@ import time
 
 from twisted.internet import defer
 from .db import IMPI, IMPU
+from ..auth_vectors import DigestAuthVector
 
 _log = logging.getLogger("crest.api.homestead.cache")
 
@@ -60,11 +61,12 @@ class Cache(object):
         return time.time() * 1000000
 
     @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
+    def get_av(self, private_id, public_id=None):
         digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)
         _log.debug("Fetched digest for private ID '%s' from cache: %s" %
                    (private_id, digest_ha1))
-        defer.returnValue(digest_ha1)
+        if digest_ha1:
+            defer.returnValue(DigestAuthVector(digest_ha1, None, None))
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, public_id, private_id=None):
@@ -74,10 +76,10 @@ class Cache(object):
         defer.returnValue(xml)
 
     @defer.inlineCallbacks
-    def put_digest(self, private_id, digest, timestamp, ttl=None):
+    def put_av(self, private_id, auth_vector, timestamp, ttl=None):
         _log.debug("Put private ID '%s' into cache with digest: %s" %
-                   (private_id, digest))
-        yield IMPI(private_id).put_digest_ha1(digest, ttl=ttl, timestamp=timestamp)
+                   (private_id, auth_vector.ha1))
+        yield IMPI(private_id).put_digest_ha1(auth_vector.ha1, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
     def put_associated_public_id(self, private_id, public_id, timestamp, ttl=None):
