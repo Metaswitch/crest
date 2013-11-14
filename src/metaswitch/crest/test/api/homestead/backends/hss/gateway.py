@@ -86,7 +86,7 @@ class TestHSSGateway(unittest.TestCase):
     # with the same techniques applied to more complicated functions later
     def test_get_av_digest(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_digest("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
@@ -96,7 +96,7 @@ class TestHSSGateway(unittest.TestCase):
 
     def test_get_av_aka(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_digest("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
@@ -106,7 +106,7 @@ class TestHSSGateway(unittest.TestCase):
 
     def test_get_av_not_found(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_digest("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
@@ -115,7 +115,7 @@ class TestHSSGateway(unittest.TestCase):
 
     def test_get_av_timeout(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_digest("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub")
         self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)

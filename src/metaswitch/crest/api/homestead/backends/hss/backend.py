@@ -58,32 +58,35 @@ class HSSBackend(Backend):
         self._cache = cache
         self._hss_gateway = HSSGateway(HSSBackend.Callbacks(cache))
 
-    @defer.inlineCallbacks
     def get_digest(self, private_id, public_id=None):
+        return self.get_av(private_id, public_id)
+
+    @defer.inlineCallbacks
+    def get_av(self, private_id, public_id=None):
         if not public_id:
             # We can't query the HSS without a public ID.
             _log.error("Cannot get digest for private ID '%s' " % private_id +
                        "as no public ID has been supplied")
             defer.returnValue(None)
         else:
-            digest = yield self._hss_gateway.get_digest(private_id,
-                                                        public_id)
-            _log.debug("Got digest %s for private ID %s from HSS" %
-                       (digest, private_id))
+            av = yield self._hss_gateway.get_av(private_id,
+                                                    public_id)
+            _log.debug("Got authentication vector %s for private ID %s from HSS" %
+                       (av, private_id))
 
-            if digest:
+            if av and av.type == "digest":
                 # Update the cache with the digest, and the fact that the
                 # private ID can authenticate the public ID.
                 timestamp = self._cache.generate_timestamp()
-                yield self._cache.put_digest(private_id,
-                                             digest,
-                                             timestamp,
-                                             ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
+                yield self._cache.put_av(private_id,
+                                         av,
+                                         timestamp,
+                                         ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
                 yield self._cache.put_associated_public_id(private_id,
                                                            public_id,
                                                            timestamp,
                                                            ttl=settings.HSS_ASSOC_IMPU_CACHE_PERIOD_SECS)
-            defer.returnValue(digest)
+            defer.returnValue(av)
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, public_id, private_id=None):

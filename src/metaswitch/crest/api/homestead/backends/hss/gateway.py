@@ -100,8 +100,11 @@ class HSSGateway(object):
         tick = LoopingCall(dstack.tick)
         tick.start(1)
 
-    @defer.inlineCallbacks
     def get_digest(self, private_id, public_id):
+        self.get_av(private_id, public_id)
+
+    @defer.inlineCallbacks
+    def get_av(self, private_id, public_id):
         """Gets the SIP digest from the HSS with a Multimedia-Auth-Request.
         Returns None if the subscriber is not found."""
         _log.debug("Getting auth for priv:%s pub:%s" % (private_id, public_id))
