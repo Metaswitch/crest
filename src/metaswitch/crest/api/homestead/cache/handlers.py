@@ -38,13 +38,15 @@ import time
 from cyclone.web import HTTPError
 from twisted.internet import defer
 
-from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator 
+from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
 
 
 class CacheApiHandler(BaseHandler):
+
+
     def send_error_or_response(self, retval):
         if retval is None:
             self.send_error(404)
@@ -54,12 +56,19 @@ class CacheApiHandler(BaseHandler):
             self.finish(retval)
 
     @staticmethod
-    def sequential_getter(*funcs):
-        """Returns a function that calls a sequence of callables in turn until
-        one returns something other than None"""
+    def sequential_getter_with_latency(*funcpairs):
+        """Each entry in funcpairs is a pair of a getter function (called to
+        get the return value) and an accumulator (which tracks the
+        latency of the getter).
+
+        Returns a function that calls each getter function in turn
+        until one returns something other than None, and tracks the
+        latency of each request (successful or not) in the
+        accumulator.
+        """
         @defer.inlineCallbacks
         def getter(*pos_args, **kwd_args):
-            for getter_function, accumulator_function in funcs:
+            for getter_function, accumulator_function in funcpairs:
                 # Track the latency of each request (in usec)
                 start_time = time.time()
                 retval = yield getter_function(*pos_args, **kwd_args)
@@ -78,13 +87,36 @@ class DigestHandler(CacheApiHandler):
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
 
-        # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter(
-                 [self.application.cache.get_digest, cache_latency_accumulator],
-                 [self.application.backend.get_digest, hss_latency_accumulator])
-        retval = yield getter(private_id, public_id)
+        cache_get = [self.application.cache.get_av, cache_latency_accumulator]
+        backend_get = [self.application.backend.get_av, hss_latency_accumulator]
 
-        retval = {JSON_DIGEST_HA1: retval} if retval else None
+        # Try the cache first.  If that fails go to the backend.
+        getter = self.sequential_getter_with_latency(cache_get, backend_get)
+        auth = yield getter(private_id, public_id)
+
+        retval = {JSON_DIGEST_HA1: auth.ha1} if auth else None
+        self.send_error_or_response(retval)
+
+
+class AuthVectorHandler(CacheApiHandler):
+    @BaseHandler.check_request_age
+    @defer.inlineCallbacks
+    def get(self, private_id):
+        public_id = self.get_argument("impu", default=None)
+        authtype = self.get_argument("authtype", default="Unknown")
+        autn = self.get_argument("autn", default=None)
+
+        cache_get = [self.application.cache.get_av, cache_latency_accumulator]
+        backend_get = [self.application.backend.get_av, hss_latency_accumulator]
+
+        if authtype == "Digest-AKAv1-MD5":
+            getter = self.sequential_getter_with_latency(backend_get)
+        else:
+            # Try the cache first.  If that fails go to the backend.
+            getter = self.sequential_getter_with_latency(cache_get, backend_get)
+        auth = yield getter(private_id, public_id)
+
+        retval = auth.to_json() if auth else None
         self.send_error_or_response(retval)
 
 
@@ -95,7 +127,7 @@ class IMSSubscriptionHandler(CacheApiHandler):
         private_id = self.get_argument("private_id", default=None)
 
         # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter(
+        getter = self.sequential_getter_with_latency(
                  [self.application.cache.get_ims_subscription, cache_latency_accumulator],
                  [self.application.backend.get_ims_subscription, hss_latency_accumulator])
         retval = yield getter(public_id, private_id)

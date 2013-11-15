@@ -6,7 +6,16 @@ class DigestAuthVector(AuthVector):
         self.type = "digest"
         self.ha1, self.realm, self.qop = ha1, realm, qop
 
+    def to_json(self):
+        return {"digest": {"ha1": self.ha1, "realm": self.realm, "qop": self.qop}}
+
 class AKAAuthVector(AuthVector):
     def __init__(self, challenge, response, crypt_key, integrity_key):
         self.type = "aka"
         self.challenge, self.response, self.crypt_key, self.integrity_key = challenge, response, crypt_key, integrity_key
+
+    def to_json(self):
+        return {"aka": {"challenge": self.challenge,
+                        "response": self.response,
+                        "cryptkey": self.crypt_key,
+                        "integritykey": self.integrity_key}}
