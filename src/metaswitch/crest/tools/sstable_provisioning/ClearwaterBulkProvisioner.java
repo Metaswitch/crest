@@ -113,10 +113,12 @@ public class ClearwaterBulkProvisioner
             if (entry.parse(line, lineNumber, csvfile))
             {
                 impiWriter.newRow(bytes(entry.private_id));
+                impiWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 impiWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
                 impiWriter.addColumn(bytes("public_id_" + entry.public_id), bytes(entry.public_id), timestamp);
 
                 impuWriter.newRow(bytes(entry.public_id));
+                impuWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 impuWriter.addColumn(bytes("ims_subscription_xml"), bytes(entry.imssubscription), timestamp);
             }
             lineNumber++;
@@ -162,19 +164,23 @@ public class ClearwaterBulkProvisioner
             if (entry.parse(line, lineNumber, csvfile))
             {
                 irsWriter.newRow(entry.irs_uuid);
+                irsWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 irsWriter.addColumn(bytes("associated_private_" + entry.private_id), bytes(entry.private_id), timestamp);
                 irsWriter.addColumn(bytes("service_profile_" + entry.sp_uuid_str), entry.sp_uuid, timestamp);
 
                 spWriter.newRow(entry.sp_uuid);
+                spWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 spWriter.addColumn(bytes("public_identity_" + entry.public_id), bytes(entry.public_id), timestamp);
                 spWriter.addColumn(bytes("initialfiltercriteria"), bytes(entry.ifc), timestamp);
                 spWriter.addColumn(bytes("irs"), entry.irs_uuid, timestamp);
 
                 publicWriter.newRow(bytes(entry.public_id));
+                publicWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 publicWriter.addColumn(bytes("publicidentity"), bytes(entry.publicidentity_xml), timestamp);
                 publicWriter.addColumn(bytes("service_profile"), entry.sp_uuid, timestamp);
 
                 privateWriter.newRow(bytes(entry.private_id));
+                privateWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 privateWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
                 privateWriter.addColumn(bytes("associated_irs_" + entry.irs_uuid_str), entry.irs_uuid, timestamp);
             }
