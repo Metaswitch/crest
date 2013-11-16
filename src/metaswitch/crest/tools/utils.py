@@ -74,6 +74,6 @@ def create_imssubscription_xml(private_id, publicidentity_xml, ifc_xml):
     output = StringIO.StringIO()
     tree = ET.ElementTree(root)
     tree.write(output, encoding="UTF-8", xml_declaration=True)
-    xml = output.getvalue()
+    xml = output.getvalue().replace('\n','')
 
     return xml
