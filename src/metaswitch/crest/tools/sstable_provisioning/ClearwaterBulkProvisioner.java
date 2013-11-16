@@ -125,14 +125,13 @@ public class ClearwaterBulkProvisioner
                 irsWriter.addColumn(bytes("associated_private_" + entry.private_id), bytes(entry.private_id), timestamp);
                 irsWriter.addColumn(bytes("service_profile_" + entry.sp_uuid_str), entry.sp_uuid, timestamp);
 
-
                 spWriter.newRow(entry.sp_uuid);
                 spWriter.addColumn(bytes("public_identity_" + entry.public_id), bytes(entry.public_id), timestamp);
-                spWriter.addColumn(bytes("initialfiltercriteria"), entry.initialfiltercriteria, timestamp);
+                spWriter.addColumn(bytes("initialfiltercriteria"), bytes(entry.ifc), timestamp);
                 spWriter.addColumn(bytes("irs"), entry.irs_uuid, timestamp);
 
                 publicWriter.newRow(bytes(entry.public_id));
-                publicWriter.addColumn(bytes("publicidentity"), entry.publicidentity_xml, timestamp);
+                publicWriter.addColumn(bytes("publicidentity"), bytes(entry.publicidentity_xml), timestamp);
                 publicWriter.addColumn(bytes("service_profile"), entry.sp_uuid, timestamp);
 
                 privateWriter.newRow(bytes(entry.private_id));
@@ -168,7 +167,7 @@ public class ClearwaterBulkProvisioner
                                                table_name,
                                                comparator,
                                                null,
-                                               64);
+                                               32);
     }
 
     static class CsvEntry
