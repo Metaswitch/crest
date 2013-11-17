@@ -52,7 +52,7 @@ This will generate `<csvfilename>_prepared.csv` in the current folder.  This sho
     sudo ./BulkProvision <csvfilename>_prepared.csv homestead-local
     sudo ./BulkProvision <csvfilename>_prepared.csv homestead-hss
 
-This will create a `homer` or `homestead_cache` and `homestead_provisioning` folders in the current directory which will contain the various sstable files for that node type.  `homestead-local` will generate both homestead_cache and homestead_provisioning directories, to simulate use of the local provisioning API.  `homestead-cache` will only produce the homestead_cache directory, to simulate use of an external HSS.
+This will create a `homer` or `homestead_cache` and `homestead_provisioning` folders in the current directory which will contain the various sstable files for that node type.  `homestead-local` will generate both homestead_cache and homestead_provisioning directories, to simulate use of the local provisioning API.  `homestead-hss` will only produce the homestead_cache directory, to simulate use of an external HSS.
 
 ## Injecting the sstables
 
