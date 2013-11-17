@@ -211,7 +211,7 @@ public class ClearwaterBulkProvisioner
                                                table_name,
                                                comparator,
                                                null,
-                                               32);
+                                               64);
     }
 
     static class CsvEntry
