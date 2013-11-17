@@ -37,19 +37,24 @@ public class ClearwaterBulkProvisioner
         String csvfile = args[0];
         String role = args[1];
 
-        BufferedReader reader = new BufferedReader(new FileReader(csvfile));
-
         if (role.equals("homer")) {
-            provision_homer(reader, csvfile);
-        } else if (role.equals("homestead")) {
-            provision_homestead(reader, csvfile);
+            provision_homer(csvfile);
+        } else if (role.equals("homestead-local")) {
+            // Provision Homestead with cache and provisioning tables
+            provision_homestead_cache(csvfile);
+            provision_homestead_provisioning(csvfile);
+        } else if (role.equals("homestead-hss")) {
+            // Provision Homestead with cache tables only
+            provision_homestead_cache(csvfile);
         } else {
-           System.out.println("Only homer and homestead roles are supported");
+           System.out.println("Only homer, homestead-local and homestead-hss roles are supported");
         }
     }
 
-    private static void provision_homer(BufferedReader reader, String csvfile) throws IOException
+    private static void provision_homer(String csvfile) throws IOException
     {
+        BufferedReader reader = new BufferedReader(new FileReader(csvfile));
+
         String keyspace = "homer";
         File ks_directory = new File(keyspace);
         if (!ks_directory.exists())
@@ -75,26 +80,70 @@ public class ClearwaterBulkProvisioner
         simservsWriter.close();
     }
 
-    private static void provision_homestead(BufferedReader reader, String csvfile) throws IOException
+    private static void provision_homestead_cache(String csvfile) throws IOException
     {
+        BufferedReader reader = new BufferedReader(new FileReader(csvfile));
+
         /*
-         * Create the directories to hold the two keyspaces.
+         * Create the directory to hold the cache keyspace.
          */
         String cache_keyspace = "homestead_cache";
         File cache_ks_directory = new File(cache_keyspace);
         if (!cache_ks_directory.exists())
             cache_ks_directory.mkdir();
 
+        /*
+         * Create SSTable writers for each table in the cache keyspace.
+         */
+        SSTableSimpleUnsortedWriter impiWriter = createWriter(cache_keyspace, "impi");
+        SSTableSimpleUnsortedWriter impuWriter = createWriter(cache_keyspace, "impu");
+
+        // There is no reason not to use the same timestamp for every column.
+        long timestamp = System.currentTimeMillis() * 1000;
+
+        /*
+         * Walk through the supplied CSV, inserting rows in the keyspaces for each entry.
+         */
+        String line;
+        int lineNumber = 1;
+        CsvEntry entry = new CsvEntry();
+
+        while ((line = reader.readLine()) != null)
+        {
+            if (entry.parse(line, lineNumber, csvfile))
+            {
+                impiWriter.newRow(bytes(entry.private_id));
+                impiWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
+                impiWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
+                impiWriter.addColumn(bytes("public_id_" + entry.public_id), bytes(entry.public_id), timestamp);
+
+                impuWriter.newRow(bytes(entry.public_id));
+                impuWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
+                impuWriter.addColumn(bytes("ims_subscription_xml"), bytes(entry.imssubscription), timestamp);
+            }
+            lineNumber++;
+        }
+
+        // Don't forget to close!
+        impiWriter.close();
+        impuWriter.close();
+    }
+
+    private static void provision_homestead_provisioning(String csvfile) throws IOException
+    {
+        BufferedReader reader = new BufferedReader(new FileReader(csvfile));
+
+        /*
+         * Create the directory to hold the provisioning keyspace.
+         */
         String prov_keyspace = "homestead_provisioning";
         File prov_ks_directory = new File(prov_keyspace);
         if (!prov_ks_directory.exists())
             prov_ks_directory.mkdir();
 
         /*
-         * Create SSTable writes for each table in the keyspaces.
+         * Create SSTable writers for each table in the provisioning keyspace.
          */
-        SSTableSimpleUnsortedWriter impiWriter = createWriter(cache_keyspace, "impi");
-        SSTableSimpleUnsortedWriter impuWriter = createWriter(cache_keyspace, "impu");
         SSTableSimpleUnsortedWriter irsWriter = createWriter(prov_keyspace, "implicit_registration_sets", UUIDType.instance);
         SSTableSimpleUnsortedWriter spWriter = createWriter(prov_keyspace, "service_profiles", UUIDType.instance);
         SSTableSimpleUnsortedWriter publicWriter = createWriter(prov_keyspace, "public");
@@ -114,28 +163,24 @@ public class ClearwaterBulkProvisioner
         {
             if (entry.parse(line, lineNumber, csvfile))
             {
-                impiWriter.newRow(bytes(entry.private_id));
-                impiWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
-                impiWriter.addColumn(bytes("public_id_" + entry.public_id), bytes(entry.public_id), timestamp);
-
-                impuWriter.newRow(bytes(entry.public_id));
-                impuWriter.addColumn(bytes("ims_subscription_xml"), bytes(entry.imssubscription), timestamp);
-
                 irsWriter.newRow(entry.irs_uuid);
+                irsWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 irsWriter.addColumn(bytes("associated_private_" + entry.private_id), bytes(entry.private_id), timestamp);
                 irsWriter.addColumn(bytes("service_profile_" + entry.sp_uuid_str), entry.sp_uuid, timestamp);
 
-
                 spWriter.newRow(entry.sp_uuid);
+                spWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 spWriter.addColumn(bytes("public_identity_" + entry.public_id), bytes(entry.public_id), timestamp);
-                spWriter.addColumn(bytes("initialfiltercriteria"), entry.initialfiltercriteria, timestamp);
+                spWriter.addColumn(bytes("initialfiltercriteria"), bytes(entry.ifc), timestamp);
                 spWriter.addColumn(bytes("irs"), entry.irs_uuid, timestamp);
 
                 publicWriter.newRow(bytes(entry.public_id));
-                publicWriter.addColumn(bytes("publicidentity"), entry.publicidentity_xml, timestamp);
+                publicWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
+                publicWriter.addColumn(bytes("publicidentity"), bytes(entry.publicidentity_xml), timestamp);
                 publicWriter.addColumn(bytes("service_profile"), entry.sp_uuid, timestamp);
 
                 privateWriter.newRow(bytes(entry.private_id));
+                privateWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 privateWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
                 privateWriter.addColumn(bytes("associated_irs_" + entry.irs_uuid_str), entry.irs_uuid, timestamp);
             }
@@ -143,8 +188,6 @@ public class ClearwaterBulkProvisioner
         }
 
         // Don't forget to close!
-        impiWriter.close();
-        impuWriter.close();
         irsWriter.close();
         spWriter.close();
         publicWriter.close();
