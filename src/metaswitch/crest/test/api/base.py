@@ -55,6 +55,15 @@ class TestBaseHandler(unittest.TestCase):
         self.request.headers = {}
         self.handler = base.BaseHandler(self.app, self.request)
 
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
+
     def test_prepare(self):
         self.request.headers = {}
         self.handler.prepare()
