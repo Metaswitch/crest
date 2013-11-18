@@ -49,6 +49,7 @@ from metaswitch.crest.api.base import penaltycounter, digest_latency_accumulator
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
+from metaswitch.crest.api.homestead import authtypes
 
 class TestHSSGateway(unittest.TestCase):
     """
@@ -86,8 +87,18 @@ class TestHSSGateway(unittest.TestCase):
     # with the same techniques applied to more complicated functions later
     def test_get_av_digest(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_av("priv", "pub")
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub", authtypes.SIP_DIGEST)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST)
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        auth = DigestAuthVector("ha1", "example.com", "auth")
+        self.peer_listener.fetch_multimedia_auth.return_value.callback(auth)
+        self.assertEquals(get_callback.call_args[0][0], auth)
+
+    def test_get_av_unknown(self):
+        self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
+        get_deferred = self.gateway.get_av("priv", "pub", authtypes.UNKNOWN)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.UNKNOWN)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         auth = DigestAuthVector("ha1", "example.com", "auth")
@@ -96,8 +107,18 @@ class TestHSSGateway(unittest.TestCase):
 
     def test_get_av_aka(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_av("priv", "pub")
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub", authtypes.AKA)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.AKA)
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        auth = AKAAuthVector("challenge", "response", "ck", "ik")
+        self.peer_listener.fetch_multimedia_auth.return_value.callback(auth)
+        self.assertEquals(get_callback.call_args[0][0], auth)
+
+    def test_get_av_aka_with_autn(self):
+        self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
+        get_deferred = self.gateway.get_av("priv", "pub", authtypes.AKA, "autn")
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.AKA, "autn")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         auth = AKAAuthVector("challenge", "response", "ck", "ik")
@@ -106,8 +127,8 @@ class TestHSSGateway(unittest.TestCase):
 
     def test_get_av_not_found(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_av("priv", "pub")
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub", authtypes.UNKNOWN)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.UNKNOWN)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         self.peer_listener.fetch_multimedia_auth.return_value.callback(None)
@@ -115,8 +136,8 @@ class TestHSSGateway(unittest.TestCase):
 
     def test_get_av_timeout(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
-        get_deferred = self.gateway.get_av("priv", "pub")
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub")
+        get_deferred = self.gateway.get_av("priv", "pub", authtypes.SIP_DIGEST)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST)
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.peer_listener.fetch_multimedia_auth.return_value.errback(TimeoutError())

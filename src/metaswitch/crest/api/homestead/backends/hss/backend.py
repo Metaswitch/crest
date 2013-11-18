@@ -62,7 +62,7 @@ class HSSBackend(Backend):
         return self.get_av(private_id, public_id)
 
     @defer.inlineCallbacks
-    def get_av(self, private_id, public_id=None):
+    def get_av(self, private_id, public_id, authtype, autn=None):
         if not public_id:
             # We can't query the HSS without a public ID.
             _log.error("Cannot get digest for private ID '%s' " % private_id +
@@ -70,7 +70,9 @@ class HSSBackend(Backend):
             defer.returnValue(None)
         else:
             av = yield self._hss_gateway.get_av(private_id,
-                                                    public_id)
+                                                public_id,
+                                                authtype,
+                                                autn)
             _log.debug("Got authentication vector %s for private ID %s from HSS" %
                        (av, private_id))
 

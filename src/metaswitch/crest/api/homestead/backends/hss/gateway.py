@@ -104,12 +104,14 @@ class HSSGateway(object):
         self.get_av(private_id, public_id)
 
     @defer.inlineCallbacks
-    def get_av(self, private_id, public_id):
+    def get_av(self, private_id, public_id, authtype, autn):
         """Gets the SIP digest from the HSS with a Multimedia-Auth-Request.
         Returns None if the subscriber is not found."""
-        _log.debug("Getting auth for priv:%s pub:%s" % (private_id, public_id))
+        _log.debug("Getting auth for priv:%s pub:%s authtype:%s autn:%s" % (private_id, public_id, authtype, autn))
         result = yield self.peer_listener.fetch_multimedia_auth(private_id,
-                                                                public_id)
+                                                                public_id,
+                                                                authtype,
+                                                                autn)
         defer.returnValue(result)
 
     @defer.inlineCallbacks
@@ -272,8 +274,8 @@ class HSSPeerListener(stack.PeerListener):
 
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
-    def fetch_multimedia_auth(self, private_id, public_id):
-        _log.debug("Sending Multimedia-Auth request for %s/%s" % (private_id, public_id))
+    def fetch_multimedia_auth(self, private_id, public_id, authtype, autn):
+        _log.debug("Sending Multimedia-Auth request for %s/%s/%s/%s" % (private_id, public_id, authtype, autn))
         public_id = str(public_id)
         private_id = str(private_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Multimedia-Auth", True)

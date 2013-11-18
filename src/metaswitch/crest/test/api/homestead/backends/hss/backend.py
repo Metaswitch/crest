@@ -41,6 +41,7 @@ from twisted.internet import defer
 
 from metaswitch.crest.api.homestead.backends.hss import HSSBackend
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
+from metaswitch.crest.api.homestead import authtypes
 
 class HSSBackendFixture(unittest.TestCase):
     def setUp(self):
@@ -73,9 +74,9 @@ class TestHSSBackend(HSSBackendFixture):
         does not update the cache"""
 
         self.gateway.get_av.return_value = defer.Deferred()
-        get_deferred = self.backend.get_av("priv", "pub")
+        get_deferred = self.backend.get_av("priv", "pub", authtypes.SIP_DIGEST)
 
-        self.gateway.get_av.assert_called_once_with("priv", "pub")
+        self.gateway.get_av.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST, None)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
 
@@ -95,11 +96,11 @@ class TestHSSBackend(HSSBackendFixture):
         self.cache.put_av.return_value = defer.Deferred()
         self.cache.put_associated_public_id.return_value = defer.Deferred()
 
-        get_deferred = self.backend.get_av("priv", "pub")
+        get_deferred = self.backend.get_av("priv", "pub", authtypes.SIP_DIGEST)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
 
-        self.gateway.get_av.assert_called_once_with("priv", "pub")
+        self.gateway.get_av.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST, None)
         self.gateway.get_av.return_value.callback(auth)
 
         self.cache.put_av.assert_called_once_with("priv",
@@ -124,11 +125,11 @@ class TestHSSBackend(HSSBackendFixture):
         self.cache.put_av.return_value = defer.Deferred()
         self.cache.put_associated_public_id.return_value = defer.Deferred()
 
-        get_deferred = self.backend.get_av("priv", "pub")
+        get_deferred = self.backend.get_av("priv", "pub", authtypes.AKA, "autn")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
 
-        self.gateway.get_av.assert_called_once_with("priv", "pub")
+        self.gateway.get_av.assert_called_once_with("priv", "pub", authtypes.AKA, "autn")
         self.gateway.get_av.return_value.callback(auth)
 
         self.assertFalse(self.cache.put_av.called)
@@ -139,7 +140,7 @@ class TestHSSBackend(HSSBackendFixture):
         """If a public is not supplied when trying to get a digest, the backend
         does not query the HSS or update the cache"""
 
-        get_deferred = self.backend.get_av("priv")
+        get_deferred = self.backend.get_av("priv", None, authtypes.AKA, "autn")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         self.assertEquals(get_callback.call_args[0][0], None)
