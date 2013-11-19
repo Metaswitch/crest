@@ -38,6 +38,7 @@ import mock
 import unittest
 import time
 
+import metaswitch.crest.api.base as base
 from metaswitch.crest.api.homestead.cache.handlers import DigestHandler, AuthVectorHandler
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
 
@@ -48,6 +49,15 @@ class TestDigestHandler(unittest.TestCase):
         self.handler.application.cache.get_av = mock.MagicMock()
         self.handler.finish = mock.MagicMock()
         self.handler.send_error = mock.MagicMock()
+ 
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = mock.MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
 
     def test_cache_success_output(self):
         self.handler.application.cache.get_av.return_value = DigestAuthVector("ha1_test", None, None)
@@ -81,6 +91,14 @@ class TestAuthVectorHandler(unittest.TestCase):
         self.handler.application.cache.get_av = mock.MagicMock()
         self.handler.finish = mock.MagicMock()
         self.handler.send_error = mock.MagicMock()
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = mock.MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
 
 class TestAuthVectorHandlerUnknown(TestAuthVectorHandler):
     def setUp(self):
@@ -111,10 +129,28 @@ class TestAuthVectorHandlerDigest(TestAuthVectorHandlerUnknown):
         TestAuthVectorHandler.setUp(self)
         self.request_args = {"authtype": "SIP-Digest"}
 
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = mock.MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
+
 class TestAuthVectorHandlerAKA(TestAuthVectorHandler):
     def setUp(self):
         TestAuthVectorHandler.setUp(self)
         self.request_args = {"authtype": "Digest-AKAv1-MD5"}
+
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = mock.MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
 
     def test_cache_not_used(self):
         self.handler.get("private_id")

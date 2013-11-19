@@ -46,6 +46,9 @@ from metaswitch.crest import settings
 from metaswitch.crest.api.base import penaltycounter, loadmonitor, digest_latency_accumulator, subscription_latency_accumulator
 from metaswitch.crest.api import DeferTimeout
 from metaswitch.common import utils
+from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
+from metaswitch.crest.api.homestead import authtypes
+
 from .io import HSSPeerIO
 
 _log = logging.getLogger("crest.api.homestead.hss")
@@ -101,10 +104,10 @@ class HSSGateway(object):
         tick.start(1)
 
     def get_digest(self, private_id, public_id):
-        self.get_av(private_id, public_id)
+        self.get_av(private_id, public_id, authtypes.SIP_DIGEST)
 
     @defer.inlineCallbacks
-    def get_av(self, private_id, public_id, authtype, autn):
+    def get_av(self, private_id, public_id, authtype, autn=None):
         """Gets the SIP digest from the HSS with a Multimedia-Auth-Request.
         Returns None if the subscriber is not found."""
         _log.debug("Getting auth for priv:%s pub:%s authtype:%s autn:%s" % (private_id, public_id, authtype, autn))
@@ -283,20 +286,55 @@ class HSSPeerListener(stack.PeerListener):
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(public_id))
         req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
         req.addAVP(self.cx.getAVP('SIP-Number-Auth-Items').withInteger32(1))
-        req.addAVP(self.cx.getAVP('SIP-Auth-Data-Item').withAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('SIP Digest')))
-        # Send off message to HSS
+       
+        # Update the request depending on the authentication method 
+        if autn:
+            req.addAVP(self.cx.getAVP('AUTN').withOctetString(autn))
+        if authtype == authtypes.AKA:
+            req.addAVP(self.cx.getAVP('SIP-Auth-Data-Item').withAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('Digest-AKAv1-MD5')))
+        else:
+            req.addAVP(self.cx.getAVP('SIP-Auth-Data-Item').withAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('SIP Digest')))
+
+       # Send off message to HSS
         start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
         # Hook up our deferred to the callback
         d = defer.Deferred()
         self.app.add_pending_response(req, d)
         answer = yield d
-        # Have response, parse out digest
-        digest = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-HA1")
+    
+        # Have response, get the authentication scheme from it
+        scheme = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", "SIP-Authenticate-Scheme")
+
         # Track how long it took (in usec)
         digest_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
-        if digest:
-            defer.returnValue(digest.getOctetString())
+    
+        if scheme:
+            if "SIP Digest" in scheme.getOctetString():
+                digest = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", 
+                                              "SIP-Digest-Authenticate AVP", "Digest-HA1").getOctetString()
+                realm = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", 
+                                             "SIP-Digest-Authenticate AVP", "Digest-Realm").getOctetString()
+                qop = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", 
+                                           "SIP-Digest-Authenticate AVP", "Digest-QoP").getOctetString()
+            
+                auth = DigestAuthVector(digest, realm, qop)
+                defer.returnValue(auth)
+            elif "Digest-AKAv1-MD5" in scheme.getOctetString():
+                ck = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", 
+                                          "Confidentiality-Key").getOctetString()
+                ik = self.cx.findFirstAVP(answer, 
+                                          "SIP-Auth-Data-Item", "Integrity-Key").getOctetString()
+                challenge = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", 
+                                                 "SIP-Authenticate").getOctetString()
+                response = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", 
+                                                "SIP-Authorization").getOctetString()
+
+                auth = AKAAuthVector(challenge, response, ck, ik)
+                defer.returnValue(auth)
+            else:
+                _log.debug("Invalid authentication scheme: %s" % scheme.getOctetString())
+                defer.returnValue(None)
         else:
             self.log_diameter_error(answer)
             # If the error is an Overload response, increment the HSS penalty counter

@@ -89,7 +89,7 @@ class TestHSSGateway(unittest.TestCase):
     def test_get_av_digest(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_av("priv", "pub", authtypes.SIP_DIGEST)
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST, None)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         auth = DigestAuthVector("ha1", "example.com", "auth")
@@ -99,7 +99,7 @@ class TestHSSGateway(unittest.TestCase):
     def test_get_av_unknown(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_av("priv", "pub", authtypes.UNKNOWN)
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.UNKNOWN)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.UNKNOWN, None)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         auth = DigestAuthVector("ha1", "example.com", "auth")
@@ -109,7 +109,7 @@ class TestHSSGateway(unittest.TestCase):
     def test_get_av_aka(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_av("priv", "pub", authtypes.AKA)
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.AKA)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.AKA, None)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         auth = AKAAuthVector("challenge", "response", "ck", "ik")
@@ -129,7 +129,7 @@ class TestHSSGateway(unittest.TestCase):
     def test_get_av_not_found(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_av("priv", "pub", authtypes.UNKNOWN)
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.UNKNOWN)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.UNKNOWN, None)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         self.peer_listener.fetch_multimedia_auth.return_value.callback(None)
@@ -138,7 +138,7 @@ class TestHSSGateway(unittest.TestCase):
     def test_get_av_timeout(self):
         self.peer_listener.fetch_multimedia_auth.return_value = defer.Deferred()
         get_deferred = self.gateway.get_av("priv", "pub", authtypes.SIP_DIGEST)
-        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST)
+        self.peer_listener.fetch_multimedia_auth.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST, None)
         get_errback = mock.MagicMock()
         get_deferred.addErrback(get_errback)
         self.peer_listener.fetch_multimedia_auth.return_value.errback(TimeoutError())
@@ -300,6 +300,14 @@ class TestHSSPeerListener(unittest.TestCase):
                 return {avp: None}
             return self.MockAVP(avp)
 
+    class FakeAVP(mock.MagicMock):
+        def __init__(self, avp, *args, **kwargs):
+            mock.MagicMock.__init__(self, args, kwargs)
+            self.avp = avp
+
+        def getOctetString(self):
+            return self.avp
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.cx = self.MockCx()
@@ -321,10 +329,32 @@ class TestHSSPeerListener(unittest.TestCase):
         # test.
         self.real_zmq = base.zmq
         base.zmq = mock.MagicMock()
-
+        
     def tearDown(self):
         base.zmq = self.real_zmq
         del self.real_zmq
+
+    # Change the return value of findFirstAVP depending on its arguments. 
+    def digest_arg(self, *params):
+        request_args = {"SIP-Authenticate-Scheme": self.FakeAVP("SIP Digest"),
+                        "Digest-HA1": self.FakeAVP("Ha1"),
+                        "Digest-Realm": self.FakeAVP("realm.com"),
+                        "Digest-QoP": self.FakeAVP("QoP")}
+
+        for arg in params:
+            if arg in request_args:
+                return request_args[arg]
+
+    def aka_arg(self, *params):
+        request_args = {"SIP-Authenticate-Scheme": self.FakeAVP("Digest-AKAv1-MD5"),
+                        "Confidentiality-Key": self.FakeAVP("ck"),
+                        "Integrity-Key": self.FakeAVP("ik"),
+                        "SIP-Authenticate": self.FakeAVP("rand"),
+                        "SIP-Authorization": self.FakeAVP("xres")}
+
+        for arg in params:
+            if arg in request_args:
+                return request_args[arg]
 
     def test_get_diameter_error_code(self):
         mock_error = mock.MagicMock()
@@ -344,10 +374,11 @@ class TestHSSPeerListener(unittest.TestCase):
         error_code = self.peer_listener.get_diameter_error_code(request)
         self.assertEquals(None, error_code)
 
-    def test_fetch_multimedia_auth(self):
+        
+    def test_fetch_multimedia_auth_digest(self):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub")
+        deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.SIP_DIGEST, None)
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
         self.assertEquals(mock_req.avps,
                           [{'User-Name': 'priv'},
@@ -359,27 +390,70 @@ class TestHSSPeerListener(unittest.TestCase):
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic returning a value from the HSS
         mock_answer = mock.MagicMock()
-        self.cx.findFirstAVP.return_value = mock.MagicMock()
-        self.cx.findFirstAVP.return_value.getOctetString.return_value = "digest"
+        self.cx.findFirstAVP.side_effect = self.digest_arg
         deferred_callback = mock.MagicMock()
         deferred.addCallback(deferred_callback)
         inner_deferred.callback(mock_answer)
-        self.cx.findFirstAVP.assert_called_once_with(mock_answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-HA1")
-        self.assertEquals(deferred_callback.call_args[0][0], "digest")
+        
+        # Check the findFirstAVP calls are correct
+        calls = [mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Authenticate-Scheme"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-HA1"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-Realm"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Digest-Authenticate AVP", "Digest-QoP")]
+        self.cx.findFirstAVP.assert_has_calls(calls)
+        
+        # Check the correct authentication vector is returned
+        expected = {"digest": {"ha1": "Ha1", "realm": "realm.com", "qop": "QoP"}}
+        self.assertEquals(deferred_callback.call_args[0][0].to_json(), expected)
+    
+    def test_fetch_multimedia_auth_aka(self):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.AKA, "autn")
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
+        self.assertEquals(mock_req.avps,
+                          [{'User-Name': 'priv'},
+                           {'Public-Identity': 'pub'},
+                           {'Server-Name': 'sip:sprout:1234'},
+                           {'SIP-Number-Auth-Items': 1},
+                           {'AUTN': 'autn'},
+                           {'SIP-Auth-Data-Item': {'SIP-Authentication-Scheme': 'Digest-AKAv1-MD5'}}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        # Now mimic returning a value from the HSS
+        mock_answer = mock.MagicMock()
+        self.cx.findFirstAVP.side_effect = self.aka_arg
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        # Check the findFirstAVP calls are correct
+        calls = [mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Authenticate-Scheme"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "Confidentiality-Key"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "Integrity-Key"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Authenticate"),
+                 mock.call(mock_answer, "SIP-Auth-Data-Item", "SIP-Authorization")]
+        self.cx.findFirstAVP.assert_has_calls(calls)
+
+        # Check the correct authentication vector is returned
+        expected = {"aka": {"challenge": "rand", "cryptkey": "ck", "integritykey": "ik", "response": "xres"}}
+        self.assertEquals(deferred_callback.call_args[0][0].to_json(), expected)
 
     def test_fetch_multimedia_auth_no_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+                             True,
                              expected_retval=matchers.MatchesNone())
 
 
     def test_fetch_multimedia_auth_not_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+                             True, 
                              error_code=3005,
                              expected_retval=matchers.MatchesNone())
 
 
     def test_fetch_multimedia_auth_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+                             True,
                              error_code=3004,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
@@ -517,22 +591,26 @@ class TestHSSPeerListener(unittest.TestCase):
 
     def test_fetch_server_assignment_no_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_server_assignment,
+                             False,
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_server_assignment_not_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_server_assignment,
+                             False, 
                              error_code=3005,
                              expected_retval=matchers.MatchesNone())
 
 
     def test_fetch_server_assignment_overload_error_code(self):
         self.common_test_hss(self.peer_listener.fetch_server_assignment,
+                             False,
                              error_code=3004,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
     def common_test_hss(self,
                         function,
+                        auth,
                         first_avp=None,
                         error_code=None,
                         expected_exception=None,
@@ -540,7 +618,10 @@ class TestHSSPeerListener(unittest.TestCase):
                         expected_count=0):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        deferred = function("priv", "pub")
+        if auth:
+            deferred = function("priv", "pub", authtypes.SIP_DIGEST, None)
+        else:
+            deferred = function("priv", "pub")
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic an error returning a value from the HSS
         mock_answer = mock.MagicMock()
