@@ -1,0 +1,3 @@
+UNKNOWN = 0
+SIP_DIGEST = 1
+AKA = 2
