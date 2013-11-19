@@ -8,7 +8,13 @@ cassandra_hostname="localhost"
 
 # Work out what features are enabled.
 LOCAL_PROVISIONING_ENABLED=Y
-[ -f /etc/clearwater/features ] && . /etc/clearwater/features
+if [ -d /etc/clearwater/features.d ]
+then
+  for $file in $(find /etc/clearwater/features.d -type f)
+  do
+    [ -r $file ] && . $file
+  done
+fi
 
 case "$LOCAL_PROVISIONING_ENABLED" in
   Y) local_prov_setting=True ;;
