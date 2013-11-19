@@ -43,10 +43,11 @@ from twisted.internet import defer
 from twisted.python import failure
 from diameter import stack
 
+import metaswitch.crest.api.base as base
 from metaswitch.crest import settings
 from metaswitch.crest.test import matchers
-from metaswitch.crest.api.base import penaltycounter, digest_latency_accumulator, subscription_latency_accumulator
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
+from metaswitch.crest.api.base import penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
 from metaswitch.crest.api.homestead import authtypes
@@ -316,8 +317,14 @@ class TestHSSPeerListener(unittest.TestCase):
         penaltycounter._log = mock.MagicMock()
         penaltycounter.reset_hss_penalty_count()
 
-        digest_latency_accumulator.accumulate = mock.MagicMock()
-        subscription_latency_accumulator.accumulate = mock.MagicMock()
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = mock.MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
 
     def test_get_diameter_error_code(self):
         mock_error = mock.MagicMock()

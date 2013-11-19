@@ -95,7 +95,8 @@ class CassandraModel(object):
                                  for col in cass_columns}
 
         # Don't return the internal "exists" column to the user.
-        del columns_as_dictionary[self.EXISTS_COLUMN]
+        if self.EXISTS_COLUMN in columns_as_dictionary:
+            del columns_as_dictionary[self.EXISTS_COLUMN]
 
         defer.returnValue(columns_as_dictionary)
 
