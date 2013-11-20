@@ -45,6 +45,7 @@ from twisted.internet.task import LoopingCall
 from metaswitch.crest import settings
 from metaswitch.crest.api.base import penaltycounter, loadmonitor, digest_latency_accumulator, subscription_latency_accumulator
 from metaswitch.crest.api import DeferTimeout
+from metaswitch.crest.api.exceptions import HSSNotEnabled, HSSOverloaded, HSSConnectionLost, HSSStillConnecting
 from metaswitch.common import utils
 from .io import HSSPeerIO
 
@@ -57,24 +58,6 @@ DIAMETER_SUCCESS = 2001
 DIAMETER_COMMAND_UNSUPPORTED = 3001
 DIAMETER_UNABLE_TO_COMPLY = 5012
 
-# HSS-specific Exceptions
-class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without a valid HSS_IP"""
-    pass
-
-
-class HSSOverloaded(Exception):
-    """Exception to throw if a request cannot be completed because the HSS returns an
-    overloaded response"""
-    pass
-
-class HSSConnectionLost(Exception):
-    """Exception to throw if we have lost our HSS connection"""
-    pass
-
-class HSSStillConnecting(Exception):
-    """Exception to throw if we have lost our HSS connection"""
-    pass
 
 class HSSGateway(object):
     """
