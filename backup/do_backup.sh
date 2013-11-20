@@ -41,8 +41,15 @@ die () {
 
 [ "$#" -eq 1 ] || die "Usage: do_backup.sh <keyspace>"
 KEYSPACE=$1
+COMPONENT=$(cut -d_ -f1 <<< $KEYSPACE)
+DATABASE=$(cut -d_ -f2 <<< $KEYSPACE)
 DATA_DIR=/var/lib/cassandra/data
-BACKUP_DIR="/usr/share/clearwater/$1/backup/backups"
+if [ -n "$DATABASE" ]
+then
+  BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups/$DATABASE"
+else
+  BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups"
+fi
 [ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
 if [[ ! -d "$BACKUP_DIR" ]]
 then
