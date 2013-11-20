@@ -68,6 +68,13 @@ class HSSOverloaded(Exception):
     overloaded response"""
     pass
 
+class HSSConnectionLost(Exception):
+    """Exception to throw if we have lost our HSS connection"""
+    pass
+
+class HSSStillConnecting(Exception):
+    """Exception to throw if we have lost our HSS connection"""
+    pass
 
 class HSSGateway(object):
     """
@@ -249,6 +256,7 @@ class HSSPeerListener(stack.PeerListener):
         self.realm = domain
         self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
+        self.peer = None
 
     def connected(self, peer):
         _log.info("Peer %s connected" % peer.identity)
@@ -270,6 +278,10 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_multimedia_auth(self, private_id, public_id):
+        if self.peer is None:
+            raise HSSStillConnecting()
+        if not self.peer.alive:
+            raise HSSConnectionLost()
         _log.debug("Sending Multimedia-Auth request for %s/%s" % (private_id, public_id))
         public_id = str(public_id)
         private_id = str(private_id)
@@ -305,6 +317,10 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id, public_id):
+        if self.peer is None:
+            raise HSSStillConnecting()
+        if not self.peer.alive:
+            raise HSSConnectionLost()
         # Constants to match the enumerated values in 3GPP TS 29.229 s6.3.15
         REGISTRATION = 1
         NO_ASSIGNMENT = 0
@@ -353,4 +369,4 @@ class HSSPeerListener(stack.PeerListener):
 
     def disconnected(self, peer):
         _log.debug("Peer %s disconnected" % peer.identity)
-        self.peer = None
+        self.peer.alive = False
