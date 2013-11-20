@@ -49,7 +49,7 @@ class TestDigestHandler(unittest.TestCase):
         self.handler.application.cache.get_av = mock.MagicMock()
         self.handler.finish = mock.MagicMock()
         self.handler.send_error = mock.MagicMock()
- 
+
         # Mock out zmq so we don't fail if we try to report stats during the
         # test.
         self.real_zmq = base.zmq
@@ -78,6 +78,7 @@ class TestDigestHandler(unittest.TestCase):
 
 class TestAuthVectorHandler(unittest.TestCase):
     def setUp(self):
+        self.request_args = {}
         def digest_arg(param, default):
             if param in self.request_args:
                 return self.request_args[param]
@@ -103,31 +104,31 @@ class TestAuthVectorHandler(unittest.TestCase):
 class TestAuthVectorHandlerUnknown(TestAuthVectorHandler):
     def setUp(self):
         TestAuthVectorHandler.setUp(self)
-        self.request_args = {"authtype": "Unknown"}
+        self.authtype = ""
 
     def test_cache_success_output(self):
         expected = {"digest": {"ha1": "ha1_test", "realm": "default-realm2.com", "qop": "auth-int"}}
         self.handler.application.cache.get_av.return_value = DigestAuthVector("ha1_test", "default-realm2.com", "auth-int")
-        self.handler.get("private_id")
+        self.handler.get("private_id", self.authtype)
         self.handler.finish.assert_called_once_with(expected)
 
     def test_backend_success_output(self):
         expected = {"digest": {"ha1": "ha1_test", "realm": "default-realm2.com", "qop": "auth-int"}}
         self.handler.application.cache.get_av.return_value = None
         self.handler.application.backend.get_av.return_value = DigestAuthVector("ha1_test", "default-realm2.com", "auth-int")
-        self.handler.get("private_id")
+        self.handler.get("private_id", self.authtype)
         self.handler.finish.assert_called_once_with(expected)
 
     def test_failure_output(self):
         self.handler.application.cache.get_av.return_value = None
         self.handler.application.backend.get_av.return_value = None
-        self.handler.get("private_id")
+        self.handler.get("private_id", self.authtype)
         self.handler.send_error.assert_called_once_with(404)
 
 class TestAuthVectorHandlerDigest(TestAuthVectorHandlerUnknown):
     def setUp(self):
         TestAuthVectorHandler.setUp(self)
-        self.request_args = {"authtype": "SIP-Digest"}
+        self.authtype = "digest"
 
         # Mock out zmq so we don't fail if we try to report stats during the
         # test.
@@ -141,7 +142,7 @@ class TestAuthVectorHandlerDigest(TestAuthVectorHandlerUnknown):
 class TestAuthVectorHandlerAKA(TestAuthVectorHandler):
     def setUp(self):
         TestAuthVectorHandler.setUp(self)
-        self.request_args = {"authtype": "Digest-AKAv1-MD5"}
+        self.authtype = "aka"
 
         # Mock out zmq so we don't fail if we try to report stats during the
         # test.
@@ -153,16 +154,16 @@ class TestAuthVectorHandlerAKA(TestAuthVectorHandler):
         del self.real_zmq
 
     def test_cache_not_used(self):
-        self.handler.get("private_id")
+        self.handler.get("private_id", self.authtype)
         self.assertFalse(self.handler.application.cache.get_av.called)
 
     def test_failure_output(self):
         self.handler.application.backend.get_av.return_value = None
-        self.handler.get("private_id")
+        self.handler.get("private_id", self.authtype)
         self.handler.send_error.assert_called_once_with(404)
 
     def test_backend_success_output(self):
         expected = {"aka": {"challenge": "rand", "response": "xres", "cryptkey": "ck", "integritykey": "ik"}}
         self.handler.application.backend.get_av.return_value = AKAAuthVector("rand", "xres", "ck", "ik")
-        self.handler.get("private_id")
+        self.handler.get("private_id", self.authtype)
         self.handler.finish.assert_called_once_with(expected)

@@ -58,9 +58,6 @@ class HSSBackend(Backend):
         self._cache = cache
         self._hss_gateway = HSSGateway(HSSBackend.Callbacks(cache))
 
-    def get_digest(self, private_id, public_id=None):
-        return self.get_av(private_id, public_id)
-
     @defer.inlineCallbacks
     def get_av(self, private_id, public_id, authtype, autn=None):
         if not public_id:

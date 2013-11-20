@@ -37,6 +37,7 @@ import time
 
 from cyclone.web import HTTPError
 from twisted.internet import defer
+from .. import authtypes
 
 from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator
 _log = logging.getLogger("crest.api.homestead.cache")
@@ -92,7 +93,7 @@ class DigestHandler(CacheApiHandler):
 
         # Try the cache first.  If that fails go to the backend.
         getter = self.sequential_getter_with_latency(cache_get, backend_get)
-        auth = yield getter(private_id, public_id)
+        auth = yield getter(private_id, public_id, authtypes.SIP_DIGEST, None)
 
         retval = {JSON_DIGEST_HA1: auth.ha1} if auth else None
         self.send_error_or_response(retval)
@@ -101,20 +102,25 @@ class DigestHandler(CacheApiHandler):
 class AuthVectorHandler(CacheApiHandler):
     @BaseHandler.check_request_age
     @defer.inlineCallbacks
-    def get(self, private_id):
+    def get(self, private_id, string_authtype=None):
         public_id = self.get_argument("impu", default=None)
-        authtype = self.get_argument("authtype", default="Unknown")
         autn = self.get_argument("autn", default=None)
+
+        authtype = authtypes.UNKNOWN
+        if string_authtype == "digest":
+            authtype = authtypes.SIP_DIGEST
+        elif string_authtype == "aka":
+            authtype = authtypes.AKA
 
         cache_get = [self.application.cache.get_av, cache_latency_accumulator]
         backend_get = [self.application.backend.get_av, hss_latency_accumulator]
 
-        if authtype == "Digest-AKAv1-MD5":
+        if authtype == authtypes.AKA:
             getter = self.sequential_getter_with_latency(backend_get)
         else:
             # Try the cache first.  If that fails go to the backend.
             getter = self.sequential_getter_with_latency(cache_get, backend_get)
-        auth = yield getter(private_id, public_id)
+        auth = yield getter(private_id, public_id, authtype, autn)
 
         retval = auth.to_json() if auth else None
         self.send_error_or_response(retval)

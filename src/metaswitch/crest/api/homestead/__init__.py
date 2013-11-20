@@ -52,6 +52,8 @@ from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, Provi
 # Regex that matches any path element (covers anything that isn't a slash).
 ANY = '([^/]+)'
 
+AUTHTYPE = "(aka|digest)"
+
 # Regex that matches a uuid.
 HEX = '[a-fA-F0-9]'
 UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
@@ -73,6 +75,7 @@ ROUTES = [
     (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
 
     # /impi/<private ID>/av?impu=xxx&authtype=[SIP-Digest|Digest-AKAv1-MD5]&autn=xxx
+    (r'/impi/'+ANY+r'/av/'+AUTHTYPE+r'/?',  AuthVectorHandler),
     (r'/impi/'+ANY+r'/av/?',  AuthVectorHandler),
 
     # IMPU: the read-only API for accessing the XMLSubscription associated with

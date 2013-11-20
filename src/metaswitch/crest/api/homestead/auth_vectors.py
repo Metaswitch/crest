@@ -4,7 +4,9 @@ class AuthVector(object):
 class DigestAuthVector(AuthVector):
     def __init__(self, ha1, realm, qop):
         self.type = "digest"
-        self.ha1, self.realm, self.qop = ha1, realm, qop
+        self.ha1 = ha1
+        self.realm = realm or settings.SIP_DIGEST_REALM
+        self.qop = qop or "auth"
 
     def to_json(self):
         return {"digest": {"ha1": self.ha1, "realm": self.realm, "qop": self.qop}}

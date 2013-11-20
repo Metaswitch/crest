@@ -61,12 +61,13 @@ class Cache(object):
         return time.time() * 1000000
 
     @defer.inlineCallbacks
-    def get_av(self, private_id, public_id=None):
-        digest_ha1 = yield IMPI(private_id).get_digest_ha1(public_id)
+    def get_av(self, private_id, public_id=None, ignored=None, ignored2=None):
+        av = yield IMPI(private_id).get_av(public_id)
         _log.debug("Fetched digest for private ID '%s' from cache: %s" %
                    (private_id, digest_ha1))
-        if digest_ha1:
-            defer.returnValue(DigestAuthVector(digest_ha1, None, None))
+        if av:
+            ha1, realm, qop = av
+            defer.returnValue(DigestAuthVector(ha1, realm, qop))
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, public_id, private_id=None):
