@@ -69,14 +69,14 @@ class LastValueCache:
                                                stat + "_" + str(process_id))
 
             # Set up a tcp connection to publish all stats, including 
-            # repeat subscriptions. If the bind fails, log and carry on
-            # (Stats are not published on All-In-One boxes)
+            # repeat subscriptions. If the bind fails, log this and carry on.
+            # The bind is expected to fail on All-In-One boxes
             self.broadcaster = context.socket(zmq.XPUB)
             self.broadcaster.setsockopt(zmq.XPUB_VERBOSE, 1)
             try:
                 self.broadcaster.bind("tcp://*:6666")
             except zmq.error.ZMQError as e:
-                _log.debug("Bind failed: " + str(e))
+                _log.debug("The broadcaster bind failed; no statistics will be published: " + str(e))
                 
             # Set up a poller to listen for new stats published to the 
             # ipc file and for new external subscriptions
