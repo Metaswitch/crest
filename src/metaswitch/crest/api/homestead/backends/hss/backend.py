@@ -38,6 +38,7 @@ from twisted.internet import defer
 from xml.etree import ElementTree
 
 from ..backend import Backend
+from ... import authtypes
 from .gateway import HSSGateway
 from metaswitch.crest import settings
 from metaswitch.crest.api import utils
@@ -73,7 +74,7 @@ class HSSBackend(Backend):
             _log.debug("Got authentication vector %s for private ID %s from HSS" %
                        (av, private_id))
 
-            if av and av.type == "digest":
+            if av and av.type == authtypes.SIP_DIGEST:
                 # Update the cache with the digest, and the fact that the
                 # private ID can authenticate the public ID.
                 timestamp = self._cache.generate_timestamp()

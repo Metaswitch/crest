@@ -31,13 +31,14 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 from metaswitch.crest import settings
+from . import authtypes
 
 class AuthVector(object):
     pass
 
 class DigestAuthVector(AuthVector):
     def __init__(self, ha1, realm, qop, preferred):
-        self.type = "digest"
+        self.type = authtypes.SIP_DIGEST
         self.ha1 = ha1
         self.realm = realm or settings.SIP_DIGEST_REALM
         self.qop = qop or "auth"
@@ -48,7 +49,7 @@ class DigestAuthVector(AuthVector):
 
 class AKAAuthVector(AuthVector):
     def __init__(self, challenge, response, crypt_key, integrity_key):
-        self.type = "aka"
+        self.type = authtypes.AKA
         self.challenge, self.response, self.crypt_key, self.integrity_key = challenge, response, crypt_key, integrity_key
 
     def to_json(self):
