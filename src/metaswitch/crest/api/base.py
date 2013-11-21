@@ -43,7 +43,7 @@ import msgpack
 import cyclone.web
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
-
+from telephus.cassandra.ttypes.TimedOutException as CassandraTimeout
 from metaswitch.common import utils
 from metaswitch.crest import settings
 from metaswitch.crest.api.statistics import Accumulator, Counter
@@ -309,7 +309,7 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 _log.debug("Sending HTTP error: %d", e.status_code)
                 self.send_error(e.status_code, httplib.responses[e.status_code], exception=e)
-        elif type(e) in [HSSOverloaded, HSSStillConnecting, HSSConnectionLost, TimeoutError]:
+        elif type(e) in [HSSOverloaded, HSSStillConnecting, HSSConnectionLost, TimeoutError, CassandraTimeout]:
                 _log.error("Translating internal %s error into a 503 status code", type(e))
                 self.send_error(503)
         else:
