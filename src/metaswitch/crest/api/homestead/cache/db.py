@@ -59,8 +59,11 @@ class IMPI(CacheModel):
     # chef (cookbooks/clearwater/recipes/cluster.rb)
     cass_create_statement = (
         "CREATE TABLE "+cass_table+" (" +
-            "private_id text PRIMARY KEY, " +
-            DIGEST_HA1+" text" +
+        "private_id text PRIMARY KEY, " +
+        DIGEST_HA1+" text" +
+        DIGEST_REALM+" text" +
+        DIGEST_QOP+" text" +
+        KNOWN_PREFERRED+" text" +
         ") WITH read_repair_chance = 1.0;"
     )
 
