@@ -43,7 +43,8 @@ import msgpack
 import cyclone.web
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
-from telephus.cassandra.ttypes.TimedOutException as CassandraTimeout
+
+from telephus.cassandra.ttypes import TimedOutException as CassandraTimeout
 from metaswitch.common import utils
 from metaswitch.crest import settings
 from metaswitch.crest.api.statistics import Accumulator, Counter
