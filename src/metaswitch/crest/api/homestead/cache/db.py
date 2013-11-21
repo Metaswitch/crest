@@ -42,6 +42,7 @@ from telephus.cassandra.ttypes import NotFoundException
 DIGEST_HA1 = "digest_ha1"
 DIGEST_REALM = "digest_realm"
 DIGEST_QOP = "digest_qop"
+KNOWN_PREFERRED = "known_preferred"
 PUBLIC_ID_PREFIX = "public_id_"
 
 _log = logging.getLogger("crest.api.homestead.cache")
@@ -66,7 +67,7 @@ class IMPI(CacheModel):
     @defer.inlineCallbacks
     def get_av(self, public_id):
         try:
-            query_columns = [DIGEST_HA1 DIGEST_REALM DIGEST_QOP]
+            query_columns = [DIGEST_HA1, DIGEST_REALM, DIGEST_QOP, KNOWN_PREFERRED]
             if public_id:
                 public_id_column = PUBLIC_ID_PREFIX+str(public_id)
                 query_columns.append(public_id_column)
@@ -83,12 +84,20 @@ class IMPI(CacheModel):
             else:
                 qop = None
 
+            # legacy support
+            if KNOWN_PREFERRED not in columns:
+                preferred = True
+            elif columns[KNOWN_PREFERRED] == "true":
+                preferred = True
+            else:
+                preferred = False
+
             # It the user has supplied a public ID, they care about whether the
             # private ID can authenticate the public ID.  Only return a digest
             # if the public ID is associated with the private ID.
             if (DIGEST_HA1 in columns):
                 if (public_id is None or public_id_column in columns):
-                    defer.returnValue((columns[DIGEST_HA1], realm, qop))
+                    defer.returnValue((columns[DIGEST_HA1], realm, qop, preferred))
                 else:
                     _log.debug("Not returning digest for private ID %s as "
                                "public ID %s is not in columns: %s" %
@@ -98,8 +107,11 @@ class IMPI(CacheModel):
             pass
 
     @defer.inlineCallbacks
-    def put_av(self, av, ttl=None, timestamp=None):
-        yield self.modify_columns({DIGEST_HA1: digest}, ttl=ttl, timestamp=timestamp)
+    def put_av(self, ha1, realm, qop, preferred, ttl=None, timestamp=None):
+        yield self.modify_columns({DIGEST_HA1: ha1,
+                                   DIGEST_REALM: realm,
+                                   DIGEST_QOP: qop,
+                                   KNOWN_PREFERRED: preferred}, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
     def put_associated_public_id(self, public_id, ttl=None, timestamp=None):

@@ -90,7 +90,7 @@ class TestHSSBackend(HSSBackendFixture):
         """When a digest is returned from the HSS the backend returns it and
         updates the cache"""
 
-        auth = DigestAuthVector("ha1", "realm", "qop")
+        auth = DigestAuthVector("ha1", "realm", "qop", True)
 
         self.gateway.get_av.return_value = defer.Deferred()
         self.cache.put_av.return_value = defer.Deferred()
@@ -203,7 +203,7 @@ class TestHSSBackend(HSSBackendFixture):
 
     def test_callback_on_digest_change(self):
         """Test a callback from the gateway to update the digest"""
-        auth = DigestAuthVector("ha1", "realm", "qop")
+        auth = DigestAuthVector("ha1", "realm", "qop", False)
 
         self.cache.put_av.return_value = defer.Deferred()
 
@@ -212,9 +212,9 @@ class TestHSSBackend(HSSBackendFixture):
         deferred.addCallback(callback)
 
         self.cache.put_av.assert_called_once_with("priv",
-                                                      auth,
-                                                      self.timestamp,
-                                                      ttl=30)
+                                                  auth,
+                                                  self.timestamp,
+                                                  ttl=30)
         self.cache.put_av.return_value.callback(None)
 
         self.assertEqual(callback.call_count, 1)

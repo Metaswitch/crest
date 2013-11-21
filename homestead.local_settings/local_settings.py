@@ -53,6 +53,7 @@ SIP_DIGEST_REALM = MUST_BE_CONFIGURED
 SPROUT_HOSTNAME = MUST_BE_CONFIGURED
 PUBLIC_HOSTNAME = MUST_BE_CONFIGURED
 HS_HOSTNAME = MUST_BE_CONFIGURED
+OPENHSS_INTEROP = MUST_BE_CONFIGURED
 
 # We use this key to encrypt sensitive fields in the database that we can't
 # avoid storing.  In general, we'd like to store passwords as bcrypt hashes

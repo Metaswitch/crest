@@ -60,13 +60,13 @@ class TestDigestHandler(unittest.TestCase):
         del self.real_zmq
 
     def test_cache_success_output(self):
-        self.handler.application.cache.get_av.return_value = DigestAuthVector("ha1_test", None, None)
+        self.handler.application.cache.get_av.return_value = DigestAuthVector("ha1_test", None, None, True)
         self.handler.get("private_id")
         self.handler.finish.assert_called_once_with({"digest_ha1": "ha1_test"})
 
     def test_backend_success_output(self):
         self.handler.application.cache.get_av.return_value = None
-        self.handler.application.backend.get_av.return_value = DigestAuthVector("ha1_test", None, None)
+        self.handler.application.backend.get_av.return_value = DigestAuthVector("ha1_test", None, None, True)
         self.handler.get("private_id")
         self.handler.finish.assert_called_once_with({"digest_ha1": "ha1_test"})
 
@@ -108,14 +108,14 @@ class TestAuthVectorHandlerUnknown(TestAuthVectorHandler):
 
     def test_cache_success_output(self):
         expected = {"digest": {"ha1": "ha1_test", "realm": "default-realm2.com", "qop": "auth-int"}}
-        self.handler.application.cache.get_av.return_value = DigestAuthVector("ha1_test", "default-realm2.com", "auth-int")
+        self.handler.application.cache.get_av.return_value = DigestAuthVector("ha1_test", "default-realm2.com", "auth-int", True)
         self.handler.get("private_id", self.authtype)
         self.handler.finish.assert_called_once_with(expected)
 
     def test_backend_success_output(self):
         expected = {"digest": {"ha1": "ha1_test", "realm": "default-realm2.com", "qop": "auth-int"}}
         self.handler.application.cache.get_av.return_value = None
-        self.handler.application.backend.get_av.return_value = DigestAuthVector("ha1_test", "default-realm2.com", "auth-int")
+        self.handler.application.backend.get_av.return_value = DigestAuthVector("ha1_test", "default-realm2.com", "auth-int", True)
         self.handler.get("private_id", self.authtype)
         self.handler.finish.assert_called_once_with(expected)
 

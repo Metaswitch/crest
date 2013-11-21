@@ -114,6 +114,11 @@ HSS_ASSOC_IMPU_CACHE_PERIOD_SECS=60 * 60
 # a result, we set this pretty high.
 HSS_IMS_SUB_CACHE_PERIOD_SECS=7 * 24 * 60 * 60
 
+# Homestead includes code to deal with some situations where the
+# OpenIMS HSS core is not specification-compliant. This is activated
+# when this flag is set to True.
+OPENHSS_INTEROP = False
+
 # To avoid deploying with debug turned on, these settings should only ever be
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.

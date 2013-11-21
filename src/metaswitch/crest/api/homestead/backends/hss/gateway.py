@@ -287,21 +287,23 @@ class HSSPeerListener(stack.PeerListener):
         req = self.cx.getCommandRequest(self.peer.stack, "Multimedia-Auth", True)
         req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(public_id))
+        req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
+        req.addAVP(self.cx.getAVP('SIP-Number-Auth-Items').withInteger32(1))
 
         auth_avp = self.cx.getAVP('SIP-Auth-Data-Item')
         # Update the request depending on the authentication method
         if authtype == authtypes.AKA:
             auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('Digest-AKAv1-MD5'))
             if autn:
-                auth_avp.addAVP(self.cx.getAVP('AUTN').withOctetString(autn))
+                auth_avp.addAVP(self.cx.getAVP('SIP-Authorization').withOctetString(autn))
         elif authtype == authtypes.SIP_DIGEST:
             auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('SIP Digest'))
+        elif settings.OPENHSS_INTEROP:
+            auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('unknown'))
         else:
             auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('Unknown'))
 
         req.addAVP(auth_avp)
-        req.addAVP(self.cx.getAVP('SIP-Number-Auth-Items').withInteger32(1))
-        req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
 
        # Send off message to HSS
         start_time = time.time()
@@ -330,7 +332,12 @@ class HSSPeerListener(stack.PeerListener):
                 if qop_avp:
                     qop = qop_avp.getOctetString()
 
-                auth = DigestAuthVector(digest, realm, qop)
+                if authtype == authtypes.UNKNOWN:
+                    preferred = True
+                else:
+                    preferred = False
+
+                auth = DigestAuthVector(digest, realm, qop, preferred)
                 defer.returnValue(auth)
             elif "Digest-AKAv1-MD5" in scheme.getOctetString():
                 # Integrity key and confidentiality key are "LDQUOT
