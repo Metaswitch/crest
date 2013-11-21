@@ -63,6 +63,3 @@ HS_HOSTNAME = MUST_BE_CONFIGURED
 #
 # Debian install will pick this up from /etc/clearwater/config
 PASSWORD_ENCRYPTION_KEY = MUST_BE_CONFIGURED
-
-# Only support 3GPP vendor, not ETSI.
-CX_SUPPORTED_VENDORS = [10415]
