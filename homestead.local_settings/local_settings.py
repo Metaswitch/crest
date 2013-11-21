@@ -49,6 +49,7 @@ HSS_PORT = 3868
 HSS_ENABLED = HSS_IP not in ["", "0.0.0.0"]
 
 # Debian install will pick this up from /etc/clearwater/config
+LOCAL_IP = MUST_BE_CONFIGURED
 SIP_DIGEST_REALM = MUST_BE_CONFIGURED
 SPROUT_HOSTNAME = MUST_BE_CONFIGURED
 PUBLIC_HOSTNAME = MUST_BE_CONFIGURED
@@ -62,3 +63,6 @@ HS_HOSTNAME = MUST_BE_CONFIGURED
 #
 # Debian install will pick this up from /etc/clearwater/config
 PASSWORD_ENCRYPTION_KEY = MUST_BE_CONFIGURED
+
+# Only support 3GPP vendor, not ETSI.
+CX_SUPPORTED_VENDORS = [10415]

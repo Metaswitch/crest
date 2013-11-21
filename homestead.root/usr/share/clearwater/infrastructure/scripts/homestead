@@ -9,7 +9,8 @@ cassandra_hostname="localhost"
 # "hostnames" will not have port numbers appended, so we just pass those on
 # verbatim by detecting 2 or more colons.
 hs_hostname=$(echo $hs_hostname | sed -e 's/^\([^:]*\):[0-9][0-9]*$/\1/g')
-sed -e 's/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
+sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g
+        s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
         s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g
         s/^PUBLIC_HOSTNAME = .*$/PUBLIC_HOSTNAME = "'$public_hostname'"/g
         s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$hs_hostname'"/g

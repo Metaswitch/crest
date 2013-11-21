@@ -68,7 +68,8 @@ class HSSGateway(object):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
 
-        dstack = stack.Stack()
+        dstack = stack.Stack(product_name="Clearwater", ip4_address=settings.LOCAL_IP)
+        dstack.vendor_id = 19444 # Metaswitch
         dstack.loadDictionary("cx", DICT_PATH)
         dstack.identity = settings.PUBLIC_HOSTNAME
         dstack.realm = settings.HS_HOSTNAME
@@ -77,7 +78,6 @@ class HSSGateway(object):
         self.peer_listener = HSSPeerListener(app,
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
-        dstack.registerApplication(app, 0, 16777216)
         for vendor in settings.CX_SUPPORTED_VENDORS:
             dstack.addSupportedVendor(vendor)
             dstack.registerApplication(app, vendor, 16777216)
