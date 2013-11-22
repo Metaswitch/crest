@@ -13,7 +13,7 @@ The URL takes an optional query parameter: `public_id=<public_id>` If specified 
 
 Response:
 
-* 200 if the digest is found, retgurned as JSON: `{ "digest": "<DIGEST>" }`
+* 200 if the digest is found, returned as JSON: `{ "digest_ha1": "<DIGEST>" }`
 * 404 if the digest is not found.
 
 ## IMPU
@@ -37,7 +37,7 @@ These URLs are only available when homestead is acting in place of a real HSS. W
 
 Make a GET to this URL to retrieve datails for a private ID. Response:
 
-* 200 if the private ID was found, returned as JSON: `{ "digest": "<DIGEST>" }`
+* 200 if the private ID was found, returned as JSON: `{ "digest_ha1": "<DIGEST>" }`
 * 404 if the private ID was not found.
 
 Make a PUT to this URL to create a new private ID or update an existing one. The body must be in the same format as would be returned on a GET. Response:
@@ -48,7 +48,7 @@ Make a PUT to this URL to create a new private ID or update an existing one. The
 Make a DELETE to this URL to delete an existing private ID. Response:
 
 * 200 if the private ID was deleted successfully.
-* 400 if the private ID could not be found.
+* 201 if the private ID could not be found.
 
     /private/<private id>/associated_implicit_registration_sets/
 
@@ -67,7 +67,7 @@ Make a PUT to this URL to configure the private ID to authenticate the specified
 Make a DELETE to this URL to configure the private ID to no longer authenticate the specified IRS. Response:
 
 * 200 if the private ID has been updated to _not_ authenticate the IRS.
-* 404 if the private ID could not be found.
+* 201 if the private ID could not be found.
 
     /private/<private ID>/associated_public_ids
 
@@ -89,7 +89,7 @@ Make a POST to this URL to create a new IRS. Response:
 Make a DELETE to this URL to delete an existing IRS. Response:
 
 * 200 if the IRS has been deleted.
-* 404 if the IRS could not be found.
+* 201 if the IRS could not be found.
 
     /irs/<irs-uuid>/public_ids
 
@@ -110,7 +110,7 @@ Make a GET to this URL to list all the private IDs that are configured to authen
 Make a PUT to this URL to configure the private ID to authenticate the specified IRS. Response:
 
 * 200 if the private ID has been updated to authenticate the IRS.
-* 404 if the IRS could not be found.
+* 404 if the IRS or Private ID could not be found.
 
 ## Service Profiles
 
@@ -125,7 +125,7 @@ Make a POST to this URL to create a new service profile. Response:
 Make a DELETE to this URL to delete an existing service profile. Response:
 
 * 200 if the service profile has been deleted.
-* 404 if the service profile could not be found.
+* 201 if the service profile could not be found.
 
     /irs/<irs-uuid>/service_profiles/<service-profile-uuid>/public_ids
 
