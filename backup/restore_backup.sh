@@ -41,6 +41,8 @@ die () {
 
 [ "$#" -ge 1 ] || die "Usage: restore_backup.sh <keyspace> [backup] (will default to latest backup if none specified) [backup directory]"
 KEYSPACE=$1
+COMPONENT=$(cut -d_ -f1 <<< $KEYSPACE)
+DATABASE=$(cut -d_ -f2 <<< $KEYSPACE)
 BACKUP=$2
 BACKUP_DIR=$3
 DATA_DIR=/var/lib/cassandra/data
@@ -55,7 +57,12 @@ fi
 
 if [[ -z "$BACKUP_DIR" ]]
 then
-  BACKUP_DIR="/usr/share/clearwater/$KEYSPACE/backup/backups"
+  if [ -n "$DATABASE" ]
+  then
+    BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups/$DATABASE"
+  else
+    BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups"
+  fi
   echo "No backup directory specified, will attempt to backup from $BACKUP_DIR"
 else
   echo "Will attempt to backup from directory $BACKUP_DIR"

@@ -33,6 +33,8 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 # Keyspaces
+# If you change either of these, check whether changes to backup scripts are
+# also required
 CACHE_KEYSPACE = "homestead_cache"
 PROVISIONING_KEYSPACE = "homestead_provisioning"
 

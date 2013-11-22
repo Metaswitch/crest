@@ -38,6 +38,26 @@ from metaswitch.crest.api import base
 from metaswitch.crest.api.ping import PingHandler
 from metaswitch.crest import settings
 
+# Monkey patch connectionLost method in ThriftClientProtocol - it's a bad
+# idea to assume the client request lists is immutable when making error
+# callbacks.
+from twisted.internet.protocol import connectionDone
+from thrift.transport import TTransport
+from thrift.transport import TTwisted
+from thrift.transport.TTwisted import ThriftClientProtocol
+
+def connectionLost(self, reason=connectionDone):
+    while (self.client._reqs != {}):
+        tmp = self.client._reqs
+        self.client._reqs = {}
+        for k, v in tmp.iteritems():
+            tex = TTransport.TTransportException(
+                type=TTransport.TTransportException.END_OF_FILE,
+                message='Connection closed')
+            v.errback(tex)
+
+ThriftClientProtocol.connectionLost = connectionLost
+
 
 def load_module(name):
     """Dynamically load routes and database CREATE statements from configured
@@ -76,6 +96,8 @@ def initialize(application):
         except AttributeError:
             # No initializer for module
             pass
+
+
 
 
 PATH_PREFIX = "^/"

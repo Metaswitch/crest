@@ -47,6 +47,8 @@ from twisted.python.failure import Failure
 from metaswitch.common import utils
 from metaswitch.crest import settings
 from metaswitch.crest.api.statistics import Accumulator, Counter
+from metaswitch.crest.api.DeferTimeout import TimeoutError
+from metaswitch.crest.api.exceptions import HSSOverloaded, HSSConnectionLost , HSSStillConnecting
 from metaswitch.crest.api.lastvaluecache import LastValueCache
 
 _log = logging.getLogger("crest.api")
@@ -290,6 +292,12 @@ class BaseHandler(cyclone.web.RequestHandler):
         """
         Overridden to intercept the exception object and pass to send_error
         """
+        err_traceback = traceback.format_exc()
+        orig_e = e
+        if e.__class__ == Failure:
+            err_traceback = e.getTraceback()
+            e = e.value
+
         if type(e) == HTTPError:
             if e.log_message:
                 format = "%d %s: " + e.log_message
@@ -301,12 +309,15 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 _log.debug("Sending HTTP error: %d", e.status_code)
                 self.send_error(e.status_code, httplib.responses[e.status_code], exception=e)
+        elif type(e) in [HSSOverloaded, HSSStillConnecting, HSSConnectionLost, TimeoutError]:
+                _log.error("Translating internal %s error into a 503 status code", type(e))
+                self.send_error(503)
         else:
             _log.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
             _log.error("Exception: %s" % repr(e))
-            _log.error(e.getTraceback())
+            _log.error(err_traceback)
             utils.write_core_file(settings.LOG_FILE_PREFIX, traceback.format_exc())
-            cyclone.web.RequestHandler._handle_request_exception(self, e)
+            cyclone.web.RequestHandler._handle_request_exception(self, orig_e)
 
     @property
     def request_data(self):

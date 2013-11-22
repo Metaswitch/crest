@@ -50,8 +50,13 @@ class HSSPeerIOTwisted(Protocol):
 
     def connectionMade(self):
         self.peer._protocol = self
+        self.peer.alive = True
         self.peer.feed(None, 0)
         _log.info("HSS connection made")
+
+    def connectionLost(self, reason):
+        _log.warning("Connection lost to HSS")
+        self.peer.alive = False
 
     def dataReceived(self, data):
         self.in_buffer += data

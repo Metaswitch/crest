@@ -1,6 +1,4 @@
-#!/bin/bash
-
-# @file do_backup.sh
+# @file exceptions.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -34,59 +32,21 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-die () {
-  echo >&2 "$@"
-  exit 1
-}
+# HSS-specific Exceptions
+class HSSNotEnabled(Exception):
+    """Exception to throw if gateway is created without a valid HSS_IP"""
+    pass
 
-[ "$#" -eq 1 ] || die "Usage: do_backup.sh <keyspace>"
-KEYSPACE=$1
-COMPONENT=$(cut -d_ -f1 <<< $KEYSPACE)
-DATABASE=$(cut -d_ -f2 <<< $KEYSPACE)
-DATA_DIR=/var/lib/cassandra/data
-if [ -n "$DATABASE" ]
-then
-  BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups/$DATABASE"
-else
-  BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups"
-fi
-[ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
-if [[ ! -d "$BACKUP_DIR" ]]
-then
-  mkdir -p $BACKUP_DIR
-  echo "Created backup directory $BACKUP_DIR"
-fi
 
-# Remove old backups (keeping last 3)
-# Cassandra keeps snapshots per columnfamily, so we need to delete them individually
-DIRS=$(find $DATA_DIR/$KEYSPACE/ -type d | grep 'snapshots$')
-for d in $DIRS
-do
-  for f in $(ls -t $d | tail -n +4)
-  do
-    echo "Deleting old backup: $d/$f"
-    rm -r $d/$f
-  done
-done
+class HSSOverloaded(Exception):
+    """Exception to throw if a request cannot be completed because the HSS returns an
+    overloaded response"""
+    pass
 
-for f in $(ls -t $BACKUP_DIR | tail -n +4)
-do
-  echo "Deleting old backup: $BACKUP_DIR/$f"
-  rm -r $BACKUP_DIR/$f
-done
+class HSSConnectionLost(Exception):
+    """Exception to throw if we have lost our HSS connection"""
+    pass
 
-echo "Creating backup for keyspace $KEYSPACE..."
-nodetool -h localhost -p 7199 snapshot $KEYSPACE
-
-for t in $DATA_DIR/$KEYSPACE/*
-do
-  TABLE=`basename $t`
-  for s in $DATA_DIR/$KEYSPACE/$TABLE/snapshots/*
-  do
-    SNAPSHOT=`basename $s`
-    mkdir -p $BACKUP_DIR/$SNAPSHOT/$TABLE
-    cp -al $DATA_DIR/$KEYSPACE/$TABLE/snapshots/$SNAPSHOT/* $BACKUP_DIR/$SNAPSHOT/$TABLE
-  done
-done
-
-echo "Backups can be found at: $BACKUP_DIR"
+class HSSStillConnecting(Exception):
+    """Exception to throw if we have lost our HSS connection"""
+    pass

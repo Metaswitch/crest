@@ -39,12 +39,11 @@ from xml.etree import ElementTree
 
 from ..backend import Backend
 from ... import authtypes
-from .gateway import HSSGateway
+from .gateway import HSSGateway, HSSConnectionLost
 from metaswitch.crest import settings
 from metaswitch.crest.api import utils
 
 _log = logging.getLogger("crest.api.homestead.hss")
-
 
 class HSSBackend(Backend):
     """
@@ -57,7 +56,8 @@ class HSSBackend(Backend):
 
     def __init__(self, cache):
         self._cache = cache
-        self._hss_gateway = HSSGateway(HSSBackend.Callbacks(cache))
+        self._hss_callbacks = HSSBackend.Callbacks(cache)
+        self._hss_gateway = HSSGateway(self._hss_callbacks)
 
     @defer.inlineCallbacks
     def get_av(self, private_id, public_id, authtype, autn=None):
@@ -67,12 +67,16 @@ class HSSBackend(Backend):
                        "as no public ID has been supplied")
             defer.returnValue(None)
         else:
-            av = yield self._hss_gateway.get_av(private_id,
-                                                public_id,
-                                                authtype,
-                                                autn)
-            _log.debug("Got authentication vector %s for private ID %s from HSS" %
-                       (av, private_id))
+            try:
+                av = yield self._hss_gateway.get_av(private_id,
+                                                    public_id,
+                                                    authtype,
+                                                    autn)
+            except HSSConnectionLost:
+                self._hss_gateway = HSSGateway(self._hss_callbacks)
+                raise
+
+            _log.debug("Got authentication vector %s for private ID %s from HSS" % (av, private_id))
 
             if av and av.type == authtypes.SIP_DIGEST:
                 # Update the cache with the digest, and the fact that the
@@ -92,9 +96,14 @@ class HSSBackend(Backend):
     def get_ims_subscription(self, public_id, private_id=None):
         # Note that _get_ims_subscription_ on the gateway has the public and
         # private IDs in a different order from this method.
-        ims_subscription = yield self._hss_gateway.get_ims_subscription(
-                                                                    private_id,
-                                                                    public_id)
+        try:
+            ims_subscription = yield self._hss_gateway.get_ims_subscription(
+                private_id,
+                public_id)
+        except HSSConnectionLost:
+            self._hss_gateway = HSSGateway(self._hss_callbacks)
+            raise
+
         _log.debug("Got IMS subscription %s for private ID %s from HSS" %
                    (ims_subscription, private_id))
 

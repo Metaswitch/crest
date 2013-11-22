@@ -45,6 +45,7 @@ from twisted.internet.task import LoopingCall
 from metaswitch.crest import settings
 from metaswitch.crest.api.base import penaltycounter, loadmonitor, digest_latency_accumulator, subscription_latency_accumulator
 from metaswitch.crest.api import DeferTimeout
+from metaswitch.crest.api.exceptions import HSSNotEnabled, HSSOverloaded, HSSConnectionLost, HSSStillConnecting
 from metaswitch.common import utils
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
 from metaswitch.crest.api.homestead import authtypes
@@ -62,17 +63,6 @@ DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
 DIAMETER_SUCCESS = 2001
 DIAMETER_COMMAND_UNSUPPORTED = 3001
 DIAMETER_UNABLE_TO_COMPLY = 5012
-
-# HSS-specific Exceptions
-class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without a valid HSS_IP"""
-    pass
-
-
-class HSSOverloaded(Exception):
-    """Exception to throw if a request cannot be completed because the HSS returns an
-    overloaded response"""
-    pass
 
 
 class HSSGateway(object):
@@ -260,6 +250,7 @@ class HSSPeerListener(stack.PeerListener):
         self.realm = domain
         self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
+        self.peer = None
 
     def connected(self, peer):
         _log.info("Peer %s connected" % peer.identity)
@@ -281,7 +272,12 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_multimedia_auth(self, private_id, public_id, authtype, autn):
+        if self.peer is None:
+            raise HSSStillConnecting()
+        if not self.peer.alive:
+            raise HSSConnectionLost()
         _log.debug("Sending Multimedia-Auth request for %s/%s/%s/%s" % (private_id, public_id, authtype, autn))
+
         public_id = str(public_id)
         private_id = str(private_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Multimedia-Auth", True)
@@ -373,6 +369,10 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id, public_id):
+        if self.peer is None:
+            raise HSSStillConnecting()
+        if not self.peer.alive:
+            raise HSSConnectionLost()
         # Constants to match the enumerated values in 3GPP TS 29.229 s6.3.15
         REGISTRATION = 1
         NO_ASSIGNMENT = 0
@@ -421,4 +421,4 @@ class HSSPeerListener(stack.PeerListener):
 
     def disconnected(self, peer):
         _log.debug("Peer %s disconnected" % peer.identity)
-        self.peer = None
+        self.peer.alive = False

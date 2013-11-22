@@ -732,4 +732,4 @@ class TestHSSPeerListener(unittest.TestCase):
     def test_disconnected(self):
         self.assertEquals(self.peer_listener.peer, self.peer)
         self.peer_listener.disconnected(mock.MagicMock())
-        self.assertEquals(self.peer_listener.peer, None)
+        self.assertEquals(self.peer_listener.peer.alive, False)
