@@ -305,7 +305,7 @@ class HSSPeerListener(stack.PeerListener):
             raise HSSConnectionLost()
         # Constants to match the enumerated values in 3GPP TS 29.229 s6.3.15
         REGISTRATION = 1
-        NO_ASSIGNMENT = 0
+        UNREGISTERED_USER = 3
 
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
@@ -319,7 +319,7 @@ class HSSPeerListener(stack.PeerListener):
         if private_id:
             req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(REGISTRATION))
         else:
-            req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(NO_ASSIGNMENT))
+            req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(UNREGISTERED_USER))
         req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.realm))
         req.addAVP(self.cx.getAVP('User-Data-Already-Available').withInteger32(0))
         req.addAVP(self.cx.getAVP('Vendor-Specific-Application-Id'))
