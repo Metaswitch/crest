@@ -77,6 +77,7 @@ class Cache(object):
                    (public_id, xml))
         defer.returnValue(xml)
 
+    @defer.inlineCallbacks
     def put_digest(self, private_id, digest, timestamp, ttl=None):
         _log.debug("Deprecated put_digest function called")
         yield self.put_av(private_id, DigestAuthVector(digest, None, None, True), timestamp, ttl)
