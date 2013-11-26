@@ -401,7 +401,7 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(mock_req.avps,
                           [{'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
-                           {'Server-Assignment-Type': 0},
+                           {'Server-Assignment-Type': 3},
                            {'Destination-Realm': 'domain'},
                            {'User-Data-Already-Available': 0},
                            {'Vendor-Specific-Application-Id': None},
