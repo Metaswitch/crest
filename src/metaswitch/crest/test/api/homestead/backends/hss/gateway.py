@@ -38,6 +38,7 @@
 import os
 import mock
 import unittest
+import time
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -267,15 +268,19 @@ class TestHSSPeerListener(unittest.TestCase):
                 return {avp: None}
             return self.MockAVP(avp)
 
-    def setUp(self):
+    @mock.patch("time.time")
+    def setUp(self, time):
         unittest.TestCase.setUp(self)
         self.cx = self.MockCx()
         stack = mock.MagicMock()
         stack.getDictionary.return_value = self.cx
         self.app = mock.MagicMock()
+        time.return_value = 1234
 
         self.peer_listener = HSSPeerListener(self.app, "domain", stack)
         self.peer = mock.MagicMock()
+        self.peer.identity = 'peer-host'
+        self.peer.realm = 'peer-realm'
         self.peer_listener.connected(self.peer)
         self.assertEquals(self.peer, self.peer_listener.peer)
         settings.SPROUT_HOSTNAME = "sprout"
@@ -317,7 +322,11 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'User-Name': 'priv'},
                            {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'SIP-Number-Auth-Items': 1},
@@ -357,14 +366,15 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Server-Assignment", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'User-Name': 'priv'},
                            {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'Server-Assignment-Type': 1},
-                           {'Destination-Realm': 'domain'},
-                           {'User-Data-Already-Available': 0},
-                           {'Vendor-Specific-Application-Id': None},
-                           {'Auth-Session-State': 0}])
+                           {'User-Data-Already-Available': 0}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic returning a value from the HSS
@@ -399,13 +409,14 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_server_assignment(None, "pub")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Server-Assignment", True)
         self.assertEquals(mock_req.avps,
-                          [{'Public-Identity': 'pub'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'Server-Assignment-Type': 3},
-                           {'Destination-Realm': 'domain'},
-                           {'User-Data-Already-Available': 0},
-                           {'Vendor-Specific-Application-Id': None},
-                           {'Auth-Session-State': 0}])
+                           {'User-Data-Already-Available': 0}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic returning a value from the HSS
@@ -440,14 +451,15 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_server_assignment("priv", "pub")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Server-Assignment", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'User-Name': 'priv'},
                            {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'Server-Assignment-Type': 1},
-                           {'Destination-Realm': 'domain'},
-                           {'User-Data-Already-Available': 0},
-                           {'Vendor-Specific-Application-Id': None},
-                           {'Auth-Session-State': 0}])
+                           {'User-Data-Already-Available': 0}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic returning a value from the HSS
