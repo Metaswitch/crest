@@ -239,6 +239,8 @@ class HSSPeerListener(stack.PeerListener):
         self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
         self.peer = None
+        self.session_hi = time.time()
+        self.session_lo = 0
 
     def connected(self, peer):
         _log.info("Peer %s connected" % peer.identity)
@@ -268,6 +270,11 @@ class HSSPeerListener(stack.PeerListener):
         public_id = str(public_id)
         private_id = str(private_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Multimedia-Auth", True)
+        self.session_lo += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_hi, self.session_lo)))
+        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
+        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
+        req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
         req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(public_id))
         req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
@@ -309,6 +316,12 @@ class HSSPeerListener(stack.PeerListener):
 
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
+        self.session_lo += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_hi, self.session_lo)))
+        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
+        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
+        req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
+
         if private_id:
             # withOctetString takes a sequence of bytes, not a Unicode
             # string, so call bytes() on private_id and public_id
@@ -320,10 +333,7 @@ class HSSPeerListener(stack.PeerListener):
             req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(REGISTRATION))
         else:
             req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(UNREGISTERED_USER))
-        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.realm))
         req.addAVP(self.cx.getAVP('User-Data-Already-Available').withInteger32(0))
-        req.addAVP(self.cx.getAVP('Vendor-Specific-Application-Id'))
-        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(0))
         # Send off message to HSS
         start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
