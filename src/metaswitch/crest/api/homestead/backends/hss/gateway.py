@@ -239,8 +239,7 @@ class HSSPeerListener(stack.PeerListener):
         self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
         self.peer = None
-        self.session_hi = time.time()
-        self.session_lo = 0
+        self.session_id = time.time() << 32
 
     def connected(self, peer):
         _log.info("Peer %s connected" % peer.identity)
@@ -270,8 +269,8 @@ class HSSPeerListener(stack.PeerListener):
         public_id = str(public_id)
         private_id = str(private_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Multimedia-Auth", True)
-        self.session_lo += 1
-        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_hi, self.session_lo)))
+        self.session_id += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_id >> 32, self.session_id & 0xffffffff)))
         req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
         req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
         req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
@@ -316,8 +315,8 @@ class HSSPeerListener(stack.PeerListener):
 
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
-        self.session_lo += 1
-        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_hi, self.session_lo)))
+        self.session_id += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_id >> 32, self.session_id & 0xffffffff)))
         req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
         req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
         req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
