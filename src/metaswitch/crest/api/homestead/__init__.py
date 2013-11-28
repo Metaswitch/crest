@@ -74,8 +74,10 @@ ROUTES = [
     # /impi/<private ID>/digest?public_id=xxx
     (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
 
-    # /impi/<private ID>/av?impu=xxx&authtype=[SIP-Digest|Digest-AKAv1-MD5]&autn=xxx
+    # /impi/<private ID>/av/aka/?impu=xxx&autn=xxx
+    # /impi/<private ID>/av/digest/?impu=xxx
     (r'/impi/'+ANY+r'/av/'+AUTHTYPE+r'/?',  AuthVectorHandler),
+    # /impi/<private ID>/av/?impu=xxx&autn=xxx
     (r'/impi/'+ANY+r'/av/?',  AuthVectorHandler),
 
     # IMPU: the read-only API for accessing the XMLSubscription associated with

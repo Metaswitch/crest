@@ -69,6 +69,8 @@ class Cache(object):
             ha1, realm, qop, preferred = av
             if preferred or (authtype == authtypes.SIP_DIGEST):
                 defer.returnValue(DigestAuthVector(ha1, realm, qop, preferred))
+        # Subscriber not found, return None
+        defer.returnValue(None)
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, public_id, private_id=None):
@@ -78,16 +80,15 @@ class Cache(object):
         defer.returnValue(xml)
 
     @defer.inlineCallbacks
-    def put_digest(self, private_id, digest, timestamp, ttl=None):
-        _log.debug("Deprecated put_digest function called")
-        yield self.put_av(private_id, DigestAuthVector(digest, None, None, True), timestamp, ttl)
-
-    @defer.inlineCallbacks
     def put_av(self, private_id, auth_vector, timestamp, ttl=None):
         _log.debug("Put private ID '%s' into cache with AV: %s" %
                    (private_id, auth_vector.to_json()))
-        preferred = "true" if auth_vector.preferred else "false"
-        yield IMPI(private_id).put_av(auth_vector.ha1, auth_vector.realm, auth_vector.qop, preferred, ttl=ttl, timestamp=timestamp)
+        yield IMPI(private_id).put_av(auth_vector.ha1,
+                                      auth_vector.realm,
+                                      auth_vector.qop,
+                                      auth_vector.preferred,
+                                      ttl=ttl,
+                                      timestamp=timestamp)
 
     @defer.inlineCallbacks
     def put_associated_public_id(self, private_id, public_id, timestamp, ttl=None):

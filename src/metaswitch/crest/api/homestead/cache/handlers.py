@@ -46,8 +46,6 @@ JSON_DIGEST_HA1 = "digest_ha1"
 
 
 class CacheApiHandler(BaseHandler):
-
-
     def send_error_or_response(self, retval):
         if retval is None:
             self.send_error(404)
@@ -81,6 +79,25 @@ class CacheApiHandler(BaseHandler):
                     _log.debug("No result from %s" % getter_function)
         return getter
 
+    def make_getter(function_name, use_cache=True):
+        backend_get = [self.application.backend.getattr(function_name), hss_latency_accumulator]
+        if use_cache:
+            cache_get = [self.application.cache.getattr(function_name), cache_latency_accumulator]
+            getter = self.sequential_getter_with_latency(cache_get, backend_get)
+        else:
+            getter = self.sequential_getter_with_latency(backend_get)
+
+    def get_ims_subscription(*args, use_cache=True, **kwargs):
+        getter = make_getter('get_ims_subscription')
+        return getter(*args, **kwargs)
+
+    def get_av(*args, **kwargs):
+        getter = make_getter('get_av')
+        return getter(*args, **kwargs)
+
+    def get_av_from_backend(*args, **kwargs):
+        getter = make_getter('get_av', use_cache=False)
+        return getter(*args, **kwargs)
 
 class DigestHandler(CacheApiHandler):
     @BaseHandler.check_request_age
@@ -88,12 +105,7 @@ class DigestHandler(CacheApiHandler):
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
 
-        cache_get = [self.application.cache.get_av, cache_latency_accumulator]
-        backend_get = [self.application.backend.get_av, hss_latency_accumulator]
-
-        # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter_with_latency(cache_get, backend_get)
-        auth = yield getter(private_id, public_id, authtypes.SIP_DIGEST, None)
+        auth = yield self.get_av(private_id, public_id, authtypes.SIP_DIGEST, None)
 
         retval = {JSON_DIGEST_HA1: auth.ha1} if auth else None
         self.send_error_or_response(retval)
@@ -112,15 +124,12 @@ class AuthVectorHandler(CacheApiHandler):
         elif string_authtype == "aka":
             authtype = authtypes.AKA
 
-        cache_get = [self.application.cache.get_av, cache_latency_accumulator]
-        backend_get = [self.application.backend.get_av, hss_latency_accumulator]
 
         if authtype == authtypes.AKA:
-            getter = self.sequential_getter_with_latency(backend_get)
+            auth = yield self.get_av_from_backend(private_id, public_id, authtype, autn)
         else:
             # Try the cache first.  If that fails go to the backend.
-            getter = self.sequential_getter_with_latency(cache_get, backend_get)
-        auth = yield getter(private_id, public_id, authtype, autn)
+            auth = yield self.get_av(private_id, public_id, authtype, autn)
 
         retval = auth.to_json() if auth else None
         self.send_error_or_response(retval)
@@ -133,8 +142,5 @@ class IMSSubscriptionHandler(CacheApiHandler):
         private_id = self.get_argument("private_id", default=None)
 
         # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter_with_latency(
-                 [self.application.cache.get_ims_subscription, cache_latency_accumulator],
-                 [self.application.backend.get_ims_subscription, hss_latency_accumulator])
-        retval = yield getter(public_id, private_id)
+        retval = yield self.get_ims_subscription(public_id, private_id)
         self.send_error_or_response(retval)

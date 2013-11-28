@@ -63,7 +63,7 @@ class IMPI(CacheModel):
         DIGEST_HA1+" text, " +
         DIGEST_REALM+" text, " +
         DIGEST_QOP+" text, " +
-        KNOWN_PREFERRED+" text" +
+        KNOWN_PREFERRED+" boolean" +
         ") WITH read_repair_chance = 1.0;"
     )
 
@@ -77,23 +77,9 @@ class IMPI(CacheModel):
 
             columns = yield self.get_columns(query_columns)
 
-            if DIGEST_REALM in columns:
-                realm = columns[DIGEST_REALM]
-            else:
-                realm = None
-
-            if DIGEST_QOP in columns:
-                qop = columns[DIGEST_QOP]
-            else:
-                qop = None
-
-            # legacy support
-            if KNOWN_PREFERRED not in columns:
-                preferred = True
-            elif columns[KNOWN_PREFERRED] == "true":
-                preferred = True
-            else:
-                preferred = False
+            realm = columns.get(DIGEST_REALM, None)
+            qop = columns.get(DIGEST_QOP, None)
+            preferred = columns.get(KNOWN_PREFERRED, True)
 
             # It the user has supplied a public ID, they care about whether the
             # private ID can authenticate the public ID.  Only return a digest

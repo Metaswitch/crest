@@ -34,7 +34,8 @@ from metaswitch.crest import settings
 from . import authtypes
 
 class AuthVector(object):
-    pass
+    def to_json(self):
+        raise NotImplementedError
 
 class DigestAuthVector(AuthVector):
     def __init__(self, ha1, realm, qop, preferred):
@@ -42,6 +43,13 @@ class DigestAuthVector(AuthVector):
         self.ha1 = ha1
         self.realm = realm or settings.SIP_DIGEST_REALM
         self.qop = qop or "auth"
+
+        # The "preferred" attribute relates to caching - if we receive
+        # a request specifically for the SIP Digest and cache it, and
+        # then get a request which doesn't specify the authentication
+        # type, we shouldn't respond from cache. Instead, we should
+        # query the HSS, because it may be configured to default to
+        # AKA rather than Digest (i.e. SIP Digest is not "preferred").
         self.preferred = preferred
 
     def to_json(self):
