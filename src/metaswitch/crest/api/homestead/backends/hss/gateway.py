@@ -239,7 +239,7 @@ class HSSPeerListener(stack.PeerListener):
         self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
         self.peer = None
-        self.session_id = time.time() << 32
+        self.session_id = int(time.time()) << 32
 
     def connected(self, peer):
         _log.info("Peer %s connected" % peer.identity)
