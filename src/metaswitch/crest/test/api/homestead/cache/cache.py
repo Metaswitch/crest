@@ -95,7 +95,7 @@ class TestCache(unittest.TestCase):
             mapping=DictContaining({"digest_ha1": "ha1_test",
                                     "digest_realm": "realm",
                                     "digest_qop": "qop",
-                                    "known_preferred": "true" }),
+                                    "known_preferred": True }),
             ttl=self.ttl,
             timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -114,7 +114,7 @@ class TestCache(unittest.TestCase):
             mapping=DictContaining({"digest_ha1": "ha1_test",
                                     "digest_realm": "realm",
                                     "digest_qop": "qop",
-                                    "known_preferred": "false"}),
+                                    "known_preferred": False}),
             ttl=self.ttl,
             timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -268,7 +268,7 @@ class TestCache(unittest.TestCase):
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", ""),
-                            MockColumn("known_preferred", "false")])
+                            MockColumn("known_preferred", False)])
         self.assertEquals(res.value(), None)
 
     def test_get_digest_unknown_preferred(self):
@@ -282,7 +282,7 @@ class TestCache(unittest.TestCase):
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", ""),
-                            MockColumn("known_preferred", "true")])
+                            MockColumn("known_preferred", True)])
         self.assertEquals(res.value().ha1, "digest")
 
     def test_get_digest_sip_preferred(self):
@@ -296,7 +296,7 @@ class TestCache(unittest.TestCase):
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", ""),
-                            MockColumn("known_preferred", "true")])
+                            MockColumn("known_preferred", True)])
         self.assertEquals(res.value().ha1, "digest")
 
     def test_get_digest_sip_not_preferred(self):
@@ -310,7 +310,7 @@ class TestCache(unittest.TestCase):
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", ""),
-                            MockColumn("known_preferred", "false")])
+                            MockColumn("known_preferred", False)])
         self.assertEquals(res.value().ha1, "digest")
 
     def test_delete_multi_private_ids(self):

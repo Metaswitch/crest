@@ -452,8 +452,8 @@ class TestHSSPeerListener(unittest.TestCase):
         expected = {"digest": {"ha1": "Ha1", "realm": "realm.com", "qop": "QoP"}}
         self.assertEquals(deferred_callback.call_args[0][0].to_json(), expected)
 
-    def test_fetch_multimedia_auth_unknown_openhss(self):
-        settings.OPENHSS_INTEROP = True
+    def test_fetch_multimedia_auth_unknown_interop(self):
+        settings.LOWERCASE_UNKNOWN = True
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
         deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.UNKNOWN, None)

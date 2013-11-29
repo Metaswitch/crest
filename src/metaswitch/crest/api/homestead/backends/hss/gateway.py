@@ -294,7 +294,7 @@ class HSSPeerListener(stack.PeerListener):
                 auth_avp.addAVP(self.cx.getAVP('SIP-Authorization').withOctetString(autn))
         elif authtype == authtypes.SIP_DIGEST:
             auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('SIP Digest'))
-        elif settings.OPENHSS_INTEROP:
+        elif settings.LOWERCASE_UNKNOWN:
             auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('unknown'))
         else:
             auth_avp.addAVP(self.cx.getAVP('SIP-Authentication-Scheme').withOctetString('Unknown'))

@@ -54,8 +54,7 @@ class CacheApiHandler(BaseHandler):
         else:
             self.finish(retval)
 
-    @staticmethod
-    def sequential_getter_with_latency(*funcpairs):
+    def sequential_getter_with_latency(self, *funcpairs):
         """Each entry in funcpairs is a pair of a getter function (called to
         get the return value) and an accumulator (which tracks the
         latency of the getter).
@@ -79,24 +78,31 @@ class CacheApiHandler(BaseHandler):
                     _log.debug("No result from %s" % getter_function)
         return getter
 
-    def make_getter(function_name, use_cache=True):
-        backend_get = [self.application.backend.getattr(function_name), hss_latency_accumulator]
-        if use_cache:
-            cache_get = [self.application.cache.getattr(function_name), cache_latency_accumulator]
-            getter = self.sequential_getter_with_latency(cache_get, backend_get)
+    def make_getter(self, function_name, use_cache=True):
+        # Can't use getattr here - it doesn't play nicely with the mocking
+        if function_name == 'get_ims_subscription':
+            backend_get, cache_get = self.application.backend.get_ims_subscription, self.application.cache.get_ims_subscription
         else:
-            getter = self.sequential_getter_with_latency(backend_get)
+            backend_get, cache_get = self.application.backend.get_av, self.application.cache.get_av
+        backend_get_with_latency = [backend_get, hss_latency_accumulator]
+        if use_cache:
+            # Try the cache first.  If that fails go to the backend.
+            cache_get_with_latency = [cache_get, cache_latency_accumulator]
+            getter = self.sequential_getter_with_latency(cache_get_with_latency, backend_get_with_latency)
+        else:
+            getter = self.sequential_getter_with_latency(backend_get_with_latency)
+        return getter
 
-    def get_ims_subscription(*args, use_cache=True, **kwargs):
-        getter = make_getter('get_ims_subscription')
+    def get_ims_subscription(self, *args, **kwargs):
+        getter = self.make_getter('get_ims_subscription')
         return getter(*args, **kwargs)
 
-    def get_av(*args, **kwargs):
-        getter = make_getter('get_av')
+    def get_av(self, *args, **kwargs):
+        getter = self.make_getter('get_av')
         return getter(*args, **kwargs)
 
-    def get_av_from_backend(*args, **kwargs):
-        getter = make_getter('get_av', use_cache=False)
+    def get_av_from_backend(self, *args, **kwargs):
+        getter = self.make_getter('get_av', use_cache=False)
         return getter(*args, **kwargs)
 
 class DigestHandler(CacheApiHandler):
@@ -128,7 +134,6 @@ class AuthVectorHandler(CacheApiHandler):
         if authtype == authtypes.AKA:
             auth = yield self.get_av_from_backend(private_id, public_id, authtype, autn)
         else:
-            # Try the cache first.  If that fails go to the backend.
             auth = yield self.get_av(private_id, public_id, authtype, autn)
 
         retval = auth.to_json() if auth else None
@@ -141,6 +146,5 @@ class IMSSubscriptionHandler(CacheApiHandler):
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
 
-        # Try the cache first.  If that fails go to the backend.
         retval = yield self.get_ims_subscription(public_id, private_id)
         self.send_error_or_response(retval)
