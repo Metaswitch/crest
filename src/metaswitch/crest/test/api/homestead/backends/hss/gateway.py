@@ -50,7 +50,7 @@ from metaswitch.crest.test import matchers
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
 from metaswitch.crest.api.base import penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
-from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded
+from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.crest.api.homestead import authtypes
 
 from base64 import b64encode
@@ -379,7 +379,22 @@ class TestHSSPeerListener(unittest.TestCase):
             if arg in request_args:
                 return request_args[arg]
 
-    def test_get_diameter_error_code(self):
+    def test_get_diameter_result_code(self):
+        mock_error = mock.MagicMock()
+        mock_error.getInteger32.return_value = 1234
+        self.cx.findFirstAVP.return_value = mock_error
+        request = mock.MagicMock()
+
+        error_code = self.peer_listener.get_diameter_result_code(request)
+        self.cx.findFirstAVP.assert_called_once_with(request, "Result-Code")
+        mock_error.getInteger32.assert_called_once_with()
+        self.assertEquals(1234, error_code)
+
+        self.cx.findFirstAVP.return_value = None
+        error_code = self.peer_listener.get_diameter_result_code(request)
+        self.assertEquals(None, error_code)
+
+    def test_get_diameter_exp_result_code(self):
         mock_error = mock.MagicMock()
         mock_error.getInteger32.return_value = 1234
         mock_exp = mock.MagicMock()
@@ -387,15 +402,29 @@ class TestHSSPeerListener(unittest.TestCase):
         self.cx.findFirstAVP.return_value = mock_exp
         request = mock.MagicMock()
 
-        error_code = self.peer_listener.get_diameter_error_code(request)
+        error_code = self.peer_listener.get_diameter_exp_result_code(request)
         self.cx.findFirstAVP.assert_called_once_with(request, "Experimental-Result")
         mock_exp.getGroup.assert_called_once_with()
         mock_error.getInteger32.assert_called_once_with()
         self.assertEquals(1234, error_code)
 
         self.cx.findFirstAVP.return_value = None
-        error_code = self.peer_listener.get_diameter_error_code(request)
+        error_code = self.peer_listener.get_diameter_exp_result_code(request)
         self.assertEquals(None, error_code)
+
+    def test_get_diameter_exp_result_vendor(self):
+        mock_vendor = mock.MagicMock()
+        mock_vendor.getInteger32.return_value = 1111
+        mock_exp = mock.MagicMock()
+        mock_exp.getGroup.return_value = [mock_vendor, None]
+        self.cx.findFirstAVP.return_value = mock_exp
+        request = mock.MagicMock()
+
+        vendor = self.peer_listener.get_diameter_exp_result_vendor(request)
+        self.cx.findFirstAVP.assert_called_once_with(request, "Experimental-Result")
+        mock_exp.getGroup.assert_called_once_with()
+        mock_vendor.getInteger32.assert_called_once_with()
+        self.assertEquals(1111, vendor)
 
     def test_fetch_multimedia_auth_digest(self):
         mock_req = self.MockRequest()
@@ -540,22 +569,21 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0].to_json(), expected)
 
     def test_fetch_multimedia_auth_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub"),
                              True,
                              expected_retval=matchers.MatchesNone())
 
-
     def test_fetch_multimedia_auth_not_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub"),
                              True,
-                             error_code=3005,
+                             result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
 
     def test_fetch_multimedia_auth_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_multimedia_auth,
+        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub"),
                              True,
-                             error_code=3004,
+                             result_code=3004,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
@@ -694,29 +722,172 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0], xml)
 
     def test_fetch_server_assignment_no_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment,
+        self.common_test_hss(lambda: self.peer_listener.fetch_server_assignment("priv", "pub"),
                              False,
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_server_assignment_not_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment,
+        self.common_test_hss(lambda: self.peer_listener.fetch_server_assignment("priv", "pub"),
                              False,
-                             error_code=3005,
+                             result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
-
     def test_fetch_server_assignment_overload_error_code(self):
-        self.common_test_hss(self.peer_listener.fetch_server_assignment,
+        self.common_test_hss(lambda: self.peer_listener.fetch_server_assignment("priv", "pub"),
                              False,
-                             error_code=3004,
+                             result_code=3004,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
+
+    def test_fetch_user_auth(self):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 1)
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "User-Authorization", True)
+        self.assertEquals(mock_req.avps,
+                          [{'Public-Identity': 'pub'},
+                           {'Visited-Network-Identifier': 'Visited 1 Network'},
+                           {'User-Authorization-Type': 1},
+                           {'User-Name': 'priv'},
+                           {'Destination-Realm': 'domain'}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        # Now mimic returning a value from the HSS
+        mock_answer = mock.MagicMock()
+        result_code = mock.MagicMock()
+        result_code.return_value = 2001
+        exp_result_code = mock.MagicMock()
+        exp_result_code.return_value = None
+        self.peer_listener.get_diameter_result_code = result_code
+        self.peer_listener.get_diameter_exp_result_code = exp_result_code
+        self.cx.findFirstAVP.return_value = mock.MagicMock()
+        self.cx.findFirstAVP.return_value.getOctetString.return_value = "scscf1"
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+        self.assertEquals(deferred_callback.call_args[0][0], {'result-code': 2001, 'scscf': 'scscf1'})
+
+    def test_fetch_user_auth_no_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             expected_retval=matchers.MatchesNone())
+
+    def test_fetch_user_auth_user_unknown_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             exp_result_code=5001,
+                             expected_exception=UserNotIdentifiable)
+
+    def test_fetch_user_auth_no_identity_match_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             exp_result_code=5002,
+                             expected_exception=UserNotIdentifiable)
+
+    def test_fetch_user_auth_authorization_rej_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             exp_result_code=5004,
+                             expected_exception=UserNotAuthorized)
+
+    def test_fetch_user_auth_roaming_not_allowed_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             result_code=5003,
+                             expected_exception=UserNotAuthorized)
+
+    def test_fetch_user_auth_overload_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             result_code=3004,
+                             expected_exception=HSSOverloaded,
+                             expected_count=1)
+
+    def test_fetch_user_auth_other_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+                             result_code=3005,
+                             expected_retval=matchers.MatchesNone())
+
+    def test_fetch_location_info(self):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_location_info("pub", 0, 2)
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Location-Info", True)
+        self.assertEquals(mock_req.avps,
+                          [{'Public-Identity': 'pub'},
+                           {'User-Authorization-Type': 2},
+                           {'Originating-Request': 0},
+                           {'Destination-Realm': 'domain'}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        # Now mimic returning a value from the HSS
+        mock_answer = mock.MagicMock()
+        result_code = mock.MagicMock()
+        result_code.return_value = 2001
+        exp_result_code = mock.MagicMock()
+        exp_result_code.return_value = None
+        self.peer_listener.get_diameter_result_code = result_code
+        self.peer_listener.get_diameter_exp_result_code = exp_result_code
+        self.cx.findFirstAVP.return_value = mock.MagicMock()
+        self.cx.findFirstAVP.return_value.getOctetString.return_value = "scscf1"
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+        self.assertEquals(deferred_callback.call_args[0][0], {'result-code': 2001, 'scscf': 'scscf1'})
+
+    def test_fetch_location_info_no_optional_params(self):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_location_info("pub", None, None)
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Location-Info", True)
+        self.assertEquals(mock_req.avps,
+                          [{'Public-Identity': 'pub'},
+                           {'Destination-Realm': 'domain'}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        # Now mimic returning a value from the HSS
+        mock_answer = mock.MagicMock()
+        result_code = mock.MagicMock()
+        result_code.return_value = 2001
+        exp_result_code = mock.MagicMock()
+        exp_result_code.return_value = None
+        self.peer_listener.get_diameter_result_code = result_code
+        self.peer_listener.get_diameter_exp_result_code = exp_result_code
+        self.cx.findFirstAVP.return_value = mock.MagicMock()
+        self.cx.findFirstAVP.return_value.getOctetString.return_value = "scscf1"
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+        self.assertEquals(deferred_callback.call_args[0][0], {'result-code': 2001, 'scscf': 'scscf1'})
+
+    def test_fetch_location_info_no_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+                             expected_retval=matchers.MatchesNone())
+
+    def test_fetch_location_info_user_unknown_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+                             exp_result_code=5001,
+                             expected_exception=UserNotIdentifiable)
+
+    def test_fetch_location_info_no_identity_registered_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+                             exp_result_code=5003,
+                             expected_exception=UserNotIdentifiable)
+
+    def test_fetch_location_info_overload_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+                             result_code=3004,
+                             expected_exception=HSSOverloaded,
+                             expected_count=1)
+
+    def test_fetch_location_info_other_error_code(self):
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+                             result_code=3005,
+                             expected_retval=matchers.MatchesNone())
 
     def common_test_hss(self,
                         function,
                         auth,
                         first_avp=None,
-                        error_code=None,
+                        result_code=None,
+                        exp_result_code=None,
                         expected_exception=None,
                         expected_retval=matchers.MatchesAnything(),
                         expected_count=0):
@@ -725,15 +896,19 @@ class TestHSSPeerListener(unittest.TestCase):
         if auth:
             deferred = function("priv", "pub", authtypes.SIP_DIGEST, None)
         else:
-            deferred = function("priv", "pub")
+            deferred = function
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic an error returning a value from the HSS
         mock_answer = mock.MagicMock()
         self.cx.findFirstAVP.return_value = first_avp
-        # Set the error code to the overload response
+        # Set the right error code to the expected response
         err_code = mock.MagicMock()
-        err_code.return_value = error_code
-        self.peer_listener.get_diameter_error_code = err_code
+        if result_code:
+            err_code.return_value = result_code
+            self.peer_listener.get_diameter_result_code = err_code
+        elif exp_result_code:
+            err_code.return_value = exp_result_code
+            self.peer_listener.get_diameter_exp_result_code = err_code
 
         deferred_callback = mock.MagicMock()
         deferred.addCallback(deferred_callback)
@@ -750,7 +925,7 @@ class TestHSSPeerListener(unittest.TestCase):
             self.assertEquals(deferred_errback.called, False)
             self.assertEquals(deferred_callback.call_args[0][0], expected_retval)
 
-        # The penalty counter should be at 1
+        # The penalty counter should be at the expected count
         self.assertEquals(penaltycounter.get_hss_penalty_count(), expected_count)
 
     def test_disconnected(self):

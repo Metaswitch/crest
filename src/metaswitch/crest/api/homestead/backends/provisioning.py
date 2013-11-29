@@ -68,3 +68,9 @@ class ProvisioningBackend(Backend):
 
     def get_ims_subscription(self, public_id, private_id):
         return self.sync_return(None)
+
+    def get_registration_status(self, private_id, public_id):
+        return self.sync_return(None)
+
+    def get_location_information(self, public_id, private_id):
+        return self.sync_return(None)

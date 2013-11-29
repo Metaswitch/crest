@@ -298,3 +298,55 @@ class TestHSSBackend(HSSBackendFixture):
         self.cache.delete_multi_public_ids.return_value.callback(None)
 
         self.assertEqual(callback.call_count, 1)
+
+    def test_get_registration_status(self):
+        """Confirm the backend gets called with the correct parameters"""
+
+        self.gateway.get_registration_status.return_value = defer.Deferred()
+        get_deferred = self.backend.get_registration_status("priv", "pub", "Visited 1 Network", 1)
+
+        self.gateway.get_registration_status.assert_called_once_with("priv", "pub", "Visited 1 Network", 1)
+
+    def test_get_registration_status_no_private_id(self):
+        """If a private ID is not supplied when trying to get a registration status,
+        the backend does not query the HSS"""
+
+        get_deferred = self.backend.get_registration_status(None, "pub", "Visted 1 Network", 2)
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        self.assertEquals(get_callback.call_args[0][0], None)
+
+        # We haven't queried the gateway.
+        self.assertFalse(self.gateway.method_calls)
+
+    def test_get_registration_status_no_public_id(self):
+        """If a public ID is not supplied when trying to get a registration status,
+        the backend does not query the HSS"""
+
+        get_deferred = self.backend.get_registration_status("priv", None, "Visted 1 Network", 2)
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        self.assertEquals(get_callback.call_args[0][0], None)
+
+        # We haven't queried the gateway.
+        self.assertFalse(self.gateway.method_calls)
+
+    def test_get_location_information(self):
+        """Confirm the backend gets called with the correct parameters"""
+
+        self.gateway.get_location_information.return_value = defer.Deferred()
+        get_deferred = self.backend.get_location_information("pub", 0, 2)
+
+        self.gateway.get_location_information.assert_called_once_with("pub", 0, 2)
+
+    def test_get_location_information_no_public_id(self):
+        """If a public ID is not supplied when trying to get location information,
+        the backend does not query the HSS"""
+
+        get_deferred = self.backend.get_location_information(None, None, None)
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+        self.assertEquals(get_callback.call_args[0][0], None)
+
+        # We haven't queried the gateway.
+        self.assertFalse(self.gateway.method_calls)

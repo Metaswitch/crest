@@ -37,7 +37,6 @@ class HSSNotEnabled(Exception):
     """Exception to throw if gateway is created without a valid HSS_IP"""
     pass
 
-
 class HSSOverloaded(Exception):
     """Exception to throw if a request cannot be completed because the HSS returns an
     overloaded response"""
@@ -49,4 +48,13 @@ class HSSConnectionLost(Exception):
 
 class HSSStillConnecting(Exception):
     """Exception to throw if we have lost our HSS connection"""
+    pass
+
+# User-specific Exceptions
+class UserNotIdentifiable(Exception):
+    """Exception to throw if we are unable to identify a user"""
+    pass
+
+class UserNotAuthorized(Exception):
+    """Exception to throw if we are unable to authorize a user"""
     pass
