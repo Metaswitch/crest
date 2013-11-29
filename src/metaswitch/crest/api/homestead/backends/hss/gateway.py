@@ -80,7 +80,7 @@ class HSSGateway(object):
                                              dstack)
         for vendor in settings.CX_SUPPORTED_VENDORS:
             dstack.addSupportedVendor(vendor)
-            dstack.registerApplication(app, vendor, 16777216)
+            dstack.registerAuthApplication(app, vendor, 16777216)
         dstack.registerPeerListener(self.peer_listener)
         dstack.registerPeerIO(HSSPeerIO())
         dstack.clientV4Add(settings.HSS_IP, settings.HSS_PORT)
