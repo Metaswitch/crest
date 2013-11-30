@@ -739,34 +739,37 @@ class TestHSSPeerListener(unittest.TestCase):
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
-    def test_fetch_user_auth(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 1)
-        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "User-Authorization", True)
-        self.assertEquals(mock_req.avps,
-                          [{'Public-Identity': 'pub'},
-                           {'Visited-Network-Identifier': 'Visited 1 Network'},
-                           {'User-Authorization-Type': 1},
-                           {'User-Name': 'priv'},
-                           {'Destination-Realm': 'domain'}])
-        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        result_code = mock.MagicMock()
-        result_code.return_value = 2001
-        exp_result_code = mock.MagicMock()
-        exp_result_code.return_value = None
-        self.peer_listener.get_diameter_result_code = result_code
-        self.peer_listener.get_diameter_exp_result_code = exp_result_code
-        self.cx.findFirstAVP.return_value = mock.MagicMock()
-        self.cx.findFirstAVP.return_value.getOctetString.return_value = "scscf1"
-        deferred_callback = mock.MagicMock()
-        deferred.addCallback(deferred_callback)
-        inner_deferred.callback(mock_answer)
-        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
-        self.assertEquals(deferred_callback.call_args[0][0], {'result-code': 2001, 'scscf': 'scscf1'})
+    def test_fetch_user_auth_success_scscf(self):
+        self.common_test_fetch_user_auth_success(result_code=2001,
+                                                 scscf="scscf")
+
+    def test_fetch_user_auth_success_scscf_and_capabilities(self):
+        self.common_test_fetch_user_auth_success(result_code=2001,
+                                                 scscf="scscf",
+                                                 man_capabilities=[4,9,7],
+                                                 opt_capabilities=[5,6])
+
+    def test_fetch_user_auth_success_capabilities(self):
+        self.common_test_fetch_user_auth_success(result_code=2001,
+                                                 man_capabilities=[4,9,7],
+                                                 opt_capabilities=[5,6])
+
+    def test_fetch_user_auth_success_man_capabilities(self):
+        self.common_test_fetch_user_auth_success(result_code=2001,
+                                                 man_capabilities=[4,9,7])
+
+    def test_fetch_user_auth_success_opt_capabilities(self):
+        self.common_test_fetch_user_auth_success(result_code=2001,
+                                                 opt_capabilities=[4,9,7])
+
+    def test_fetch_user_auth_success_no_data(self):
+        self.common_test_fetch_user_auth_success(result_code=2001)
+
+    def test_fetch_user_auth_success_first_reg(self):
+        self.common_test_fetch_user_auth_success(exp_result_code=2001)
+
+    def test_fetch_user_auth_success_sub_reg(self):
+        self.common_test_fetch_user_auth_success(exp_result_code=2002)
 
     def test_fetch_user_auth_no_error_code(self):
         self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
@@ -803,7 +806,36 @@ class TestHSSPeerListener(unittest.TestCase):
                              result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
-    def test_fetch_location_info(self):
+    def test_fetch_location_info_success_scscf(self):
+        self.common_test_fetch_location_info_success(result_code=2001,
+                                                     scscf="scscf")
+
+    def test_fetch_location_info_success_scscf_and_capabilities(self):
+        self.common_test_fetch_location_info_success(result_code=2001,
+                                                     scscf="scscf",
+                                                     man_capabilities=[4,9,7],
+                                                     opt_capabilities=[5,6])
+
+    def test_fetch_location_info_success_capabilities(self):
+        self.common_test_fetch_location_info_success(result_code=2001,
+                                                     man_capabilities=[4,9,7],
+                                                     opt_capabilities=[5,6])
+
+    def test_fetch_location_info_success_man_capabilities(self):
+        self.common_test_fetch_location_info_success(result_code=2001,
+                                                     man_capabilities=[4,9,7])
+
+    def test_fetch_location_info_success_opt_capabilities(self):
+        self.common_test_fetch_location_info_success(result_code=2001,
+                                                     opt_capabilities=[4,9,7])
+
+    def test_fetch_location_info_success_no_data(self):
+        self.common_test_fetch_location_info_success(result_code=2001)
+
+    def test_fetch_location_info_success_unreg(self):
+        self.common_test_fetch_location_info_success(exp_result_code=2003)
+
+    def test_fetch_location_info_optional_params(self):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
         deferred = self.peer_listener.fetch_location_info("pub", 0, 2)
@@ -815,47 +847,10 @@ class TestHSSPeerListener(unittest.TestCase):
                            {'Destination-Realm': 'domain'}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        result_code = mock.MagicMock()
-        result_code.return_value = 2001
-        exp_result_code = mock.MagicMock()
-        exp_result_code.return_value = None
-        self.peer_listener.get_diameter_result_code = result_code
-        self.peer_listener.get_diameter_exp_result_code = exp_result_code
-        self.cx.findFirstAVP.return_value = mock.MagicMock()
-        self.cx.findFirstAVP.return_value.getOctetString.return_value = "scscf1"
-        deferred_callback = mock.MagicMock()
-        deferred.addCallback(deferred_callback)
-        inner_deferred.callback(mock_answer)
-        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
-        self.assertEquals(deferred_callback.call_args[0][0], {'result-code': 2001, 'scscf': 'scscf1'})
-
-    def test_fetch_location_info_no_optional_params(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_location_info("pub", None, None)
-        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Location-Info", True)
-        self.assertEquals(mock_req.avps,
-                          [{'Public-Identity': 'pub'},
-                           {'Destination-Realm': 'domain'}])
-        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        # Now mimic returning a value from the HSS
-        mock_answer = mock.MagicMock()
-        result_code = mock.MagicMock()
-        result_code.return_value = 2001
-        exp_result_code = mock.MagicMock()
-        exp_result_code.return_value = None
-        self.peer_listener.get_diameter_result_code = result_code
-        self.peer_listener.get_diameter_exp_result_code = exp_result_code
-        self.cx.findFirstAVP.return_value = mock.MagicMock()
-        self.cx.findFirstAVP.return_value.getOctetString.return_value = "scscf1"
-        deferred_callback = mock.MagicMock()
-        deferred.addCallback(deferred_callback)
-        inner_deferred.callback(mock_answer)
-        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
-        self.assertEquals(deferred_callback.call_args[0][0], {'result-code': 2001, 'scscf': 'scscf1'})
+        self.common_test_server_resp_processing(deferred=deferred,
+	                                            inner_deferred=inner_deferred,
+                                                   result_code=2001,
+                                                   scscf="scscf")
 
     def test_fetch_location_info_no_error_code(self):
         self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
@@ -927,6 +922,117 @@ class TestHSSPeerListener(unittest.TestCase):
 
         # The penalty counter should be at the expected count
         self.assertEquals(penaltycounter.get_hss_penalty_count(), expected_count)
+
+    def common_test_fetch_user_auth_success(self,
+                                            result_code=None,
+                                            exp_result_code=None,
+                                            scscf=None,
+                                            man_capabilities=[],
+                                            opt_capabilities=[]):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 1)
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "User-Authorization", True)
+        self.assertEquals(mock_req.avps,
+                          [{'Public-Identity': 'pub'},
+                           {'Visited-Network-Identifier': 'Visited 1 Network'},
+                           {'User-Authorization-Type': 1},
+                           {'User-Name': 'priv'},
+                           {'Destination-Realm': 'domain'}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        self.common_test_server_resp_processing(deferred,
+                                                inner_deferred,
+                                                result_code,
+                                                exp_result_code,
+                                                scscf,
+                                                man_capabilities,
+                                                opt_capabilities)
+
+    def common_test_fetch_location_info_success(self,
+                                                result_code=None,
+                                                exp_result_code=None,
+                                                scscf=None,
+                                                man_capabilities=[],
+                                                opt_capabilities=[]):
+        mock_req = self.MockRequest()
+        self.cx.getCommandRequest.return_value = mock_req
+        deferred = self.peer_listener.fetch_location_info("pub", None, None)
+        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Location-Info", True)
+        self.assertEquals(mock_req.avps,
+                          [{'Public-Identity': 'pub'},
+                           {'Destination-Realm': 'domain'}])
+        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
+        inner_deferred = self.app.add_pending_response.call_args[0][1]
+        self.common_test_server_resp_processing(deferred,
+	                                         inner_deferred,
+                                                result_code,
+                                                exp_result_code,
+                                                scscf,
+                                                man_capabilities,
+                                                opt_capabilities)
+
+    def common_test_server_resp_processing(self,
+	                                    deferred,
+                                           inner_deferred,
+                                           result_code=None,
+                                           exp_result_code=None,
+                                           scscf=None,
+                                           man_capabilities=[],
+                                           opt_capabilities=[]):
+        # Mimic returning a value from the HSS. Start with the return codes. Construct the expected
+        # return_value as we go along.
+        mock_answer = mock.MagicMock()
+        return_value = {}
+        mock_result_code = mock.MagicMock()
+        mock_exp_result_code = mock.MagicMock()
+        mock_result_code.return_value = result_code
+        mock_exp_result_code.return_value = exp_result_code
+        self.peer_listener.get_diameter_result_code = mock_result_code
+        self.peer_listener.get_diameter_exp_result_code = mock_exp_result_code
+        if result_code:
+            return_value["result-code"] = result_code
+        elif exp_result_code:
+            return_value["result-code"] = exp_result_code
+        # Now add the server name and server capabilities
+        if scscf:
+            mock_server = mock.MagicMock()
+            self.cx.findFirstAVP.return_value = mock.MagicMock()
+            self.cx.findFirstAVP.return_value.getOctetString.return_value = scscf
+            return_value["scscf"] = scscf
+            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+        elif len(man_capabilities) or len(opt_capabilities):
+            mock_capabilities = mock.MagicMock()
+            self.cx.findFirstAVP = mock.MagicMock(side_effect=(None, mock_capabilities))
+            mock_man_capabilities = [None] * len(man_capabilities)
+            mock_opt_capabilities = [None] * len(opt_capabilities)
+            ii=0
+            for capability in man_capabilities:
+                mock_man_capabilities[ii] = mock.MagicMock()
+                mock_man_capabilities[ii].getInteger32.return_value = capability
+                ii+=1
+            ii=0
+            for capability in opt_capabilities:
+                mock_opt_capabilities[ii] = mock.MagicMock()
+                mock_opt_capabilities[ii].getInteger32.return_value = capability
+                ii+=1
+            return_value["mandatory-capabilities"] = man_capabilities
+            return_value["optional-capabilities"] = opt_capabilities
+            self.cx.findAVP = mock.MagicMock(side_effect=(mock_man_capabilities, mock_opt_capabilities))
+            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Capabilities")
+            self.cx.findAVP.assert_has_calls(mock_capabilities, "Mandatory-Capability")
+            self.cx.findAVP.assert_has_calls(mock_capabilities, "Optional-Capability")
+        else:
+            self.cx.findFirstAVP = mock.MagicMock(side_effect=(None, None))
+            return_value["mandatory-capabilities"] = man_capabilities
+            return_value["optional-capabilities"] = opt_capabilities
+            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Capabilities")
+        deferred_callback = mock.MagicMock()
+        deferred.addCallback(deferred_callback)
+        inner_deferred.callback(mock_answer)
+        self.assertEquals(deferred_callback.call_args[0][0], return_value)
 
     def test_disconnected(self):
         self.assertEquals(self.peer_listener.peer, self.peer)
