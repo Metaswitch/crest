@@ -437,7 +437,11 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.UNKNOWN, None)
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'User-Name': 'priv'},
                            {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'SIP-Number-Auth-Items': 1},
@@ -468,7 +472,11 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.UNKNOWN, None)
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'User-Name': 'priv'},
                            {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'SIP-Number-Auth-Items': 1},
@@ -498,7 +506,11 @@ class TestHSSPeerListener(unittest.TestCase):
         deferred = self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.AKA, "autn")
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Multimedia-Auth", True)
         self.assertEquals(mock_req.avps,
-                          [{'User-Name': 'priv'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'User-Name': 'priv'},
                            {'Public-Identity': 'pub'},
                            {'Server-Name': 'sip:sprout:1234'},
                            {'SIP-Number-Auth-Items': 1},
