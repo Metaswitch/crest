@@ -115,6 +115,13 @@ HSS_ASSOC_IMPU_CACHE_PERIOD_SECS=60 * 60
 # a result, we set this pretty high.
 HSS_IMS_SUB_CACHE_PERIOD_SECS=7 * 24 * 60 * 60
 
+# Some HSSes (e.g. OpenIMSCore HSS as of November 2013) require the
+# string "unknown" rather than "Unknown" on the
+# Multimedia-Auth-Request where we don't already know the
+# authentication type needed. This setting allows interop with those
+# HSSes.
+LOWERCASE_UNKNOWN = False
+
 # To avoid deploying with debug turned on, these settings should only ever be
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.

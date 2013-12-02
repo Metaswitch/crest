@@ -63,7 +63,7 @@ class ProvisioningBackend(Backend):
         d.callback(value)
         return d
 
-    def get_digest(self, private_id, public_id):
+    def get_av(self, private_id, public_id, authtype, autn):
         return self.sync_return(None)
 
     def get_ims_subscription(self, public_id, private_id):

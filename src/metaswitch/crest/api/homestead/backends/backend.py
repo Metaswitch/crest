@@ -44,7 +44,7 @@ class Backend(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def get_digest(self, private_id, public_id):
+    def get_av(self, private_id, public_id, authtype, autn):
         """
         Get the digest for the specified private_id (that is being used to
         authenticate the specified public_id).

@@ -301,9 +301,9 @@ class PrivateID(ProvisioningModel):
         _log.debug("Create private ID %s" % self.row_key_str)
 
         yield self.modify_columns({self.DIGEST_HA1: digest})
-        yield self._cache.put_digest(self.row_key,
-                                     digest,
-                                     self._cache.generate_timestamp())
+        yield self._cache.put_av(self.row_key,
+                                 DigestAuthVector(digest, None, None, True),
+                                 self._cache.generate_timestamp())
 
     @defer.inlineCallbacks
     def delete(self):
@@ -351,7 +351,9 @@ class PrivateID(ProvisioningModel):
         # associated public IDs.  Take 1ms off the timestamp to ensure the
         # update happens after the delete.
         yield self._cache.delete_private_id(self.row_key, timestamp - 1000)
-        yield self._cache.put_digest(self.row_key, digest, timestamp)
+        yield self._cache.put_av(self.row_key,
+                                 DigestAuthVector(digest, None, None, True),
+                                 self._cache.generate_timestamp())
         for pub_id in public_ids:
             yield self._cache.put_associated_public_id(self.row_key,
                                                        pub_id,

@@ -38,6 +38,7 @@ from twisted.internet import defer
 from xml.etree import ElementTree
 
 from ..backend import Backend
+from ... import authtypes
 from .gateway import HSSGateway, HSSConnectionLost
 from metaswitch.crest import settings
 from metaswitch.crest.api import utils
@@ -59,7 +60,7 @@ class HSSBackend(Backend):
         self._hss_gateway = HSSGateway(self._hss_callbacks)
 
     @defer.inlineCallbacks
-    def get_digest(self, private_id, public_id=None):
+    def get_av(self, private_id, public_id, authtype, autn=None):
         if not public_id:
             # We can't query the HSS without a public ID.
             _log.error("Cannot get digest for private ID '%s' " % private_id +
@@ -67,28 +68,29 @@ class HSSBackend(Backend):
             defer.returnValue(None)
         else:
             try:
-                digest = yield self._hss_gateway.get_digest(private_id,
-                                                            public_id)
+                av = yield self._hss_gateway.get_av(private_id,
+                                                    public_id,
+                                                    authtype,
+                                                    autn)
             except HSSConnectionLost:
                 self._hss_gateway = HSSGateway(self._hss_callbacks)
                 raise
 
-            _log.debug("Got digest %s for private ID %s from HSS" %
-                       (digest, private_id))
+            _log.debug("Got authentication vector %s for private ID %s from HSS" % (av, private_id))
 
-            if digest:
+            if av and av.type == authtypes.SIP_DIGEST:
                 # Update the cache with the digest, and the fact that the
                 # private ID can authenticate the public ID.
                 timestamp = self._cache.generate_timestamp()
-                yield self._cache.put_digest(private_id,
-                                             digest,
-                                             timestamp,
-                                             ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
+                yield self._cache.put_av(private_id,
+                                         av,
+                                         timestamp,
+                                         ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
                 yield self._cache.put_associated_public_id(private_id,
                                                            public_id,
                                                            timestamp,
                                                            ttl=settings.HSS_ASSOC_IMPU_CACHE_PERIOD_SECS)
-            defer.returnValue(digest)
+            defer.returnValue(av)
 
     @defer.inlineCallbacks
     def get_ims_subscription(self, public_id, private_id=None):
@@ -122,11 +124,11 @@ class HSSBackend(Backend):
         def __init__(self, cache):
             self._cache = cache
 
-        def on_digest_change(self, private_id, digest):
-            return self._cache.put_digest(private_id,
-                                          digest,
-                                          self._cache.generate_timestamp(),
-                                          ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
+        def on_digest_change(self, private_id, digest_vector):
+            return self._cache.put_av(private_id,
+                                      digest_vector,
+                                      self._cache.generate_timestamp(),
+                                      ttl=settings.HSS_AUTH_CACHE_PERIOD_SECS)
 
         @defer.inlineCallbacks
         def on_ims_subscription_change(self, ims_subscription):

@@ -37,8 +37,9 @@ import time
 
 from cyclone.web import HTTPError
 from twisted.internet import defer
+from .. import authtypes
 
-from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator 
+from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
@@ -53,13 +54,19 @@ class CacheApiHandler(BaseHandler):
         else:
             self.finish(retval)
 
-    @staticmethod
-    def sequential_getter(*funcs):
-        """Returns a function that calls a sequence of callables in turn until
-        one returns something other than None"""
+    def sequential_getter_with_latency(self, *funcpairs):
+        """Each entry in funcpairs is a pair of a getter function (called to
+        get the return value) and an accumulator (which tracks the
+        latency of the getter).
+
+        Returns a function that calls each getter function in turn
+        until one returns something other than None, and tracks the
+        latency of each request (successful or not) in the
+        accumulator.
+        """
         @defer.inlineCallbacks
         def getter(*pos_args, **kwd_args):
-            for getter_function, accumulator_function in funcs:
+            for getter_function, accumulator_function in funcpairs:
                 # Track the latency of each request (in usec)
                 start_time = time.time()
                 retval = yield getter_function(*pos_args, **kwd_args)
@@ -71,6 +78,32 @@ class CacheApiHandler(BaseHandler):
                     _log.debug("No result from %s" % getter_function)
         return getter
 
+    def make_getter(self, function_name, use_cache=True):
+        # Can't use getattr here - it doesn't play nicely with the mocking
+        if function_name == 'get_ims_subscription':
+            backend_get, cache_get = self.application.backend.get_ims_subscription, self.application.cache.get_ims_subscription
+        else:
+            backend_get, cache_get = self.application.backend.get_av, self.application.cache.get_av
+        backend_get_with_latency = [backend_get, hss_latency_accumulator]
+        if use_cache:
+            # Try the cache first.  If that fails go to the backend.
+            cache_get_with_latency = [cache_get, cache_latency_accumulator]
+            getter = self.sequential_getter_with_latency(cache_get_with_latency, backend_get_with_latency)
+        else:
+            getter = self.sequential_getter_with_latency(backend_get_with_latency)
+        return getter
+
+    def get_ims_subscription(self, *args, **kwargs):
+        getter = self.make_getter('get_ims_subscription')
+        return getter(*args, **kwargs)
+
+    def get_av(self, *args, **kwargs):
+        getter = self.make_getter('get_av')
+        return getter(*args, **kwargs)
+
+    def get_av_from_backend(self, *args, **kwargs):
+        getter = self.make_getter('get_av', use_cache=False)
+        return getter(*args, **kwargs)
 
 class DigestHandler(CacheApiHandler):
     @BaseHandler.check_request_age
@@ -78,13 +111,32 @@ class DigestHandler(CacheApiHandler):
     def get(self, private_id):
         public_id = self.get_argument("public_id", default=None)
 
-        # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter(
-                 [self.application.cache.get_digest, cache_latency_accumulator],
-                 [self.application.backend.get_digest, hss_latency_accumulator])
-        retval = yield getter(private_id, public_id)
+        auth = yield self.get_av(private_id, public_id, authtypes.SIP_DIGEST, None)
 
-        retval = {JSON_DIGEST_HA1: retval} if retval else None
+        retval = {JSON_DIGEST_HA1: auth.ha1} if auth else None
+        self.send_error_or_response(retval)
+
+
+class AuthVectorHandler(CacheApiHandler):
+    @BaseHandler.check_request_age
+    @defer.inlineCallbacks
+    def get(self, private_id, string_authtype=None):
+        public_id = self.get_argument("impu", default=None)
+        autn = self.get_argument("autn", default=None)
+
+        authtype = authtypes.UNKNOWN
+        if string_authtype == "digest":
+            authtype = authtypes.SIP_DIGEST
+        elif string_authtype == "aka":
+            authtype = authtypes.AKA
+
+
+        if authtype == authtypes.AKA:
+            auth = yield self.get_av_from_backend(private_id, public_id, authtype, autn)
+        else:
+            auth = yield self.get_av(private_id, public_id, authtype, autn)
+
+        retval = auth.to_json() if auth else None
         self.send_error_or_response(retval)
 
 
@@ -94,9 +146,5 @@ class IMSSubscriptionHandler(CacheApiHandler):
     def get(self, public_id):
         private_id = self.get_argument("private_id", default=None)
 
-        # Try the cache first.  If that fails go to the backend.
-        getter = self.sequential_getter(
-                 [self.application.cache.get_ims_subscription, cache_latency_accumulator],
-                 [self.application.backend.get_ims_subscription, hss_latency_accumulator])
-        retval = yield getter(public_id, private_id)
+        retval = yield self.get_ims_subscription(public_id, private_id)
         self.send_error_or_response(retval)

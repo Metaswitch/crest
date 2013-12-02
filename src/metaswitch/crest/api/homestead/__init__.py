@@ -40,7 +40,7 @@ from .cache.cache import Cache
 from .backends.hss import HSSBackend
 from .backends.provisioning import ProvisioningBackend
 
-from .cache.handlers import DigestHandler, IMSSubscriptionHandler
+from .cache.handlers import DigestHandler, AuthVectorHandler, IMSSubscriptionHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
 from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
@@ -51,6 +51,8 @@ from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, Provi
 
 # Regex that matches any path element (covers anything that isn't a slash).
 ANY = '([^/]+)'
+
+AUTHTYPE = "(aka|digest)"
 
 # Regex that matches a uuid.
 HEX = '[a-fA-F0-9]'
@@ -65,12 +67,18 @@ CACHE_ROUTES = [
     # Routes for accessing the cache.
     #
 
-    # IMPI: the read-only API for accessing the digest and associated public IDs
+    # IMPI: the read-only API for accessing the authentication vector
     # for a private ID. Can optionally validate whether a specific public ID is
     # associated.
     #
     # /impi/<private ID>/digest?public_id=xxx
     (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
+
+    # /impi/<private ID>/av/aka/?impu=xxx&autn=xxx
+    # /impi/<private ID>/av/digest/?impu=xxx
+    (r'/impi/'+ANY+r'/av/'+AUTHTYPE+r'/?',  AuthVectorHandler),
+    # /impi/<private ID>/av/?impu=xxx&autn=xxx
+    (r'/impi/'+ANY+r'/av/?',  AuthVectorHandler),
 
     # IMPU: the read-only API for accessing the XMLSubscription associated with
     # a particular public ID.

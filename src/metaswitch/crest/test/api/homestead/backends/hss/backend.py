@@ -40,6 +40,8 @@ import unittest
 from twisted.internet import defer
 
 from metaswitch.crest.api.homestead.backends.hss import HSSBackend
+from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
+from metaswitch.crest.api.homestead import authtypes
 
 class HSSBackendFixture(unittest.TestCase):
     def setUp(self):
@@ -67,55 +69,78 @@ class TestHSSBackend(HSSBackendFixture):
         self.assertEqual(self.HSSGateway.call_count, 1)
         self.backend_callbacks = self.HSSGateway.call_args[0][0]
 
-    def test_get_digest_nothing_returned(self):
+    def test_get_av_nothing_returned(self):
         """When no digest is returned from the HSS that backend returns None and
         does not update the cache"""
 
-        self.gateway.get_digest.return_value = defer.Deferred()
-        get_deferred = self.backend.get_digest("priv", "pub")
+        self.gateway.get_av.return_value = defer.Deferred()
+        get_deferred = self.backend.get_av("priv", "pub", authtypes.SIP_DIGEST)
 
-        self.gateway.get_digest.assert_called_once_with("priv", "pub")
+        self.gateway.get_av.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST, None)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
 
-        self.gateway.get_digest.return_value.callback(None)
+        self.gateway.get_av.return_value.callback(None)
         self.assertEquals(get_callback.call_args[0][0], None)
 
         # The cache is not updated.
         self.assertFalse(self.cache.method_calls)
 
-    def test_get_digest_something_returned(self):
+    def test_get_av_digest_returned(self):
         """When a digest is returned from the HSS the backend returns it and
         updates the cache"""
 
-        self.gateway.get_digest.return_value = defer.Deferred()
-        self.cache.put_digest.return_value = defer.Deferred()
+        auth = DigestAuthVector("ha1", "realm", "qop", True)
+
+        self.gateway.get_av.return_value = defer.Deferred()
+        self.cache.put_av.return_value = defer.Deferred()
         self.cache.put_associated_public_id.return_value = defer.Deferred()
 
-        get_deferred = self.backend.get_digest("priv", "pub")
+        get_deferred = self.backend.get_av("priv", "pub", authtypes.SIP_DIGEST)
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
 
-        self.gateway.get_digest.assert_called_once_with("priv", "pub")
-        self.gateway.get_digest.return_value.callback("some_digest")
+        self.gateway.get_av.assert_called_once_with("priv", "pub", authtypes.SIP_DIGEST, None)
+        self.gateway.get_av.return_value.callback(auth)
 
-        self.cache.put_digest.assert_called_once_with("priv",
-                                                      "some_digest",
-                                                      self.timestamp,
-                                                      ttl=30)
-        self.cache.put_digest.return_value.callback(None)
+        self.cache.put_av.assert_called_once_with("priv",
+                                                  auth,
+                                                  self.timestamp,
+                                                  ttl=30)
+        self.cache.put_av.return_value.callback(None)
 
         self.cache.put_associated_public_id.assert_called_once_with(
                                                   "priv", "pub", self.timestamp, ttl=3600)
         self.cache.put_associated_public_id.return_value.callback(None)
 
-        self.assertEquals(get_callback.call_args[0][0], "some_digest")
+        self.assertEquals(get_callback.call_args[0][0], auth)
 
-    def test_get_digest_no_public_id(self):
+    def test_get_av_aka_returned(self):
+        """When an AKA vector is returned from the HSS the backend returns it and
+        does not update the cache"""
+
+        auth = AKAAuthVector("challenge", "response", "ck", "ik")
+
+        self.gateway.get_av.return_value = defer.Deferred()
+        self.cache.put_av.return_value = defer.Deferred()
+        self.cache.put_associated_public_id.return_value = defer.Deferred()
+
+        get_deferred = self.backend.get_av("priv", "pub", authtypes.AKA, "autn")
+        get_callback = mock.MagicMock()
+        get_deferred.addCallback(get_callback)
+
+        self.gateway.get_av.assert_called_once_with("priv", "pub", authtypes.AKA, "autn")
+        self.gateway.get_av.return_value.callback(auth)
+
+        self.assertFalse(self.cache.put_av.called)
+        self.assertFalse(self.cache.put_associated_public_id.called)
+        self.assertEquals(get_callback.call_args[0][0], auth)
+
+    def test_get_av_no_public_id(self):
         """If a public is not supplied when trying to get a digest, the backend
         does not query the HSS or update the cache"""
 
-        get_deferred = self.backend.get_digest("priv")
+        get_deferred = self.backend.get_av("priv", None, authtypes.AKA, "autn")
         get_callback = mock.MagicMock()
         get_deferred.addCallback(get_callback)
         self.assertEquals(get_callback.call_args[0][0], None)
@@ -178,17 +203,19 @@ class TestHSSBackend(HSSBackendFixture):
 
     def test_callback_on_digest_change(self):
         """Test a callback from the gateway to update the digest"""
-        self.cache.put_digest.return_value = defer.Deferred()
+        auth = DigestAuthVector("ha1", "realm", "qop", False)
 
-        deferred = self.backend_callbacks.on_digest_change("priv", "some_digest")
+        self.cache.put_av.return_value = defer.Deferred()
+
+        deferred = self.backend_callbacks.on_digest_change("priv", auth)
         callback = mock.MagicMock()
         deferred.addCallback(callback)
 
-        self.cache.put_digest.assert_called_once_with("priv",
-                                                      "some_digest",
-                                                      self.timestamp,
-                                                      ttl=30)
-        self.cache.put_digest.return_value.callback(None)
+        self.cache.put_av.assert_called_once_with("priv",
+                                                  auth,
+                                                  self.timestamp,
+                                                  ttl=30)
+        self.cache.put_av.return_value.callback(None)
 
         self.assertEqual(callback.call_count, 1)
 

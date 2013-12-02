@@ -1,5 +1,3 @@
-# @file local_settings.py
-#
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
 #
@@ -32,38 +30,38 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-LOGS_DIR = "/var/log/homestead"
-PID_FILE = "/var/run/homestead.pid"
-LOG_FILE_PREFIX = "homestead"
-INSTALLED_HANDLERS = ["homestead"]
-HTTP_PORT = 8888
-XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
+from metaswitch.crest import settings
+from . import authtypes
 
-# Debian install will pick this up from /etc/clearwater/config
-CASS_HOST = "localhost"
+class AuthVector(object):
+    def to_json(self):
+        raise NotImplementedError
 
-# HSS configuration (by default, synchronization with the HSS is disabled)
-# Debian install will pick this up from /etc/clearwater/config
-HSS_IP = "0.0.0.0"
-HSS_PORT = 3868
-HSS_ENABLED = HSS_IP not in ["", "0.0.0.0"]
+class DigestAuthVector(AuthVector):
+    def __init__(self, ha1, realm, qop, preferred):
+        self.type = authtypes.SIP_DIGEST
+        self.ha1 = ha1
+        self.realm = realm or settings.SIP_DIGEST_REALM
+        self.qop = qop or "auth"
 
-# Debian install will pick this up from /etc/clearwater/config
-LOCAL_IP = MUST_BE_CONFIGURED
-SIP_DIGEST_REALM = MUST_BE_CONFIGURED
-SPROUT_HOSTNAME = MUST_BE_CONFIGURED
-PUBLIC_HOSTNAME = MUST_BE_CONFIGURED
-HS_HOSTNAME = MUST_BE_CONFIGURED
-LOWERCASE_UNKNOWN = MUST_BE_CONFIGURED
+        # The "preferred" attribute relates to caching - if we receive
+        # a request specifically for the SIP Digest and cache it, and
+        # then get a request which doesn't specify the authentication
+        # type, we shouldn't respond from cache. Instead, we should
+        # query the HSS, because it may be configured to default to
+        # AKA rather than Digest (i.e. SIP Digest is not "preferred").
+        self.preferred = preferred
 
-# We use this key to encrypt sensitive fields in the database that we can't
-# avoid storing.  In general, we'd like to store passwords as bcrypt hashes
-# but we can only do that if the password is sent to us by the user in the
-# clear.  Encrypting the password in the DB at least mitigates DB injection
-# attacks and prevents accidental exposure to staff.
-#
-# Debian install will pick this up from /etc/clearwater/config
-PASSWORD_ENCRYPTION_KEY = MUST_BE_CONFIGURED
+    def to_json(self):
+        return {"digest": {"ha1": self.ha1, "realm": self.realm, "qop": self.qop}}
 
-# Debian install will pick this up from /etc/clearwater/features
-LOCAL_PROVISIONING_ENABLED = MUST_BE_CONFIGURED
+class AKAAuthVector(AuthVector):
+    def __init__(self, challenge, response, crypt_key, integrity_key):
+        self.type = authtypes.AKA
+        self.challenge, self.response, self.crypt_key, self.integrity_key = challenge, response, crypt_key, integrity_key
+
+    def to_json(self):
+        return {"aka": {"challenge": self.challenge,
+                        "response": self.response,
+                        "cryptkey": self.crypt_key,
+                        "integritykey": self.integrity_key}}

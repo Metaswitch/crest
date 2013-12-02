@@ -40,7 +40,9 @@ import unittest
 from twisted.internet import defer
 from telephus.cassandra.ttypes import Column, Deletion, NotFoundException
 
+from metaswitch.crest.api.homestead import authtypes
 from metaswitch.crest.api.homestead.cache.cache import Cache
+from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector
 from metaswitch.crest.api.homestead.cache.db import CacheModel
 from metaswitch.crest.test.matchers import DictContaining, ListContaining
 
@@ -53,9 +55,13 @@ def MockColumn(name, val):
 class Result(object):
     def __init__(self, deferred):
         self.callback = mock.MagicMock()
+        self.errback = mock.MagicMock()
         deferred.addCallback(self.callback)
+        deferred.addErrback(self.errback)
 
     def value(self):
+        if self.errback.called:
+            raise self.errback.call_args[0][0]
         return self.callback.call_args[0][0]
 
 class TestCache(unittest.TestCase):
@@ -76,17 +82,41 @@ class TestCache(unittest.TestCase):
         self.ttl = 123
         self.timestamp = 1234
 
-    def test_put_digest(self):
+    def test_put_av(self):
         """Test a digest can be put into the cache"""
 
+        auth = DigestAuthVector("ha1_test", "realm", "qop", True)
+
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
-        res = Result(self.cache.put_digest("priv", "digest", self.timestamp, ttl=self.ttl))
+        res = Result(self.cache.put_av("priv", auth, self.timestamp, ttl=self.ttl))
         self.cass_client.batch_insert.assert_called_once_with(
-                                               key="priv",
-                                               column_family="impi",
-                                               mapping=DictContaining({"digest_ha1": "digest"}),
-                                               ttl=self.ttl,
-                                               timestamp=self.timestamp)
+            key="priv",
+            column_family="impi",
+            mapping=DictContaining({"digest_ha1": "ha1_test",
+                                    "digest_realm": "realm",
+                                    "digest_qop": "qop",
+                                    "known_preferred": True }),
+            ttl=self.ttl,
+            timestamp=self.timestamp)
+        batch_insert.callback(None)
+        self.assertEquals(res.value(), None)
+
+    def test_put_non_preferred_av(self):
+        """Test a digest can be put into the cache and marked as non-preferred"""
+
+        auth = DigestAuthVector("ha1_test", "realm", "qop", False)
+
+        self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
+        res = Result(self.cache.put_av("priv", auth, self.timestamp, ttl=self.ttl))
+        self.cass_client.batch_insert.assert_called_once_with(
+            key="priv",
+            column_family="impi",
+            mapping=DictContaining({"digest_ha1": "ha1_test",
+                                    "digest_realm": "realm",
+                                    "digest_qop": "qop",
+                                    "known_preferred": False}),
+            ttl=self.ttl,
+            timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -182,7 +212,7 @@ class TestCache(unittest.TestCase):
         supplied"""
 
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
-        res = Result(self.cache.get_digest("priv"))
+        res = Result(self.cache.get_av("priv"))
 
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="priv",
@@ -190,7 +220,7 @@ class TestCache(unittest.TestCase):
                                                  names=ListContaining(["digest_ha1"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("_exists", "")])
-        self.assertEquals(res.value(), "digest")
+        self.assertEquals(res.value().ha1, "digest")
 
     def test_get_digest_no_pub_id_assoc(self):
         """Test that is you specify a required public ID when getting a digest,
@@ -198,7 +228,7 @@ class TestCache(unittest.TestCase):
         ID."""
 
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
-        res = Result(self.cache.get_digest("priv", "miss_piggy"))
+        res = Result(self.cache.get_av("priv", "miss_piggy"))
 
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
@@ -215,7 +245,7 @@ class TestCache(unittest.TestCase):
         ID."""
 
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
-        res = Result(self.cache.get_digest("priv", "miss_piggy"))
+        res = Result(self.cache.get_av("priv", "miss_piggy"))
 
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
@@ -224,7 +254,64 @@ class TestCache(unittest.TestCase):
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", "")])
-        self.assertEquals(res.value(), "digest")
+        self.assertEquals(res.value().ha1, "digest")
+
+    def test_get_digest_unknown_not_preferred(self):
+
+        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
+        res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.UNKNOWN))
+
+        self.cass_client.get_slice.assert_called_once_with(
+                                   key="priv",
+                                   column_family="impi",
+                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
+        get_slice.callback([MockColumn("digest_ha1", "digest"),
+                            MockColumn("public_id_miss_piggy", None),
+                            MockColumn("_exists", ""),
+                            MockColumn("known_preferred", False)])
+        self.assertEquals(res.value(), None)
+
+    def test_get_digest_unknown_preferred(self):
+        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
+        res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.UNKNOWN))
+
+        self.cass_client.get_slice.assert_called_once_with(
+                                   key="priv",
+                                   column_family="impi",
+                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
+        get_slice.callback([MockColumn("digest_ha1", "digest"),
+                            MockColumn("public_id_miss_piggy", None),
+                            MockColumn("_exists", ""),
+                            MockColumn("known_preferred", True)])
+        self.assertEquals(res.value().ha1, "digest")
+
+    def test_get_digest_sip_preferred(self):
+        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
+        res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.SIP_DIGEST))
+
+        self.cass_client.get_slice.assert_called_once_with(
+                                   key="priv",
+                                   column_family="impi",
+                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
+        get_slice.callback([MockColumn("digest_ha1", "digest"),
+                            MockColumn("public_id_miss_piggy", None),
+                            MockColumn("_exists", ""),
+                            MockColumn("known_preferred", True)])
+        self.assertEquals(res.value().ha1, "digest")
+
+    def test_get_digest_sip_not_preferred(self):
+        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
+        res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.SIP_DIGEST))
+
+        self.cass_client.get_slice.assert_called_once_with(
+                                   key="priv",
+                                   column_family="impi",
+                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
+        get_slice.callback([MockColumn("digest_ha1", "digest"),
+                            MockColumn("public_id_miss_piggy", None),
+                            MockColumn("_exists", ""),
+                            MockColumn("known_preferred", False)])
+        self.assertEquals(res.value().ha1, "digest")
 
     def test_delete_multi_private_ids(self):
         """Test deleting multiple private IDs from the cache"""
