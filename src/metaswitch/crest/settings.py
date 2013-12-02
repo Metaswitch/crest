@@ -90,8 +90,9 @@ CASS_HOST = "localhost"
 CASS_PORT = 9160
 
 # Debian install will pick this up from /etc/clearwater/config
+LOCAL_IP = "127.0.0.1"
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
-SPROUT_PORT = 5058
+SPROUT_PORT = 5054
 PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 HS_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 
@@ -118,9 +119,14 @@ HSS_IMS_SUB_CACHE_PERIOD_SECS=7 * 24 * 60 * 60
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
 
+<<<<<<< HEAD
 # By default enable provisioning of local subscribers (those homed on homestead
 # rather than an HSS).
 LOCAL_PROVISIONING_ENABLED = True
+
+# Set of vendor IDs to include on Cx CER.  As 3GPP TS 29.229 Section 5.6, the
+# default is both 3GPP (10415) and ETSI (13019), but this can be overridden.
+CX_SUPPORTED_VENDORS = [10415, 13019]
 
 # Include any locally-defined settings.
 _local_settings_file = os.path.join(_MY_DIR, "local_settings.py")

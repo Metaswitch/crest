@@ -45,6 +45,7 @@ from twisted.internet.task import LoopingCall
 from metaswitch.crest import settings
 from metaswitch.crest.api.base import penaltycounter, loadmonitor, digest_latency_accumulator, subscription_latency_accumulator
 from metaswitch.crest.api import DeferTimeout
+from metaswitch.crest.api.exceptions import HSSNotEnabled, HSSOverloaded, HSSConnectionLost, HSSStillConnecting
 from metaswitch.common import utils
 from .io import HSSPeerIO
 
@@ -57,17 +58,6 @@ DIAMETER_SUCCESS = 2001
 DIAMETER_COMMAND_UNSUPPORTED = 3001
 DIAMETER_UNABLE_TO_COMPLY = 5012
 
-# HSS-specific Exceptions
-class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without a valid HSS_IP"""
-    pass
-
-
-class HSSOverloaded(Exception):
-    """Exception to throw if a request cannot be completed because the HSS returns an
-    overloaded response"""
-    pass
-
 
 class HSSGateway(object):
     """
@@ -78,7 +68,8 @@ class HSSGateway(object):
         if not settings.HSS_ENABLED:
             raise HSSNotEnabled()
 
-        dstack = stack.Stack()
+        dstack = stack.Stack(product_name="Clearwater", ip4_address=settings.LOCAL_IP)
+        dstack.vendor_id = 19444 # Metaswitch
         dstack.loadDictionary("cx", DICT_PATH)
         dstack.identity = settings.PUBLIC_HOSTNAME
         dstack.realm = settings.HS_HOSTNAME
@@ -87,11 +78,9 @@ class HSSGateway(object):
         self.peer_listener = HSSPeerListener(app,
                                              settings.SIP_DIGEST_REALM,
                                              dstack)
-        dstack.addSupportedVendor(10415)
-        dstack.addSupportedVendor(13019)
-        dstack.registerApplication(app, 0, 16777216)
-        dstack.registerApplication(app, 10415, 16777216)
-        dstack.registerApplication(app, 13019, 16777216)
+        for vendor in settings.CX_SUPPORTED_VENDORS:
+            dstack.addSupportedVendor(vendor)
+            dstack.registerAuthApplication(app, vendor, 16777216)
         dstack.registerPeerListener(self.peer_listener)
         dstack.registerPeerIO(HSSPeerIO())
         dstack.clientV4Add(settings.HSS_IP, settings.HSS_PORT)
@@ -249,6 +238,8 @@ class HSSPeerListener(stack.PeerListener):
         self.realm = domain
         self.server_name = "sip:%s:%d" % (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)
         self.cx = stack.getDictionary("cx")
+        self.peer = None
+        self.session_id = int(time.time()) << 32
 
     def connected(self, peer):
         _log.info("Peer %s connected" % peer.identity)
@@ -270,10 +261,19 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_multimedia_auth(self, private_id, public_id):
+        if self.peer is None:
+            raise HSSStillConnecting()
+        if not self.peer.alive:
+            raise HSSConnectionLost()
         _log.debug("Sending Multimedia-Auth request for %s/%s" % (private_id, public_id))
         public_id = str(public_id)
         private_id = str(private_id)
         req = self.cx.getCommandRequest(self.peer.stack, "Multimedia-Auth", True)
+        self.session_id += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_id >> 32, self.session_id & 0xffffffff)))
+        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
+        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
+        req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
         req.addAVP(self.cx.getAVP('User-Name').withOctetString(private_id))
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(public_id))
         req.addAVP(self.cx.getAVP('Server-Name').withOctetString(self.server_name))
@@ -305,12 +305,22 @@ class HSSPeerListener(stack.PeerListener):
     @DeferTimeout.timeout(loadmonitor.max_latency)
     @defer.inlineCallbacks
     def fetch_server_assignment(self, private_id, public_id):
+        if self.peer is None:
+            raise HSSStillConnecting()
+        if not self.peer.alive:
+            raise HSSConnectionLost()
         # Constants to match the enumerated values in 3GPP TS 29.229 s6.3.15
         REGISTRATION = 1
-        NO_ASSIGNMENT = 0
+        UNREGISTERED_USER = 3
 
         _log.debug("Sending Server-Assignment request for %s/%s" % (private_id, public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "Server-Assignment", True)
+        self.session_id += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_id >> 32, self.session_id & 0xffffffff)))
+        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
+        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
+        req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
+
         if private_id:
             # withOctetString takes a sequence of bytes, not a Unicode
             # string, so call bytes() on private_id and public_id
@@ -321,11 +331,8 @@ class HSSPeerListener(stack.PeerListener):
         if private_id:
             req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(REGISTRATION))
         else:
-            req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(NO_ASSIGNMENT))
-        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.realm))
+            req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(UNREGISTERED_USER))
         req.addAVP(self.cx.getAVP('User-Data-Already-Available').withInteger32(0))
-        req.addAVP(self.cx.getAVP('Vendor-Specific-Application-Id'))
-        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(0))
         # Send off message to HSS
         start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
@@ -353,4 +360,4 @@ class HSSPeerListener(stack.PeerListener):
 
     def disconnected(self, peer):
         _log.debug("Peer %s disconnected" % peer.identity)
-        self.peer = None
+        self.peer.alive = False
