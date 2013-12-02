@@ -126,6 +126,10 @@ LOWERCASE_UNKNOWN = False
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
 
+# By default enable provisioning of local subscribers (those homed on homestead
+# rather than an HSS).
+LOCAL_PROVISIONING_ENABLED = True
+
 # Set of vendor IDs to include on Cx CER.  As 3GPP TS 29.229 Section 5.6, the
 # default is both 3GPP (10415) and ETSI (13019), but this can be overridden.
 CX_SUPPORTED_VENDORS = [10415, 13019]

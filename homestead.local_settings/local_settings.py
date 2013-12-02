@@ -64,3 +64,6 @@ LOWERCASE_UNKNOWN = MUST_BE_CONFIGURED
 #
 # Debian install will pick this up from /etc/clearwater/config
 PASSWORD_ENCRYPTION_KEY = MUST_BE_CONFIGURED
+
+# Debian install will pick this up from /etc/clearwater/features
+LOCAL_PROVISIONING_ENABLED = MUST_BE_CONFIGURED

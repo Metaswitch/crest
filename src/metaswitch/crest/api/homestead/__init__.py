@@ -62,7 +62,7 @@ UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
 # - The actual route regex, with capture groups for parameters that will be
 # passed to the the Handler.
 # - The Handler to process the request.
-ROUTES = [
+CACHE_ROUTES = [
     #
     # Routes for accessing the cache.
     #
@@ -85,7 +85,9 @@ ROUTES = [
     #
     # /impu/<public ID>?private_id=xxx
     (r'/impu/'+ANY+r'/?',  IMSSubscriptionHandler),
+]
 
+PROVISIONING_ROUTES = [
     #
     # Private ID provisioning.
     #
@@ -158,6 +160,10 @@ ROUTES = [
     # List all private IDs that can authenticate this public ID.
     (r'/public/'+ANY+r'/associated_private_ids/?', PublicIDPrivateIDHandler),
 ]
+
+ROUTES = CACHE_ROUTES
+if settings.LOCAL_PROVISIONING_ENABLED:
+    ROUTES += PROVISIONING_ROUTES
 
 # List of all the tables used by homestead.
 TABLES = [IMPI, IMPU, PrivateID, IRS, ServiceProfile, PublicID]
