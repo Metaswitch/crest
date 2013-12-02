@@ -5,7 +5,23 @@ hss_port=3868
 homestead_password_encryption_key="2lB6HWYd1cvuGbAdey9cFL5bSWDzxHOsYyPLYOxV3Bs"
 cassandra_hostname="localhost"
 . /etc/clearwater/config
-# Legacy configuration may have a port numbers - strip it.  Note that IPv6 
+
+# Work out what features are enabled.
+LOCAL_PROVISIONING_ENABLED=Y
+if [ -d /etc/clearwater/features.d ]
+then
+  for file in $(find /etc/clearwater/features.d -type f)
+  do
+    [ -r $file ] && . $file
+  done
+fi
+
+case "$LOCAL_PROVISIONING_ENABLED" in
+  Y) local_prov_setting=True ;;
+  *) local_prov_setting=False ;;
+esac
+
+# Legacy configuration may have a port numbers - strip it.  Note that IPv6
 # "hostnames" will not have port numbers appended, so we just pass those on
 # verbatim by detecting 2 or more colons.
 hs_hostname=$(echo $hs_hostname | sed -e 's/^\([^:]*\):[0-9][0-9]*$/\1/g')
@@ -17,7 +33,9 @@ sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g
         s/^HSS_IP = .*$/HSS_IP = "'$hss_hostname'"/g
         s/^HSS_PORT = .*$/HSS_PORT = '$hss_port'/g
         s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$homestead_password_encryption_key'"/g
-        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g' </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
+        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g
+        s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$local_prov_setting'/g' \
+        </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \
            /usr/share/clearwater/homestead/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
 do
