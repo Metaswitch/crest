@@ -119,7 +119,6 @@ HSS_IMS_SUB_CACHE_PERIOD_SECS=7 * 24 * 60 * 60
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
 
-<<<<<<< HEAD
 # By default enable provisioning of local subscribers (those homed on homestead
 # rather than an HSS).
 LOCAL_PROVISIONING_ENABLED = True
