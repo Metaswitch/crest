@@ -123,11 +123,6 @@ class HSSBackend(Backend):
             _log.error("Cannot get registration status for private ID '%s' " % private_id +
                        "as no public ID has been supplied")
             defer.returnValue(None)
-        elif not private_id:
-            # We can't query the HSS without a public ID.
-            _log.error("Cannot get registration status for public ID '%s' " % public_id +
-                       "as no private ID has been supplied")
-            defer.returnValue(None)
         else:
             try:
                 registration_status = yield self._hss_gateway.get_registration_status(private_id,
@@ -145,24 +140,18 @@ class HSSBackend(Backend):
 
     @defer.inlineCallbacks
     def get_location_information(self, public_id, originating, auth_type):
-        if not public_id:
-            # We can't query the HSS without a public ID.
-            _log.error("Cannot get location information as no public ID has been"
-                       "supplied")
-            defer.returnValue(None)
-        else:
-            try:
-                location_information = yield self._hss_gateway.get_location_information(public_id,
-                                                                                        originating,
-                                                                                        auth_type)
-            except HSSConnectionLost:
-                self._hss_gateway = HSSGateway(self._hss_callbacks)
-                raise
+        try:
+            location_information = yield self._hss_gateway.get_location_information(public_id,
+                                                                                    originating,
+                                                                                    auth_type)
+        except HSSConnectionLost:
+            self._hss_gateway = HSSGateway(self._hss_callbacks)
+            raise
 
-            _log.debug("Got location information %s for public ID %s from HSS" %
-                       (location_information, public_id))
+        _log.debug("Got location information %s for public ID %s from HSS" %
+                   (location_information, public_id))
 
-            defer.returnValue(location_information)
+        defer.returnValue(location_information)
 
     class Callbacks:
         """

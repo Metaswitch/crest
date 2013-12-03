@@ -1,5 +1,3 @@
-# @file provisioning.py.py
-#
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
 #
@@ -32,45 +30,17 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from twisted.internet import defer
-
-from .backend import Backend
-
-
-class ProvisioningBackend(Backend):
-    """
-    Backend providing access to the homestead provisioning database.
-
-    When new data is provisioned the cache is automatically updated at the same
-    time (and the cached data never expires). As such all methods on this class
-    simply return None).
-    """
-
-    def __init__(self, cache):
-        self._cache = cache
-
-    @staticmethod
-    def sync_return(value):
-        """Synchronously return a value from a function that is called as if it
-        returns asynchrnously.
-
-        In twisted asynchronous functions return a deferred.  There is therfore
-        an issue if a function implements an asynchronous interface but wants to
-        return synchronously.  The solve this, we create a new deferred, and
-        immediately pass it the value to return.  When this reaches the reactor
-        it will get processed immediately."""
-        d = defer.Deferred()
-        d.callback(value)
-        return d
-
-    def get_av(self, private_id, public_id, authtype, autn):
-        return self.sync_return(None)
-
-    def get_ims_subscription(self, public_id, private_id):
-        return self.sync_return(None)
-
-    def get_registration_status(self, private_id, public_id, visited_network, auth_type):
-        return self.sync_return(None)
-
-    def get_location_information(self, public_id, originating, auth_type):
-        return self.sync_return(None)
+# Result-Code AVP constants from our dictionary
+DIAMETER_SUCCESS = 2001
+DIAMETER_COMMAND_UNSUPPORTED = 3001
+DIAMETER_TOO_BUSY = 3004
+DIAMETER_AUTHORIZATION_REJECTED = 5003
+DIAMETER_UNABLE_TO_COMPLY = 5012
+# Experimental-Result-Code AVP constants from our dictionary
+DIAMETER_FIRST_REGISTRATION = 2001
+DIAMETER_SUBSEQUENT_REGISTRATION = 2002
+DIAMETER_UNREGISTERED_SERVICE = 2003
+DIAMETER_ERROR_USER_UNKNOWN = 5001
+DIAMETER_ERROR_IDENTITIES_DONT_MATCH = 5002
+DIAMETER_ERROR_IDENTITY_NOT_REGISTERED = 5003
+DIAMETER_ERROR_ROAMING_NOT_ALLOWED = 5004

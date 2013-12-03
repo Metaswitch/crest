@@ -52,6 +52,8 @@ from metaswitch.crest.api.base import penaltycounter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.homestead.backends.hss.gateway import HSSAppListener, HSSGateway, HSSNotEnabled, HSSPeerListener, HSSOverloaded, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.crest.api.homestead import authtypes
+from metaswitch.crest.api.homestead import resultcodes
+from metaswitch.crest.api.homestead.cache.handlers import AUTH_TYPES, ORIGINATING
 
 from base64 import b64encode
 from binascii import hexlify
@@ -569,21 +571,18 @@ class TestHSSPeerListener(unittest.TestCase):
         self.assertEquals(deferred_callback.call_args[0][0].to_json(), expected)
 
     def test_fetch_multimedia_auth_no_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub"),
-                             True,
+        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.SIP_DIGEST, None),
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_multimedia_auth_not_overload_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub"),
-                             True,
+        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.SIP_DIGEST, None),
                              result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
 
     def test_fetch_multimedia_auth_overload_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub"),
-                             True,
-                             result_code=3004,
+        self.common_test_hss(lambda: self.peer_listener.fetch_multimedia_auth("priv", "pub", authtypes.SIP_DIGEST, None),
+                             result_code=resultcodes.DIAMETER_TOO_BUSY,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
@@ -723,175 +722,151 @@ class TestHSSPeerListener(unittest.TestCase):
 
     def test_fetch_server_assignment_no_error_code(self):
         self.common_test_hss(lambda: self.peer_listener.fetch_server_assignment("priv", "pub"),
-                             False,
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_server_assignment_not_overload_error_code(self):
         self.common_test_hss(lambda: self.peer_listener.fetch_server_assignment("priv", "pub"),
-                             False,
                              result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_server_assignment_overload_error_code(self):
         self.common_test_hss(lambda: self.peer_listener.fetch_server_assignment("priv", "pub"),
-                             False,
-                             result_code=3004,
+                             result_code=resultcodes.DIAMETER_TOO_BUSY,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
     def test_fetch_user_auth_success_scscf(self):
-        self.common_test_fetch_user_auth_success(result_code=2001,
+        self.common_test_fetch_user_auth_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                  scscf="scscf")
 
     def test_fetch_user_auth_success_scscf_and_capabilities(self):
-        self.common_test_fetch_user_auth_success(result_code=2001,
+        self.common_test_fetch_user_auth_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                  scscf="scscf",
                                                  man_capabilities=[4,9,7],
                                                  opt_capabilities=[5,6])
 
     def test_fetch_user_auth_success_capabilities(self):
-        self.common_test_fetch_user_auth_success(result_code=2001,
+        self.common_test_fetch_user_auth_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                  man_capabilities=[4,9,7],
                                                  opt_capabilities=[5,6])
 
     def test_fetch_user_auth_success_man_capabilities(self):
-        self.common_test_fetch_user_auth_success(result_code=2001,
+        self.common_test_fetch_user_auth_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                  man_capabilities=[4,9,7])
 
     def test_fetch_user_auth_success_opt_capabilities(self):
-        self.common_test_fetch_user_auth_success(result_code=2001,
+        self.common_test_fetch_user_auth_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                  opt_capabilities=[4,9,7])
 
     def test_fetch_user_auth_success_no_data(self):
-        self.common_test_fetch_user_auth_success(result_code=2001)
+        self.common_test_fetch_user_auth_success(result_code=resultcodes.DIAMETER_SUCCESS)
 
     def test_fetch_user_auth_success_first_reg(self):
-        self.common_test_fetch_user_auth_success(exp_result_code=2001)
+        self.common_test_fetch_user_auth_success(experimental_result_code=resultcodes.DIAMETER_FIRST_REGISTRATION)
 
     def test_fetch_user_auth_success_sub_reg(self):
-        self.common_test_fetch_user_auth_success(exp_result_code=2002)
+        self.common_test_fetch_user_auth_success(experimental_result_code=resultcodes.DIAMETER_SUBSEQUENT_REGISTRATION)
 
     def test_fetch_user_auth_no_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_user_auth_user_unknown_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
-                             exp_result_code=5001,
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
+                             experimental_result_code=resultcodes.DIAMETER_ERROR_USER_UNKNOWN,
                              expected_exception=UserNotIdentifiable)
 
     def test_fetch_user_auth_no_identity_match_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
-                             exp_result_code=5002,
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
+                             experimental_result_code=resultcodes.DIAMETER_ERROR_IDENTITIES_DONT_MATCH,
                              expected_exception=UserNotIdentifiable)
 
     def test_fetch_user_auth_authorization_rej_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
-                             exp_result_code=5004,
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
+                             experimental_result_code=resultcodes.DIAMETER_ERROR_ROAMING_NOT_ALLOWED,
                              expected_exception=UserNotAuthorized)
 
     def test_fetch_user_auth_roaming_not_allowed_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
-                             result_code=5003,
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
+                             result_code=resultcodes.DIAMETER_AUTHORIZATION_REJECTED,
                              expected_exception=UserNotAuthorized)
 
     def test_fetch_user_auth_overload_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
-                             result_code=3004,
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
+                             result_code=resultcodes.DIAMETER_TOO_BUSY,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
     def test_fetch_user_auth_other_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 0),
+        self.common_test_hss(lambda: self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", AUTH_TYPES["REG"]),
                              result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_location_info_success_scscf(self):
-        self.common_test_fetch_location_info_success(result_code=2001,
+        self.common_test_fetch_location_info_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                      scscf="scscf")
 
     def test_fetch_location_info_success_scscf_and_capabilities(self):
-        self.common_test_fetch_location_info_success(result_code=2001,
+        self.common_test_fetch_location_info_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                      scscf="scscf",
                                                      man_capabilities=[4,9,7],
                                                      opt_capabilities=[5,6])
 
     def test_fetch_location_info_success_capabilities(self):
-        self.common_test_fetch_location_info_success(result_code=2001,
+        self.common_test_fetch_location_info_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                      man_capabilities=[4,9,7],
                                                      opt_capabilities=[5,6])
 
     def test_fetch_location_info_success_man_capabilities(self):
-        self.common_test_fetch_location_info_success(result_code=2001,
+        self.common_test_fetch_location_info_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                      man_capabilities=[4,9,7])
 
     def test_fetch_location_info_success_opt_capabilities(self):
-        self.common_test_fetch_location_info_success(result_code=2001,
+        self.common_test_fetch_location_info_success(result_code=resultcodes.DIAMETER_SUCCESS,
                                                      opt_capabilities=[4,9,7])
 
     def test_fetch_location_info_success_no_data(self):
-        self.common_test_fetch_location_info_success(result_code=2001)
+        self.common_test_fetch_location_info_success(result_code=resultcodes.DIAMETER_SUCCESS)
 
     def test_fetch_location_info_success_unreg(self):
-        self.common_test_fetch_location_info_success(exp_result_code=2003)
-
-    def test_fetch_location_info_optional_params(self):
-        mock_req = self.MockRequest()
-        self.cx.getCommandRequest.return_value = mock_req
-        deferred = self.peer_listener.fetch_location_info("pub", 0, 2)
-        self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Location-Info", True)
-        self.assertEquals(mock_req.avps,
-                          [{'Public-Identity': 'pub'},
-                           {'User-Authorization-Type': 2},
-                           {'Originating-Request': 0},
-                           {'Destination-Realm': 'domain'}])
-        self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
-        inner_deferred = self.app.add_pending_response.call_args[0][1]
-        self.common_test_server_resp_processing(deferred=deferred,
-	                                            inner_deferred=inner_deferred,
-                                                   result_code=2001,
-                                                   scscf="scscf")
+        self.common_test_fetch_location_info_success(experimental_result_code=resultcodes.DIAMETER_UNREGISTERED_SERVICE)
 
     def test_fetch_location_info_no_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", ORIGINATING, AUTH_TYPES["CAPAB"]),
                              expected_retval=matchers.MatchesNone())
 
     def test_fetch_location_info_user_unknown_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
-                             exp_result_code=5001,
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", ORIGINATING, AUTH_TYPES["CAPAB"]),
+                             experimental_result_code=resultcodes.DIAMETER_ERROR_USER_UNKNOWN,
                              expected_exception=UserNotIdentifiable)
 
     def test_fetch_location_info_no_identity_registered_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
-                             exp_result_code=5003,
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", ORIGINATING, AUTH_TYPES["CAPAB"]),
+                             experimental_result_code=resultcodes.DIAMETER_ERROR_IDENTITY_NOT_REGISTERED,
                              expected_exception=UserNotIdentifiable)
 
     def test_fetch_location_info_overload_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
-                             result_code=3004,
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", ORIGINATING, AUTH_TYPES["CAPAB"]),
+                             result_code=resultcodes.DIAMETER_TOO_BUSY,
                              expected_exception=HSSOverloaded,
                              expected_count=1)
 
     def test_fetch_location_info_other_error_code(self):
-        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", 0, 2),
+        self.common_test_hss(lambda: self.peer_listener.fetch_location_info("pub", ORIGINATING, AUTH_TYPES["CAPAB"]),
                              result_code=3005,
                              expected_retval=matchers.MatchesNone())
 
     def common_test_hss(self,
                         function,
-                        auth,
                         first_avp=None,
                         result_code=None,
-                        exp_result_code=None,
+                        experimental_result_code=None,
                         expected_exception=None,
                         expected_retval=matchers.MatchesAnything(),
                         expected_count=0):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
-        if auth:
-            deferred = function("priv", "pub", authtypes.SIP_DIGEST, None)
-        else:
-            deferred = function
+        deferred = function()
         inner_deferred = self.app.add_pending_response.call_args[0][1]
         # Now mimic an error returning a value from the HSS
         mock_answer = mock.MagicMock()
@@ -901,8 +876,8 @@ class TestHSSPeerListener(unittest.TestCase):
         if result_code:
             err_code.return_value = result_code
             self.peer_listener.get_diameter_result_code = err_code
-        elif exp_result_code:
-            err_code.return_value = exp_result_code
+        elif experimental_result_code:
+            err_code.return_value = experimental_result_code
             self.peer_listener.get_diameter_exp_result_code = err_code
 
         deferred_callback = mock.MagicMock()
@@ -925,116 +900,136 @@ class TestHSSPeerListener(unittest.TestCase):
 
     def common_test_fetch_user_auth_success(self,
                                             result_code=None,
-                                            exp_result_code=None,
+                                            experimental_result_code=None,
                                             scscf=None,
-                                            man_capabilities=[],
-                                            opt_capabilities=[]):
+                                            man_capabilities=None,
+                                            opt_capabilities=None):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
         deferred = self.peer_listener.fetch_user_auth("priv", "pub", "Visited 1 Network", 1)
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "User-Authorization", True)
         self.assertEquals(mock_req.avps,
-                          [{'Public-Identity': 'pub'},
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'Public-Identity': 'pub'},
                            {'Visited-Network-Identifier': 'Visited 1 Network'},
                            {'User-Authorization-Type': 1},
-                           {'User-Name': 'priv'},
-                           {'Destination-Realm': 'domain'}])
+                           {'User-Name': 'priv'}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
-        self.common_test_server_resp_processing(deferred,
-                                                inner_deferred,
-                                                result_code,
-                                                exp_result_code,
-                                                scscf,
-                                                man_capabilities,
-                                                opt_capabilities)
+        # Capabilities should default to [] but Python doesn't like defaulting to a list
+        # in a function definition so do it here.
+        man_capabilities = [] if man_capabilities is None else man_capabilities
+        opt_capabilities = [] if opt_capabilities is None else opt_capabilities
+
+        self.common_server_mock_resp(result_code,
+                                     experimental_result_code,
+                                     scscf,
+                                     man_capabilities,
+                                     opt_capabilities)
+        result_code = experimental_result_code if result_code is None else result_code
+        self.common_server_check_return_value(deferred,
+                                              inner_deferred,
+                                              result_code,
+                                              scscf,
+                                              man_capabilities,
+                                              opt_capabilities)
 
     def common_test_fetch_location_info_success(self,
                                                 result_code=None,
-                                                exp_result_code=None,
+                                                experimental_result_code=None,
                                                 scscf=None,
-                                                man_capabilities=[],
-                                                opt_capabilities=[]):
+                                                man_capabilities=None,
+                                                opt_capabilities=None):
         mock_req = self.MockRequest()
         self.cx.getCommandRequest.return_value = mock_req
         deferred = self.peer_listener.fetch_location_info("pub", None, None)
         self.cx.getCommandRequest.assert_called_once_with(self.peer.stack, "Location-Info", True)
         self.assertEquals(mock_req.avps,
-                          [{'Public-Identity': 'pub'},
-                           {'Destination-Realm': 'domain'}])
+                          [{'Session-Id': 'hs.example.com;1234;1'},
+                           {'Auth-Session-State': 1},
+                           {'Destination-Realm': 'peer-realm'},
+                           {'Destination-Host': 'peer-host'},
+                           {'Public-Identity': 'pub'}])
         self.peer.stack.sendByPeer.assert_called_once_with(self.peer, mock_req)
         inner_deferred = self.app.add_pending_response.call_args[0][1]
-        self.common_test_server_resp_processing(deferred,
-	                                         inner_deferred,
-                                                result_code,
-                                                exp_result_code,
-                                                scscf,
-                                                man_capabilities,
-                                                opt_capabilities)
+        # Capabilities should default to [] but Python doesn't like defaulting to a list
+        # in a function definition so do it here.
+        man_capabilities = [] if man_capabilities is None else man_capabilities
+        opt_capabilities = [] if opt_capabilities is None else opt_capabilities
+        self.common_server_mock_resp(result_code,
+                                     experimental_result_code,
+                                     scscf,
+                                     man_capabilities,
+                                     opt_capabilities)
+        result_code = experimental_result_code if result_code is None else result_code
+        self.common_server_check_return_value(deferred,
+                                              inner_deferred,
+                                              result_code,
+                                              scscf,
+                                              man_capabilities,
+                                              opt_capabilities)
 
-    def common_test_server_resp_processing(self,
-	                                    deferred,
-                                           inner_deferred,
-                                           result_code=None,
-                                           exp_result_code=None,
-                                           scscf=None,
-                                           man_capabilities=[],
-                                           opt_capabilities=[]):
-        # Mimic returning a value from the HSS. Start with the return codes. Construct the expected
-        # return_value as we go along.
-        mock_answer = mock.MagicMock()
-        return_value = {}
-        mock_result_code = mock.MagicMock()
-        mock_exp_result_code = mock.MagicMock()
-        mock_result_code.return_value = result_code
-        mock_exp_result_code.return_value = exp_result_code
-        self.peer_listener.get_diameter_result_code = mock_result_code
-        self.peer_listener.get_diameter_exp_result_code = mock_exp_result_code
-        if result_code:
-            return_value["result-code"] = result_code
-        elif exp_result_code:
-            return_value["result-code"] = exp_result_code
-        # Now add the server name and server capabilities
+    def common_server_mock_resp(self,
+                                result_code,
+                                experimental_result_code,
+                                scscf,
+                                man_capabilities,
+                                opt_capabilities):
+        # Mock everything we need for a response from the HSS for a UAR or LIR. The inputs
+        # to this function determine whether we return a server name or server capabilities.
+        # Start with the result_codes.
+        self.peer_listener.get_diameter_result_code = mock.MagicMock(return_value=result_code)
+        self.peer_listener.get_diameter_exp_result_code = mock.MagicMock(return_value=experimental_result_code)
+        # Now add the server name or server capabilities
         if scscf:
-            mock_server = mock.MagicMock()
             self.cx.findFirstAVP.return_value = mock.MagicMock()
             self.cx.findFirstAVP.return_value.getOctetString.return_value = scscf
-            return_value["scscf"] = scscf
-            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
-        elif len(man_capabilities) or len(opt_capabilities):
+        else:
             mock_capabilities = mock.MagicMock()
             self.cx.findFirstAVP = mock.MagicMock(side_effect=(None, mock_capabilities))
-            mock_man_capabilities = [None] * len(man_capabilities)
-            mock_opt_capabilities = [None] * len(opt_capabilities)
-            ii=0
+            mock_man_capabilities = []
             for capability in man_capabilities:
-                mock_man_capabilities[ii] = mock.MagicMock()
-                mock_man_capabilities[ii].getInteger32.return_value = capability
-                ii+=1
-            ii=0
+                mock_man_capabilities.append(mock.MagicMock())
+                mock_man_capabilities[-1].getInteger32.return_value = capability
+            mock_opt_capabilities = []
             for capability in opt_capabilities:
-                mock_opt_capabilities[ii] = mock.MagicMock()
-                mock_opt_capabilities[ii].getInteger32.return_value = capability
-                ii+=1
-            return_value["mandatory-capabilities"] = man_capabilities
-            return_value["optional-capabilities"] = opt_capabilities
+                mock_opt_capabilities.append(mock.MagicMock())
+                mock_opt_capabilities[-1].getInteger32.return_value = capability
             self.cx.findAVP = mock.MagicMock(side_effect=(mock_man_capabilities, mock_opt_capabilities))
-            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
-            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Capabilities")
-            self.cx.findAVP.assert_has_calls(mock_capabilities, "Mandatory-Capability")
-            self.cx.findAVP.assert_has_calls(mock_capabilities, "Optional-Capability")
+            self.cx.findAVP = mock.MagicMock(side_effect=(mock_man_capabilities, mock_opt_capabilities))
+
+    def common_server_check_return_value(self,
+                                         deferred,
+                                         inner_deferred,
+                                         result_code,
+                                         scscf,
+                                         man_capabilities,
+                                         opt_capabilities):
+        # Check we're returning the correct JSON for a UAR or LIR, and check the correct
+        # functions are being called.
+        mock_answer = mock.MagicMock()
+        expected_return_value = {}
+        expected_return_value["result-code"] = result_code
+        self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+        if scscf:
+            expected_return_value["scscf"] = scscf
         else:
-            self.cx.findFirstAVP = mock.MagicMock(side_effect=(None, None))
-            return_value["mandatory-capabilities"] = man_capabilities
-            return_value["optional-capabilities"] = opt_capabilities
-            self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Name")
+            expected_return_value["mandatory-capabilities"] = man_capabilities
+            expected_return_value["optional-capabilities"] = opt_capabilities
             self.cx.findFirstAVP.assert_has_calls(mock_answer, "Server-Capabilities")
+            self.cx.findAVP.assert_has_calls(mock_answer, "Mandatory-Capability")
+            self.cx.findAVP.assert_has_calls(mock_answer, "Optional-Capability")
+
         deferred_callback = mock.MagicMock()
         deferred.addCallback(deferred_callback)
         inner_deferred.callback(mock_answer)
-        self.assertEquals(deferred_callback.call_args[0][0], return_value)
+        self.assertEquals(deferred_callback.call_args[0][0], expected_return_value)
 
     def test_disconnected(self):
         self.assertEquals(self.peer_listener.peer, self.peer)
         self.peer_listener.disconnected(mock.MagicMock())
         self.assertEquals(self.peer_listener.peer.alive, False)
+

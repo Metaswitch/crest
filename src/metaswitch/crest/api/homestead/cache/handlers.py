@@ -44,10 +44,18 @@ _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
 
+# auth_type dictionary matching strings defined for URL to enumerated values
+# for User-Authorization AVP defined in RFC 4740.
+AUTH_TYPES = {"REG" : 0, "DEREG" : 1, "CAPAB" : 2}
+
+# Constant to match the enumerated value for Originating-Request AVP in 3GPP 29.229
+ORIGINATING = 0
 
 class CacheApiHandler(BaseHandler):
-    def send_error_or_response(self, retval):
-        if retval is None:
+    def send_error_or_response(self, retval, server_error=False):
+        if server_error and retval is None:
+            self.send_error(500)
+        elif retval is None:
             self.send_error(404)
         elif isinstance(retval, HTTPError):
             self.send_error(retval.status_code)
@@ -82,6 +90,10 @@ class CacheApiHandler(BaseHandler):
         # Can't use getattr here - it doesn't play nicely with the mocking
         if function_name == 'get_ims_subscription':
             backend_get, cache_get = self.application.backend.get_ims_subscription, self.application.cache.get_ims_subscription
+        elif function_name == 'get_registration_status':
+            backend_get = self.application.backend.get_registration_status
+        elif function_name == 'get_location_information':
+            backend_get = self.application.backend.get_location_information
         else:
             backend_get, cache_get = self.application.backend.get_av, self.application.cache.get_av
         backend_get_with_latency = [backend_get, hss_latency_accumulator]
@@ -103,6 +115,14 @@ class CacheApiHandler(BaseHandler):
 
     def get_av_from_backend(self, *args, **kwargs):
         getter = self.make_getter('get_av', use_cache=False)
+        return getter(*args, **kwargs)
+
+    def get_registration_status(self, *args, **kwargs):
+        getter = self.make_getter('get_registration_status', use_cache=False)
+        return getter(*args, **kwargs)
+
+    def get_location_information(self, *args, **kwargs):
+        getter = self.make_getter('get_location_information', use_cache=False)
         return getter(*args, **kwargs)
 
 class DigestHandler(CacheApiHandler):
@@ -148,3 +168,28 @@ class IMSSubscriptionHandler(CacheApiHandler):
 
         retval = yield self.get_ims_subscription(public_id, private_id)
         self.send_error_or_response(retval)
+
+class RegistrationStatusHandler(CacheApiHandler):
+    @BaseHandler.check_request_age
+    @defer.inlineCallbacks
+    def get(self, private_id):
+        public_id = self.get_argument("impu", default=None)
+        visited_network = self.get_argument("visited-network", default=settings.SIP_DIGEST_REALM)
+        auth_type_str = self.get_argument("auth_type", default=None)
+        auth_type = AUTH_TYPES[auth_type_str] if auth_type_str in AUTH_TYPES.keys() else AUTH_TYPES["REG"]
+        retval = yield self.get_registration_status(private_id, public_id, visited_network, auth_type)
+        self.send_error_or_response(retval, True)
+
+class LocationInformationHandler(CacheApiHandler):
+    @BaseHandler.check_request_age
+    @defer.inlineCallbacks
+    def get(self, public_id):
+        # originating parameter should be set to true or we ignore it
+        originating_str = self.get_argument("originating", default=None)
+        originating = ORIGINATING if originating_str == "true" else None
+        # auth_type parameter should be set to CAPAB or we ignore it
+        auth_type_str = self.get_argument("auth_type", default=None)
+        auth_type = AUTH_TYPES["CAPAB"] if auth_type_str == "CAPAB" else None
+        retval = yield self.get_location_information(public_id, originating, auth_type)
+        self.send_error_or_response(retval, True)
+

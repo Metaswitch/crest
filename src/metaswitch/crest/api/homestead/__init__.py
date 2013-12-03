@@ -40,12 +40,7 @@ from .cache.cache import Cache
 from .backends.hss import HSSBackend
 from .backends.provisioning import ProvisioningBackend
 
-<<<<<<< HEAD
-from .cache.handlers import DigestHandler, AuthVectorHandler, IMSSubscriptionHandler
-=======
-from .cache.handlers import DigestHandler, IMSSubscriptionHandler
-from .backends.hss.handlers import RegistrationStatusHandler, LocationInformationHandler
->>>>>>> =Implementation of I-CSCF functionality in Homestead for sto581
+from .cache.handlers import DigestHandler, AuthVectorHandler, IMSSubscriptionHandler, RegistrationStatusHandler, LocationInformationHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
 from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
@@ -78,7 +73,7 @@ CACHE_ROUTES = [
     # "auth-type". For authentication vector anddigest, can optionally validate whether a specific
     # public ID is associated.
 
-    # /impi/<private ID>/registration-status?impu=xxx[&visitied-network=xxx][&auth-type=xxx]
+    # /impi/<private ID>/registration-status?impu=xxx[&visited-network=xxx][&auth-type=xxx]
     (r'/impi/'+ANY+r'/registration-status/?',  RegistrationStatusHandler),
 
     # /impi/<private ID>/digest?public_id=xxx
@@ -94,7 +89,7 @@ CACHE_ROUTES = [
     # information associated with a particular public ID. For location information,
     # there are two optional parameters. The parameter "originating" is added and set
     # to "true" if the request relates to an originating request. The parameter
-    # "auth_type" is added and set to "REGISTRATION_AND_CAPABILITIES" if IMS
+    # "auth_type" is added and set to "CAPAB" if IMS
     # Restoration Procedures are occuring.
 
     # /impu/<public ID>/location?[originating=true][&auth-type=REGISTRATION_AND_CAPABILITIES]

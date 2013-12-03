@@ -49,6 +49,8 @@ from metaswitch.crest.api.exceptions import HSSNotEnabled, HSSOverloaded, HSSCon
 from metaswitch.common import utils
 from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector, AKAAuthVector
 from metaswitch.crest.api.homestead import authtypes
+from metaswitch.crest.api.homestead import resultcodes
+from metaswitch.crest.api.homestead.cache.handlers import AUTH_TYPES, ORIGINATING
 
 from base64 import b64encode
 from binascii import hexlify
@@ -59,21 +61,6 @@ _log = logging.getLogger("crest.api.homestead.hss")
 
 DICT_NAME = "dictionary.xml"
 DICT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), DICT_NAME)
-
-# Result-Code AVP constants from our dictionary
-DIAMETER_SUCCESS = 2001
-DIAMETER_COMMAND_UNSUPPORTED = 3001
-DIAMETER_TOO_BUSY = 3004
-DIAMETER_AUTHORIZATION_REJECTED = 5003
-DIAMETER_UNABLE_TO_COMPLY = 5012
-# Experimental-Result-Code AVP constants from our dictionary
-DIAMETER_FIRST_REGISTRATION = 2001
-DIAMETER_SUBSEQUENT_REGISTRATION = 2002
-DIAMETER_UNREGISTERED_SERVICE = 2003
-DIAMETER_ERROR_USER_UNKNOWN = 5001
-DIAMETER_ERROR_IDENTITIES_DONT_MATCH = 5002
-DIAMETER_ERROR_IDENTITY_NOT_REGISTERED = 5003
-DIAMETER_ERROR_ROAMING_NOT_ALLOWED = 5004
 
 JSON_RC = "result-code"
 JSON_SCSCF = "scscf"
@@ -203,7 +190,7 @@ class HSSAppListener(stack.ApplicationListener):
                 yield self.onRegistrationTerminationRequest(peer, request)
             else:
                 answer = request.createAnswer()
-                answer.addAVP(self.cx.getAVP("Result-Code").withInteger32(DIAMETER_COMMAND_UNSUPPORTED))
+                answer.addAVP(self.cx.getAVP("Result-Code").withInteger32(resultcodes.DIAMETER_COMMAND_UNSUPPORTED))
                 peer.stack.sendByPeer(peer, answer)
         except:
             # We must catch and handle any exception here, as otherwise it will
@@ -241,10 +228,10 @@ class HSSAppListener(stack.ApplicationListener):
             # We specify fireOnOneErrback here to ensure an exception is thrown if either
             # Deferred fails.
             yield defer.DeferredList(deferreds, fireOnOneErrback=True, consumeErrors=True)
-            answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
+            answer.addAVP(result_code.withInteger32(resultcodes.DIAMETER_SUCCESS))
         except:
             _log.exception("Push-Profile-Request cache update failed")
-            answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
+            answer.addAVP(result_code.withInteger32(resultcodes.DIAMETER_UNABLE_TO_COMPLY))
         answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
         answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
         answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
@@ -270,10 +257,10 @@ class HSSAppListener(stack.ApplicationListener):
         try:
             yield self.backend_callbacks.on_forced_expiry(private_ids, public_ids)
             # TODO: Notify Sprout to force deregistration there?
-            answer.addAVP(result_code.withInteger32(DIAMETER_SUCCESS))
+            answer.addAVP(result_code.withInteger32(resultcodes.DIAMETER_SUCCESS))
         except:
             _log.exception("Registration-Termination-Request cache update failed")
-            answer.addAVP(result_code.withInteger32(DIAMETER_UNABLE_TO_COMPLY))
+            answer.addAVP(result_code.withInteger32(resultcodes.DIAMETER_UNABLE_TO_COMPLY))
         answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
         answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
         answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
@@ -492,13 +479,18 @@ class HSSPeerListener(stack.PeerListener):
 
         _log.debug("Sending User-Authorization request for %s/%s" % (private_id, public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "User-Authorization", True)
+        self.session_id += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_id >> 32, self.session_id & 0xffffffff)))
+        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
+        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
+        req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
+
         # withOctetString takes a sequence of bytes, not a Unicode string, so call
         # bytes() on private_id, public_id and visited_network
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(bytes(public_id)))
         req.addAVP(self.cx.getAVP('Visited-Network-Identifier').withOctetString(bytes(visited_network)))
         req.addAVP(self.cx.getAVP('User-Authorization-Type').withInteger32(auth_type))
         req.addAVP(self.cx.getAVP('User-Name').withOctetString(bytes(private_id)))
-        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.realm))
         # Send off message to HSS
         start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
@@ -513,13 +505,10 @@ class HSSPeerListener(stack.PeerListener):
         result_code = self.get_diameter_result_code(answer)
         exp_result_code = self.get_diameter_exp_result_code(answer)
 
-        if result_code == DIAMETER_SUCCESS or exp_result_code in [DIAMETER_FIRST_REGISTRATION,
-                                                                  DIAMETER_SUBSEQUENT_REGISTRATION]:
+        if result_code == resultcodes.DIAMETER_SUCCESS or exp_result_code in [resultcodes.DIAMETER_FIRST_REGISTRATION,
+                                                                              resultcodes.DIAMETER_SUBSEQUENT_REGISTRATION]:
             registration_status = {}
-            if result_code == DIAMETER_SUCCESS:
-                registration_status[JSON_RC] = result_code
-            else:
-                registration_status[JSON_RC] = exp_result_code
+            registration_status[JSON_RC] = result_code if result_code == resultcodes.DIAMETER_SUCCESS else exp_result_code
 
             server_name = self.cx.findFirstAVP(answer, "Server-Name")
             if server_name:
@@ -529,19 +518,17 @@ class HSSPeerListener(stack.PeerListener):
                 man_capabilities = []
                 opt_capabilities = []
                 if server_capabilities:
-                    for avp in self.cx.findAVP(server_capabilities, "Mandatory-Capability"):
-                        man_capabilities.append(avp.getInteger32())
-                    for avp in self.cx.findAVP(server_capabilities, "Optional-Capability"):
-                        opt_capabilities.append(avp.getInteger32())
+                    man_capabilities = [avp.getInteger32() for avp in self.cx.findAVP(server_capabilities, "Mandatory-Capability")]
+                    opt_capabilities = [avp.getInteger32() for avp in self.cx.findAVP(server_capabilities, "Optional-Capability")]
                 registration_status[JSON_MAN_CAP] = man_capabilities
                 registration_status[JSON_OPT_CAP] = opt_capabilities
-        elif exp_result_code in [DIAMETER_ERROR_USER_UNKNOWN, DIAMETER_ERROR_IDENTITIES_DONT_MATCH]:
+        elif exp_result_code in [resultcodes.DIAMETER_ERROR_USER_UNKNOWN, resultcodes.DIAMETER_ERROR_IDENTITIES_DONT_MATCH]:
             self.log_diameter_error(answer)
             raise UserNotIdentifiable()
-        elif exp_result_code == DIAMETER_ERROR_ROAMING_NOT_ALLOWED or result_code == DIAMETER_AUTHORIZATION_REJECTED:
+        elif exp_result_code == resultcodes.DIAMETER_ERROR_ROAMING_NOT_ALLOWED or result_code == resultcodes.DIAMETER_AUTHORIZATION_REJECTED:
             self.log_diameter_error(answer)
             raise UserNotAuthorized()
-        elif result_code == DIAMETER_TOO_BUSY:
+        elif result_code == resultcodes.DIAMETER_TOO_BUSY:
             # If the error is an Overload response, increment the HSS penalty counter
             penaltycounter.incr_hss_penalty_count()
             self.log_diameter_error(answer)
@@ -562,14 +549,19 @@ class HSSPeerListener(stack.PeerListener):
 
         _log.debug("Sending Location-Info request for %s" % (public_id))
         req = self.cx.getCommandRequest(self.peer.stack, "Location-Info", True)
+        self.session_id += 1
+        req.addAVP(self.cx.getAVP('Session-Id').withOctetString("%s;%u;%u" % (settings.PUBLIC_HOSTNAME, self.session_id >> 32, self.session_id & 0xffffffff)))
+        req.addAVP(self.cx.getAVP('Auth-Session-State').withInteger32(1))
+        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.peer.realm))
+        req.addAVP(self.cx.getAVP('Destination-Host').withOctetString(self.peer.identity))
+
         # withOctetString takes a sequence of bytes, not a Unicode string, so call
         # bytes() on public_id
         req.addAVP(self.cx.getAVP('Public-Identity').withOctetString(bytes(public_id)))
         if auth_type is not None:
-            req.addAVP(self.cx.getAVP('User-Authorization-Type').withInteger32(auth_type))
+            req.addAVP(self.cx.getAVP('User-Authorization-Type').withInteger32(AUTH_TYPES["CAPAB"]))
         if originating is not None:
-            req.addAVP(self.cx.getAVP('Originating-Request').withInteger32(originating))
-        req.addAVP(self.cx.getAVP('Destination-Realm').withOctetString(self.realm))
+            req.addAVP(self.cx.getAVP('Originating-Request').withInteger32(ORIGINATING))
         # Send off message to HSS
         start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
@@ -585,31 +577,26 @@ class HSSPeerListener(stack.PeerListener):
         result_code = self.get_diameter_result_code(answer)
         exp_result_code = self.get_diameter_exp_result_code(answer)
 
-        if result_code == DIAMETER_SUCCESS or exp_result_code == DIAMETER_UNREGISTERED_SERVICE:
+        if result_code == resultcodes.DIAMETER_SUCCESS or exp_result_code == resultcodes.DIAMETER_UNREGISTERED_SERVICE:
             location_information = {}
             server_name = self.cx.findFirstAVP(answer, "Server-Name")
-            if result_code == DIAMETER_SUCCESS and server_name:
+            if result_code == resultcodes.DIAMETER_SUCCESS and server_name:
                 location_information[JSON_RC] = result_code
                 location_information[JSON_SCSCF] = server_name.getOctetString()
             else:
-                if result_code == DIAMETER_SUCCESS:
-                    location_information[JSON_RC] = result_code
-                else:
-                    location_information[JSON_RC] = exp_result_code
+                location_information[JSON_RC] = result_code if result_code == resultcodes.DIAMETER_SUCCESS else exp_result_code
                 server_capabilities = self.cx.findFirstAVP(answer, "Server-Capabilities")
                 man_capabilities = []
                 opt_capabilities = []
                 if server_capabilities:
-                    for avp in self.cx.findAVP(server_capabilities, "Mandatory-Capability"):
-                        man_capabilities.append(avp.getInteger32())
-                    for avp in self.cx.findAVP(server_capabilities, "Optional-Capability"):
-                        opt_capabilities.append(avp.getInteger32())
+                    man_capabilities = [avp.getInteger32() for avp in self.cx.findAVP(server_capabilities, "Mandatory-Capability")]
+                    opt_capabilities = [avp.getInteger32() for avp in self.cx.findAVP(server_capabilities, "Optional-Capability")]
                 location_information[JSON_MAN_CAP] = man_capabilities
                 location_information[JSON_OPT_CAP] = opt_capabilities
-        elif exp_result_code in [DIAMETER_ERROR_USER_UNKNOWN, DIAMETER_ERROR_IDENTITY_NOT_REGISTERED]:
+        elif exp_result_code in [resultcodes.DIAMETER_ERROR_USER_UNKNOWN, resultcodes.DIAMETER_ERROR_IDENTITY_NOT_REGISTERED]:
             self.log_diameter_error(answer)
             raise UserNotIdentifiable()
-        elif result_code == DIAMETER_TOO_BUSY:
+        elif result_code == resultcodes.DIAMETER_TOO_BUSY:
             # If the error is an Overload response, increment the HSS penalty counter
             penaltycounter.incr_hss_penalty_count()
             self.log_diameter_error(answer)
