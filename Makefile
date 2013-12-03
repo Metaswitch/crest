@@ -1,7 +1,7 @@
 ENV_DIR := $(shell pwd)/_env
 PYTHON_BIN := $(shell which python)
 
-DEB_COMPONENT := homer
+DEB_COMPONENT := crest
 DEB_MAJOR_VERSION := 1.0
 DEB_NAMES := homer homestead
 
