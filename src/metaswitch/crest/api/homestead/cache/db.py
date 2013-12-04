@@ -63,7 +63,7 @@ class IMPI(CacheModel):
         DIGEST_HA1+" text, " +
         DIGEST_REALM+" text, " +
         DIGEST_QOP+" text, " +
-        KNOWN_PREFERRED+" boolean" +
+        KNOWN_PREFERRED+" text" +
         ") WITH read_repair_chance = 1.0;"
     )
 
@@ -79,7 +79,7 @@ class IMPI(CacheModel):
 
             realm = columns.get(DIGEST_REALM, None)
             qop = columns.get(DIGEST_QOP, None)
-            preferred = columns.get(KNOWN_PREFERRED, True)
+            preferred = (columns.get(KNOWN_PREFERRED, "true") == "true")
 
             # It the user has supplied a public ID, they care about whether the
             # private ID can authenticate the public ID.  Only return a digest
@@ -100,7 +100,7 @@ class IMPI(CacheModel):
         yield self.modify_columns({DIGEST_HA1: ha1,
                                    DIGEST_REALM: realm,
                                    DIGEST_QOP: qop,
-                                   KNOWN_PREFERRED: preferred}, ttl=ttl, timestamp=timestamp)
+                                   KNOWN_PREFERRED: "true" if preferred else "false"}, ttl=ttl, timestamp=timestamp)
 
     @defer.inlineCallbacks
     def put_associated_public_id(self, public_id, ttl=None, timestamp=None):
