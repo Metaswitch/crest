@@ -64,3 +64,24 @@ class Backend(object):
         None.
         """
         pass
+
+    @abc.abstractmethod
+    def get_registration_status(self, private_id, public_id, visited_network, auth_type):
+        """
+        Get the registration status for the specified private_id and public_id
+        pair.
+
+        This function must return a deferred that either contains the registration
+        status or None.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_location_information(self, public_id, originating, auth_type):
+        """
+        Get the location information for the specified public_id.
+
+        This function must return a deferred that either contains the location
+        information or None.
+        """
+        pass

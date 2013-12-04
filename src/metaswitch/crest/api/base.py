@@ -49,7 +49,7 @@ from metaswitch.common import utils
 from metaswitch.crest import settings
 from metaswitch.crest.api.statistics import Accumulator, Counter
 from metaswitch.crest.api.DeferTimeout import TimeoutError
-from metaswitch.crest.api.exceptions import HSSOverloaded, HSSConnectionLost , HSSStillConnecting
+from metaswitch.crest.api.exceptions import HSSOverloaded, HSSConnectionLost, HSSStillConnecting, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.crest.api.lastvaluecache import LastValueCache
 
 _log = logging.getLogger("crest.api")
@@ -310,9 +310,18 @@ class BaseHandler(cyclone.web.RequestHandler):
             else:
                 _log.debug("Sending HTTP error: %d", e.status_code)
                 self.send_error(e.status_code, httplib.responses[e.status_code], exception=e)
-        elif type(e) in [HSSOverloaded, HSSStillConnecting, HSSConnectionLost, TimeoutError, CassandraTimeout]:
+        elif type(e) == HSSOverloaded:
+                _log.error("Translating HSS overload error into a 502 status code", type(e))
+                self.send_error(502)
+        elif type(e) in [HSSStillConnecting, HSSConnectionLost, TimeoutError, CassandraTimeout]:
                 _log.error("Translating internal %s error into a 503 status code", type(e))
                 self.send_error(503)
+        elif type(e) == UserNotIdentifiable:
+                _log.error("Translating user not identifiable error into a 404 status code", type(e))
+                self.send_error(404)
+        elif type(e) == UserNotAuthorized:
+                _log.error("Translating user not authorized error into a 403 status code", type(e))
+                self.send_error(403)
         else:
             _log.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
             _log.error("Exception: %s" % repr(e))

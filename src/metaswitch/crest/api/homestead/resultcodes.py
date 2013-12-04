@@ -1,5 +1,3 @@
-# @file exceptions.py
-#
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
 #
@@ -32,29 +30,17 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# HSS-specific Exceptions
-class HSSNotEnabled(Exception):
-    """Exception to throw if gateway is created without a valid HSS_IP"""
-    pass
-
-class HSSOverloaded(Exception):
-    """Exception to throw if a request cannot be completed because the HSS returns an
-    overloaded response"""
-    pass
-
-class HSSConnectionLost(Exception):
-    """Exception to throw if we have lost our HSS connection"""
-    pass
-
-class HSSStillConnecting(Exception):
-    """Exception to throw if we have lost our HSS connection"""
-    pass
-
-# User-specific Exceptions
-class UserNotIdentifiable(Exception):
-    """Exception to throw if we are unable to identify a user"""
-    pass
-
-class UserNotAuthorized(Exception):
-    """Exception to throw if we are unable to authorize a user"""
-    pass
+# Result-Code AVP constants from our dictionary
+DIAMETER_SUCCESS = 2001
+DIAMETER_COMMAND_UNSUPPORTED = 3001
+DIAMETER_TOO_BUSY = 3004
+DIAMETER_AUTHORIZATION_REJECTED = 5003
+DIAMETER_UNABLE_TO_COMPLY = 5012
+# Experimental-Result-Code AVP constants from our dictionary
+DIAMETER_FIRST_REGISTRATION = 2001
+DIAMETER_SUBSEQUENT_REGISTRATION = 2002
+DIAMETER_UNREGISTERED_SERVICE = 2003
+DIAMETER_ERROR_USER_UNKNOWN = 5001
+DIAMETER_ERROR_IDENTITIES_DONT_MATCH = 5002
+DIAMETER_ERROR_IDENTITY_NOT_REGISTERED = 5003
+DIAMETER_ERROR_ROAMING_NOT_ALLOWED = 5004

@@ -40,7 +40,7 @@ from .cache.cache import Cache
 from .backends.hss import HSSBackend
 from .backends.provisioning import ProvisioningBackend
 
-from .cache.handlers import DigestHandler, AuthVectorHandler, IMSSubscriptionHandler
+from .cache.handlers import DigestHandler, AuthVectorHandler, IMSSubscriptionHandler, RegistrationStatusHandler, LocationInformationHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
 from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
@@ -67,10 +67,15 @@ CACHE_ROUTES = [
     # Routes for accessing the cache.
     #
 
-    # IMPI: the read-only API for accessing the authentication vector
-    # for a private ID. Can optionally validate whether a specific public ID is
-    # associated.
-    #
+    # IMPI: the read-only API for accessing either registration status, authentication vector,
+    # or the digest and associated public IDs for a private ID. For registration status,
+    # public ID is mandatory, and there are two optional parameters, "visited-network" and
+    # "auth-type". For authentication vector anddigest, can optionally validate whether a specific
+    # public ID is associated.
+
+    # /impi/<private ID>/registration-status?impu=xxx[&visited-network=xxx][&auth-type=xxx]
+    (r'/impi/'+ANY+r'/registration-status/?',  RegistrationStatusHandler),
+
     # /impi/<private ID>/digest?public_id=xxx
     (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
 
@@ -80,9 +85,16 @@ CACHE_ROUTES = [
     # /impi/<private ID>/av/?impu=xxx&autn=xxx
     (r'/impi/'+ANY+r'/av/?',  AuthVectorHandler),
 
-    # IMPU: the read-only API for accessing the XMLSubscription associated with
-    # a particular public ID.
-    #
+    # IMPU: the read-only API for accessing either XMLSubscription or location
+    # information associated with a particular public ID. For location information,
+    # there are two optional parameters. The parameter "originating" is added and set
+    # to "true" if the request relates to an originating request. The parameter
+    # "auth_type" is added and set to "CAPAB" if IMS
+    # Restoration Procedures are occuring.
+
+    # /impu/<public ID>/location?[originating=true][&auth-type=REGISTRATION_AND_CAPABILITIES]
+    (r'/impu/'+ANY+r'/location/?',  LocationInformationHandler),
+
     # /impu/<public ID>?private_id=xxx
     (r'/impu/'+ANY+r'/?',  IMSSubscriptionHandler),
 ]
