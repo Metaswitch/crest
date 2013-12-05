@@ -95,7 +95,7 @@ class TestCache(unittest.TestCase):
             mapping=DictContaining({"digest_ha1": "ha1_test",
                                     "digest_realm": "realm",
                                     "digest_qop": "qop",
-                                    "known_preferred": True }),
+                                    "known_preferred": '\x01' }),
             ttl=self.ttl,
             timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -114,7 +114,7 @@ class TestCache(unittest.TestCase):
             mapping=DictContaining({"digest_ha1": "ha1_test",
                                     "digest_realm": "realm",
                                     "digest_qop": "qop",
-                                    "known_preferred": False}),
+                                    "known_preferred": '\x00'}),
             ttl=self.ttl,
             timestamp=self.timestamp)
         batch_insert.callback(None)
@@ -282,7 +282,7 @@ class TestCache(unittest.TestCase):
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
                             MockColumn("_exists", ""),
-                            MockColumn("known_preferred", True)])
+                            MockColumn("known_preferred", '\x01')])
         self.assertEquals(res.value().ha1, "digest")
 
     def test_get_digest_sip_preferred(self):
