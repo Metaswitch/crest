@@ -41,6 +41,7 @@ from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 
 from .. import config
+from ..auth_vectors import DigestAuthVector
 from metaswitch.crest.api import utils
 from ..cassandra import CassandraModel
 
