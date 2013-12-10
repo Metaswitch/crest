@@ -189,8 +189,7 @@ class HSSAppListener(stack.ApplicationListener):
             elif self.cx.isCommand(request, "Registration-Termination"):
                 yield self.onRegistrationTerminationRequest(peer, request)
             else:
-                answer = request.createAnswer()
-                answer.addAVP(self.cx.getAVP("Result-Code").withInteger32(resultcodes.DIAMETER_COMMAND_UNSUPPORTED))
+                answer = peer.stack.createAnswer(request, resultcodes.DIAMETER_COMMAND_UNSUPPORTED)
                 peer.stack.sendByPeer(peer, answer)
         except:
             # We must catch and handle any exception here, as otherwise it will
@@ -221,7 +220,7 @@ class HSSAppListener(stack.ApplicationListener):
             d = self.backend_callbacks.on_ims_subscription_change(user_data.getOctetString())
             deferreds.append(d)
         # Build an answer and send it once all deferreds are complete.
-        answer = request.createAnswer()
+        answer = peer.stack.createAnswer(request)
         answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
         result_code = self.cx.getAVP("Result-Code")
         try:
@@ -233,15 +232,13 @@ class HSSAppListener(stack.ApplicationListener):
             _log.exception("Push-Profile-Request cache update failed")
             answer.addAVP(result_code.withInteger32(resultcodes.DIAMETER_UNABLE_TO_COMPLY))
         answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
-        answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
-        answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
         peer.stack.sendByPeer(peer, answer)
 
     @defer.inlineCallbacks
     def onRegistrationTerminationRequest(self, peer, request):
         # Got a Registration-Termination-Request.  This tells us we won't get any
         # further notifications, so we should flush the cache now.
-        answer = request.createAnswer()
+        answer = peer.stack.createAnswer(request)
         answer.addAVP(self.cx.findFirstAVP(request, "Vendor-Specific-Application-Id"))
         # Build a list of private IDs and copy it to the answer.
         private_id = self.cx.findFirstAVP(request, "User-Name").getOctetString()
@@ -262,8 +259,6 @@ class HSSAppListener(stack.ApplicationListener):
             _log.exception("Registration-Termination-Request cache update failed")
             answer.addAVP(result_code.withInteger32(resultcodes.DIAMETER_UNABLE_TO_COMPLY))
         answer.addAVP(self.cx.findFirstAVP(request, "Auth-Session-State"))
-        answer.addAVP(self.cx.getAVP("Origin-Host").withOctetString(settings.PUBLIC_HOSTNAME))
-        answer.addAVP(self.cx.getAVP("Origin-Realm").withOctetString(settings.HS_HOSTNAME))
         peer.stack.sendByPeer(peer, answer)
 
 
