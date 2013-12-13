@@ -35,7 +35,7 @@
 from twisted.internet import defer
 
 from .backend import Backend
-
+from metaswitch.crest import settings
 
 class ProvisioningBackend(Backend):
     """
@@ -69,8 +69,10 @@ class ProvisioningBackend(Backend):
     def get_ims_subscription(self, public_id, private_id):
         return self.sync_return(None)
 
+    # Return the sprout hostname on S-CSCF lookups when no HSS is configured
     def get_registration_status(self, private_id, public_id, visited_network, auth_type):
-        return self.sync_return(None)
+        return self.sync_return({"result-code": 2001, "scscf": settings.SPROUT_HOSTNAME})
 
     def get_location_information(self, public_id, originating, auth_type):
-        return self.sync_return(None)
+        return self.sync_return({"result-code": 2001, "scscf": settings.SPROUT_HOSTNAME})
+
