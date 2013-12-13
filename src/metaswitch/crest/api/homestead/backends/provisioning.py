@@ -71,8 +71,10 @@ class ProvisioningBackend(Backend):
 
     # Return the sprout hostname on S-CSCF lookups when no HSS is configured
     def get_registration_status(self, private_id, public_id, visited_network, auth_type):
-        return self.sync_return({"result-code": 2001, "scscf": settings.SPROUT_HOSTNAME})
+        return self.sync_return({"result-code": 2001, "scscf": "sip:%s:%d" % 
+                                 (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)})
 
     def get_location_information(self, public_id, originating, auth_type):
-        return self.sync_return({"result-code": 2001, "scscf": settings.SPROUT_HOSTNAME})
+        return self.sync_return({"result-code": 2001, "scscf": "sip:%s:%d" % 
+                                 (settings.SPROUT_HOSTNAME, settings.SPROUT_PORT)})
 
