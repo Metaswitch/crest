@@ -39,6 +39,7 @@ from cyclone.web import HTTPError
 from twisted.internet import defer
 from .. import authtypes
 
+from metaswitch.crest import settings
 from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator
 _log = logging.getLogger("crest.api.homestead.cache")
 
