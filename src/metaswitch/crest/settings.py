@@ -92,7 +92,7 @@ CASS_PORT = 9160
 # Debian install will pick this up from /etc/clearwater/config
 LOCAL_IP = "127.0.0.1"
 SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
-SPROUT_PORT = 5052
+SPROUT_PORT = 5054
 PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 HS_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 
