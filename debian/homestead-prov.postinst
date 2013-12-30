@@ -69,7 +69,7 @@ case "$1" in
             cd -
         done
 
-        /usr/share/clearwater/infrastructure/scripts/homestead
+        /usr/share/clearwater/infrastructure/scripts/homestead-prov
         echo Connecting to Cassandra on localhost...
         if ! echo "describe KEYSPACE homestead_cache;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homestead_cache"
         then

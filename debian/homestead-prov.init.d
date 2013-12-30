@@ -46,8 +46,8 @@
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC=homestead       # Introduce a short description here
-NAME=homestead       # Introduce the short server's name here (not suitable for --name)
+DESC=homestead-prov        # Introduce a short description here
+NAME=homestead-prov       # Introduce the short server's name here (not suitable for --name)
 DAEMON=/usr/share/clearwater/homestead/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --background --worker-processes 1"
 DAEMON_DIR=/usr/share/clearwater/homestead/
