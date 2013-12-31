@@ -33,8 +33,8 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 LOGS_DIR = "/var/log/homestead"
-PID_FILE = "/var/run/homestead.pid"
-LOG_FILE_PREFIX = "homestead"
+PID_FILE = "/var/run/homestead-prov.pid"
+LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8889
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
