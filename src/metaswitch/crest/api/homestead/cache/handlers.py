@@ -176,7 +176,7 @@ class RegistrationStatusHandler(CacheApiHandler):
     def get(self, private_id):
         public_id = self.get_argument("impu", default=None)
         visited_network = self.get_argument("visited-network", default=settings.SIP_DIGEST_REALM)
-        auth_type_str = self.get_argument("auth_type", default=None)
+        auth_type_str = self.get_argument("auth-type", default=None)
         auth_type = AUTH_TYPES[auth_type_str] if auth_type_str in AUTH_TYPES.keys() else AUTH_TYPES["REG"]
         retval = yield self.get_registration_status(private_id, public_id, visited_network, auth_type)
         self.send_error_or_response(retval, True)
@@ -189,7 +189,7 @@ class LocationInformationHandler(CacheApiHandler):
         originating_str = self.get_argument("originating", default=None)
         originating = ORIGINATING if originating_str == "true" else None
         # auth_type parameter should be set to CAPAB or we ignore it
-        auth_type_str = self.get_argument("auth_type", default=None)
+        auth_type_str = self.get_argument("auth-type", default=None)
         auth_type = AUTH_TYPES["CAPAB"] if auth_type_str == "CAPAB" else None
         retval = yield self.get_location_information(public_id, originating, auth_type)
         self.send_error_or_response(retval, True)
