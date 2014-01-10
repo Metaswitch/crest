@@ -188,12 +188,12 @@ class TestHSSAppListenerRequests(unittest.TestCase):
         self.stack.identity = "ut-host"
         self.stack.realm = "ut-realm"
         self.stack.loadDictionary("cx", os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../../../../api/homestead/backends/hss/dictionary.xml"))
+        self.stack.sendByPeer = self.sendByPeer = mock.MagicMock()
         self.backend_callbacks = mock.MagicMock()
         self.app_listener = HSSAppListener(self.stack, self.backend_callbacks)
         self.cx = self.stack.getDictionary("cx")
         self.peer = mock.MagicMock()
-        self.peer.stack = mock.MagicMock()
-        self.peer.stack.sendByPeer = self.sendByPeer = mock.MagicMock()
+        self.peer.stack = self.stack
 
     def send_request_in(self, command, avps=[]):
         self.request = self.cx.getCommandRequest(self.stack, command, True)
