@@ -80,8 +80,8 @@ case "$1" in
             # Previously provisioned subscribers are still present in the old
             # tables but are no longer accessible.
             echo "Initializing homestead Cassandra database"
-            echo "CREATE KEYSPACE homestead_cache WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
-            echo "CREATE KEYSPACE homestead_provisioning WITH strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
+            echo "CREATE KEYSPACE homestead_cache WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 2};" | cqlsh -3 localhost
+            echo "CREATE KEYSPACE homestead_provisioning WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 2};" | cqlsh -3 localhost
             cd $HOMESTEAD_DIR
             $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/create_db.py
             cd -

@@ -20,7 +20,7 @@ import java.util.UUID;
 
 import org.apache.cassandra.db.marshal.*;
 import org.apache.cassandra.io.sstable.SSTableSimpleUnsortedWriter;
-import org.apache.cassandra.dht.RandomPartitioner;
+import org.apache.cassandra.dht.Murmur3Partitioner;
 import static org.apache.cassandra.utils.ByteBufferUtil.bytes;
 import static org.apache.cassandra.utils.UUIDGen.decompose;
 
@@ -206,7 +206,7 @@ public class ClearwaterBulkProvisioner
             directory.mkdir();
 
         return new SSTableSimpleUnsortedWriter(directory,
-                                               new RandomPartitioner(),
+                                               new Murmur3Partitioner(),
                                                keyspace_name,
                                                table_name,
                                                comparator,
