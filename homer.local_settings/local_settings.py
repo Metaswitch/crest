@@ -43,5 +43,6 @@ XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homer/modules/common/metaswit
 CASS_HOST = "localhost"
 
 # Debian install will pick this up from /etc/clearwater/config
+LOCAL_IP = MUST_BE_CONFIGURED
 SIP_DIGEST_REALM = MUST_BE_CONFIGURED
 SPROUT_HOSTNAME = MUST_BE_CONFIGURED
