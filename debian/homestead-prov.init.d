@@ -35,13 +35,13 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 ### BEGIN INIT INFO
-# Provides:          homestead
+# Provides:          homestead-prov
 # Required-Start:    $network $local_fs
 # Required-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: homestead
-# Description:       homestead, the Cassandra powered HSS gateway
+# Short-Description: homestead-prov
+# Description:       Provisioning backend for Homestead, the Cassandra powered HSS gateway
 ### END INIT INFO
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
