@@ -59,7 +59,7 @@ case "$1" in
         service monit restart
         # Make sure we're stopped - do this before env is removed,
         # or init.d script won't work
-        service homestead stop
+        service homestead-prov stop
         rm -rf $HOMESTEAD_DIR/env
     ;;
 

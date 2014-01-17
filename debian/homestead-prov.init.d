@@ -35,19 +35,19 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 ### BEGIN INIT INFO
-# Provides:          homestead
+# Provides:          homestead-prov
 # Required-Start:    $network $local_fs
 # Required-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: homestead
-# Description:       homestead, the Cassandra powered HSS gateway
+# Short-Description: homestead-prov
+# Description:       Provisioning backend for Homestead, the Cassandra powered HSS gateway
 ### END INIT INFO
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC=homestead       # Introduce a short description here
-NAME=homestead       # Introduce the short server's name here (not suitable for --name)
+DESC=homestead-prov        # Introduce a short description here
+NAME=homestead-prov       # Introduce the short server's name here (not suitable for --name)
 DAEMON=/usr/share/clearwater/homestead/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --background --worker-processes 1"
 DAEMON_DIR=/usr/share/clearwater/homestead/

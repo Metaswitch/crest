@@ -1,0 +1,9 @@
+# Poll every 10 seconds
+set daemon 10
+
+# Monitor the server's PID file and check its public interfaces.
+check process homestead-prov pidfile /var/run/homestead-prov.pid
+  start program = "/etc/monit/run_logged /etc/init.d/homestead-prov start"
+  stop program = "/etc/monit/run_logged /etc/init.d/homestead-prov stop"
+  if failed host localhost port 8889 type TCP protocol http
+    and use the request "/ping" then exec "/etc/monit/run_logged /etc/init.d/homestead-prov abort-restart"
