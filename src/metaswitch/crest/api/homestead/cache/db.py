@@ -55,18 +55,6 @@ class CacheModel(CassandraModel):
 class IMPI(CacheModel):
     cass_table = config.IMPI_TABLE
 
-    # If you change this, also update the corresponding create statement in
-    # chef (cookbooks/clearwater/recipes/cluster.rb)
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-        "private_id text PRIMARY KEY, " +
-        DIGEST_HA1+" text, " +
-        DIGEST_REALM+" text, " +
-        DIGEST_QOP+" text, " +
-        KNOWN_PREFERRED+" boolean" +
-        ") WITH read_repair_chance = 1.0;"
-    )
-
     @defer.inlineCallbacks
     def get_av(self, public_id):
         try:
@@ -129,15 +117,6 @@ IMS_SUBSCRIPTION = "ims_subscription_xml"
 
 class IMPU(CacheModel):
     cass_table = config.IMPU_TABLE
-
-    # If you change this, also update the corresponding create statement in
-    # chef (cookbooks/clearwater/recipes/cluster.rb)
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "public_id text PRIMARY KEY, " +
-            IMS_SUBSCRIPTION+" text" +
-        ") WITH read_repair_chance = 1.0;"
-    )
 
     @defer.inlineCallbacks
     def get_ims_subscription(self):
