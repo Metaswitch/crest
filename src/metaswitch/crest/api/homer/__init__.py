@@ -62,14 +62,6 @@ ROUTES = [
      {"factory_name": "homer", "table": "simservs", "column": "value"}),
 ]
 
-# Initial Cassandra table creation. Whenever you add a route to the URLS above, add
-# a CQL CREATE statement below. Also, if you change the keyspace, check whether changes
-# to backup scripts are required.
-KEYSPACE = "homer"
-CREATE_SIMSERVS = "CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH read_repair_chance = 1.0;"
-CREATE_STATEMENTS = {KEYSPACE: [CREATE_SIMSERVS]}
-
-
 def initialize(application):
     """Module initialization"""
     factory = ManagedCassandraClientFactory(KEYSPACE)

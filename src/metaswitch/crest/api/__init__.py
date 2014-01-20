@@ -60,34 +60,15 @@ ThriftClientProtocol.connectionLost = connectionLost
 
 
 def load_module(name):
-    """Dynamically load routes and database CREATE statements from configured
-    modules"""
+    """Dynamically load routes from configured modules"""
     return __import__("metaswitch.crest.api.%s" % name,
-                      fromlist=["ROUTES", "CREATE_STATEMENTS"])
+                      fromlist=["ROUTES"])
 
 
 def get_routes():
     """Get all the routes for the webserver.  This includes the default routes,
     plus the routes for all the installed submodules"""
     return sum([load_module(m).ROUTES for m in settings.INSTALLED_HANDLERS], []) + ROUTES
-
-
-def get_create_statements():
-    """
-    Get all the statements for creating the necessary database tables.
-
-    Each application must define a CREATE_STATEMENTS module attribute that is a
-    dictionary mapping keyspaces to a list of statements creating tables in that
-    keyspace.  This function merges these into one dictionary.
-    """
-    statement_dict = collections.defaultdict(list)
-
-    for m in settings.INSTALLED_HANDLERS:
-        for keyspace, statements in load_module(m).CREATE_STATEMENTS.items():
-            statement_dict[keyspace] += statements
-
-    return statement_dict
-
 
 def initialize(application):
     for m in [load_module(m) for m in settings.INSTALLED_HANDLERS]:

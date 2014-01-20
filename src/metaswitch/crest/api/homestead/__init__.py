@@ -180,13 +180,6 @@ if settings.LOCAL_PROVISIONING_ENABLED:
 # List of all the tables used by homestead.
 TABLES = [IMPI, IMPU, PrivateID, IRS, ServiceProfile, PublicID]
 
-# CREATE_STATEMENTS is a dictionary that maps keyspaces to a list of tables in
-# that keyspace. Generate this now.
-CREATE_STATEMENTS = collections.defaultdict(list)
-for table in TABLES:
-    CREATE_STATEMENTS[table.cass_keyspace].append(table.cass_create_statement)
-
-
 def initialize(application):
     """Module initialization"""
 
