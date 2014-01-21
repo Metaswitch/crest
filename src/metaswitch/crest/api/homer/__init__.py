@@ -64,7 +64,7 @@ ROUTES = [
 
 def initialize(application):
     """Module initialization"""
-    factory = ManagedCassandraClientFactory(KEYSPACE)
+    factory = ManagedCassandraClientFactory("homer")
     reactor.connectTCP(settings.CASS_HOST,
                        settings.CASS_PORT,
                        factory)
