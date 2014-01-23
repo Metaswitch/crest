@@ -38,7 +38,6 @@
 import os
 import mock
 import unittest
-import time
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -220,7 +219,7 @@ class TestHSSAppListenerRequests(unittest.TestCase):
                 self.cx.getAVP("SIP-Digest-Authenticate AVP").withAVP(
                   self.cx.getAVP("Digest-HA1").withOctetString(
                     "0123456789abcdef")))
-        callback = self.send_request_in("Push-Profile", [avp])
+        self.send_request_in("Push-Profile", [avp])
         self.backend_callbacks.on_digest_change.assert_called_once_with("priv", "0123456789abcdef")
         on_digest_change.callback(None)
         self.get_and_check_answer(2001) # success
@@ -231,43 +230,43 @@ class TestHSSAppListenerRequests(unittest.TestCase):
                 self.cx.getAVP("SIP-Digest-Authenticate AVP").withAVP(
                   self.cx.getAVP("Digest-HA1").withOctetString(
                     "0123456789abcdef")))
-        callback = self.send_request_in("Push-Profile", [avp])
+        self.send_request_in("Push-Profile", [avp])
         self.backend_callbacks.on_digest_change.assert_called_once_with("priv", "0123456789abcdef")
         on_digest_change.errback(failure.Failure(Exception()))
         self.get_and_check_answer(5012) # can't comply
 
     def test_receive_push_profile_request_user_data(self):
         self.backend_callbacks.on_ims_subscription_change.return_value = on_ims_subscription_change = defer.Deferred()
-        callback = self.send_request_in("Push-Profile",
-                                        [self.cx.getAVP("User-Data").withOctetString("xml")])
+        self.send_request_in("Push-Profile",
+                             [self.cx.getAVP("User-Data").withOctetString("xml")])
         self.backend_callbacks.on_ims_subscription_change.assert_called_once_with("xml")
         on_ims_subscription_change.callback(None)
         self.get_and_check_answer(2001) # success
 
     def test_receive_push_profile_request_user_data_fail(self):
         self.backend_callbacks.on_ims_subscription_change.return_value = on_ims_subscription_change = defer.Deferred()
-        callback = self.send_request_in("Push-Profile",
-                                        [self.cx.getAVP("User-Data").withOctetString("xml")])
+        self.send_request_in("Push-Profile",
+                             [self.cx.getAVP("User-Data").withOctetString("xml")])
         self.backend_callbacks.on_ims_subscription_change.assert_called_once_with("xml")
         on_ims_subscription_change.errback(failure.Failure(Exception()))
         self.get_and_check_answer(5012) # can't comply
 
     def test_receive_registration_termination_request(self):
         self.backend_callbacks.on_forced_expiry.return_value = on_forced_expiry = defer.Deferred()
-        callback = self.send_request_in("Registration-Termination",
-                                        [self.cx.getAVP("Associated-Identities").withOctetString("priv2"),
-                                         self.cx.getAVP("Public-Identity").withOctetString("pub1"),
-                                         self.cx.getAVP("Public-Identity").withOctetString("pub2")])
+        self.send_request_in("Registration-Termination",
+                             [self.cx.getAVP("Associated-Identities").withOctetString("priv2"),
+                              self.cx.getAVP("Public-Identity").withOctetString("pub1"),
+                              self.cx.getAVP("Public-Identity").withOctetString("pub2")])
         self.backend_callbacks.on_forced_expiry.assert_called_once_with(["priv", "priv2"], ["pub1", "pub2"])
         on_forced_expiry.callback(None)
         self.get_and_check_answer(2001) # success
 
     def test_receive_registration_termination_request_fail(self):
         self.backend_callbacks.on_forced_expiry.return_value = on_forced_expiry = defer.Deferred()
-        callback = self.send_request_in("Registration-Termination",
-                                        [self.cx.getAVP("Associated-Identities").withOctetString("priv2"),
-                                         self.cx.getAVP("Public-Identity").withOctetString("pub1"),
-                                         self.cx.getAVP("Public-Identity").withOctetString("pub2")])
+        self.send_request_in("Registration-Termination",
+                             [self.cx.getAVP("Associated-Identities").withOctetString("priv2"),
+                              self.cx.getAVP("Public-Identity").withOctetString("pub1"),
+                              self.cx.getAVP("Public-Identity").withOctetString("pub2")])
         self.backend_callbacks.on_forced_expiry.assert_called_once_with(["priv", "priv2"], ["pub1", "pub2"])
         on_forced_expiry.errback(failure.Failure(Exception()))
         self.get_and_check_answer(5012) # can't comply

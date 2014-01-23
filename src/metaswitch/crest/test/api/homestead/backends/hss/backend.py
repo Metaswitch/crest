@@ -303,7 +303,7 @@ class TestHSSBackend(HSSBackendFixture):
         """Confirm the backend gets called with the correct parameters"""
 
         self.gateway.get_registration_status.return_value = defer.Deferred()
-        get_deferred = self.backend.get_registration_status("priv", "pub", "Visited 1 Network", 1)
+        self.backend.get_registration_status("priv", "pub", "Visited 1 Network", 1)
 
         self.gateway.get_registration_status.assert_called_once_with("priv", "pub", "Visited 1 Network", 1)
 
@@ -311,6 +311,6 @@ class TestHSSBackend(HSSBackendFixture):
         """Confirm the backend gets called with the correct parameters"""
 
         self.gateway.get_location_information.return_value = defer.Deferred()
-        get_deferred = self.backend.get_location_information("pub", 0, 2)
+        self.backend.get_location_information("pub", 0, 2)
 
         self.gateway.get_location_information.assert_called_once_with("pub", 0, 2)

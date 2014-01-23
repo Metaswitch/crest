@@ -4,8 +4,7 @@
 
 from twisted.internet import defer, reactor
 from telephus.protocol import ManagedCassandraClientFactory
-from telephus.client import CassandraClient, ConsistencyLevel
-import telephus
+from telephus.client import CassandraClient
 import gzip
 import csv
 import sys

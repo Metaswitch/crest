@@ -37,14 +37,12 @@ import zmq
 from twisted.internet import defer, threads
 
 _log = logging.getLogger("crest.api")
-VALID_STATS = ["H_latency_us",
-               "H_queue_size",
-               "H_incoming_requests",
-               "H_rejected_overload",
-               "H_hss_latency_us",
-               "H_cache_latency_us",
-               "H_hss_digest_latency_us",
-               "H_hss_subscription_latency_us"]
+VALID_STATS = [
+    "P_latency_us",
+    "P_queue_size",
+    "P_incoming_requests",
+    "P_rejected_overload",
+]
 
 
 class LastValueCache:
@@ -63,12 +61,12 @@ class LastValueCache:
         if p_id == 0:
             self.subscriber = context.socket(zmq.SUB)
             self.subscriber.bind("ipc:///tmp/stats0")
-            for process_id in range (0, worker_proc): 
+            for process_id in range (0, worker_proc):
                 for stat in VALID_STATS:
-                    self.subscriber.setsockopt(zmq.SUBSCRIBE, 
+                    self.subscriber.setsockopt(zmq.SUBSCRIBE,
                                                stat + "_" + str(process_id))
 
-            # Set up a tcp connection to publish all stats, including 
+            # Set up a tcp connection to publish all stats, including
             # repeat subscriptions. If the bind fails, log this and carry on.
             # The bind is expected to fail on All-In-One boxes
             self.broadcaster = context.socket(zmq.XPUB)
@@ -77,8 +75,8 @@ class LastValueCache:
                 self.broadcaster.bind("tcp://*:6666")
             except zmq.error.ZMQError as e:
                 _log.debug("The broadcaster bind failed; no statistics will be published: " + str(e))
-                
-            # Set up a poller to listen for new stats published to the 
+
+            # Set up a poller to listen for new stats published to the
             # ipc file and for new external subscriptions
             self.poller = zmq.Poller()
             self.poller.register(self.subscriber, zmq.POLLIN)
@@ -99,10 +97,10 @@ class LastValueCache:
         while True:
             # Poll returns a dictionary of sockets
             answer = yield self.last_cache()
-  
+
             if self.subscriber in dict(answer):
                 # A stat has been updated in the ipc file. Update
-                # the cache, and publish the new stat. The stat will 
+                # the cache, and publish the new stat. The stat will
                 # be of the form [stat_name, "OK", values...]
                 msg = yield self.subscriber.recv_multipart()
                 self.cache[msg[0]] = msg
@@ -111,9 +109,9 @@ class LastValueCache:
                 # A new subscription for a stat has occurred. Immediately
                 # send the value stored in the cache (if it exists)
                 event = yield self.broadcaster.recv()
-          
-                # The first element is whether this is a subscripion (1) 
-                # or to unsubscriber (0)  
+
+                # The first element is whether this is a subscripion (1)
+                # or to unsubscriber (0)
                 if event[0] == b'\x01':
                     topic = event[1:]
                     if topic in self.cache:

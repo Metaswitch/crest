@@ -198,14 +198,10 @@ penaltycounter = PenaltyCounter()
 
 # Create the accumulators and counters
 zmq = LastValueCache()
-latency_accumulator = Accumulator("H_latency_us")
-queue_size_accumulator = Accumulator("H_queue_size")
-incoming_requests = Counter("H_incoming_requests")
-overload_counter = Counter("H_rejected_overload")
-hss_latency_accumulator = Accumulator("H_hss_latency_us")
-cache_latency_accumulator = Accumulator("H_cache_latency_us")
-digest_latency_accumulator = Accumulator("H_hss_digest_latency_us")
-subscription_latency_accumulator = Accumulator("H_hss_subscription_latency_us")
+latency_accumulator = Accumulator("P_latency_us")
+queue_size_accumulator = Accumulator("P_queue_size")
+incoming_requests = Counter("P_incoming_requests")
+overload_counter = Counter("P_rejected_overload")
 
 # Update the accumulators and counters when the process id is known,
 # and set up the zmq bindings
@@ -215,10 +211,6 @@ def setupStats(p_id, worker_proc):
     queue_size_accumulator.set_process_id(p_id)
     incoming_requests.set_process_id(p_id)
     overload_counter.set_process_id(p_id)
-    hss_latency_accumulator.set_process_id(p_id)
-    cache_latency_accumulator.set_process_id(p_id)
-    digest_latency_accumulator.set_process_id(p_id)
-    subscription_latency_accumulator.set_process_id(p_id)
 
 def _guess_mime_type(body):
     if (body == "null" or

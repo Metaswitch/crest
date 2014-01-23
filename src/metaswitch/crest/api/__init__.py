@@ -32,8 +32,6 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import collections
-
 from metaswitch.crest.api import base
 from metaswitch.crest.api.ping import PingHandler
 from metaswitch.crest import settings
@@ -43,7 +41,6 @@ from metaswitch.crest import settings
 # callbacks.
 from twisted.internet.protocol import connectionDone
 from thrift.transport import TTransport
-from thrift.transport import TTwisted
 from thrift.transport.TTwisted import ThriftClientProtocol
 
 def connectionLost(self, reason=connectionDone):
