@@ -1,7 +1,7 @@
 .buildout_downloads
 .installed.cfg
 *~
-bin
+/bin/
 _env
 bootstrap.py
 develop-eggs
