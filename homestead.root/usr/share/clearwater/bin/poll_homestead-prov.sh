@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# @file poll_homestead_prov.sh
+# @file poll_homestead-prov.sh
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2014  Metaswitch Networks Ltd
