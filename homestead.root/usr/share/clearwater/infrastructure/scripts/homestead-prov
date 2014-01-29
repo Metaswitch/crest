@@ -5,7 +5,6 @@ hss_port=3868
 homestead_provisioning_port=8889
 homestead_password_encryption_key="2lB6HWYd1cvuGbAdey9cFL5bSWDzxHOsYyPLYOxV3Bs"
 cassandra_hostname="localhost"
-hss_mar_lowercase_unknown=N
 . /etc/clearwater/config
 
 # Work out what features are enabled.
@@ -17,11 +16,6 @@ then
     [ -r $file ] && . $file
   done
 fi
-
-case "$hss_mar_lowercase_unknown" in
-  Y) hss_mar_unknown_interop_setting=True ;;
-  *) hss_mar_unknown_interop_setting=False ;;
-esac
 
 case "$LOCAL_PROVISIONING_ENABLED" in
   Y) local_prov_setting=True ;;
@@ -37,12 +31,9 @@ sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g
         s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g
         s/^PUBLIC_HOSTNAME = .*$/PUBLIC_HOSTNAME = "'$public_hostname'"/g
         s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$hs_hostname'"/g
-        s/^HSS_IP = .*$/HSS_IP = "'$hss_hostname'"/g
-        s/^HSS_PORT = .*$/HSS_PORT = '$hss_port'/g
         s/^HTTP_PORT = .*$/HTTP_PORT = '$homestead_provisioning_port'/g
         s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$homestead_password_encryption_key'"/g
         s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$local_prov_setting'/g
-        s/^LOWERCASE_UNKNOWN = .*$/LOWERCASE_UNKNOWN = '$hss_mar_unknown_interop_setting'/g
         s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g' \
             </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 
