@@ -70,22 +70,7 @@ case "$1" in
         done
 
         /usr/share/clearwater/infrastructure/scripts/homestead-prov
-        echo Connecting to Cassandra on localhost...
-        if ! echo "describe KEYSPACE homestead_cache;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homestead_cache"
-        then
-            # Create the homestead keyspaces.
-            #
-            # Note that if upgrading from a previous version of homestead, the
-            # new keyspaces/tables are added alongside the old ones.
-            # Previously provisioned subscribers are still present in the old
-            # tables but are no longer accessible.
-            echo "Initializing homestead Cassandra database"
-            echo "CREATE KEYSPACE homestead_cache WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 2};" | cqlsh -3 localhost
-            echo "CREATE KEYSPACE homestead_provisioning WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 2};" | cqlsh -3 localhost
-            cd $HOMESTEAD_DIR
-            $HOMESTEAD_DIR/env/bin/python $HOMESTEAD_DIR/src/metaswitch/crest/tools/create_db.py
-            cd -
-        fi
+        /usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh
 
         # Start monit monitoring ourselves
         cp $HOMESTEAD_DIR/*.monit /etc/monit/conf.d/

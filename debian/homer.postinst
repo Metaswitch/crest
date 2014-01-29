@@ -70,18 +70,8 @@ case "$1" in
         done
 
         /usr/share/clearwater/infrastructure/scripts/homer
-        echo Connecting to Cassandra on localhost...
-        if echo "describe KEYSPACE homer;" | cqlsh -3 localhost 2>/dev/null | grep -q "CREATE KEYSPACE homer"
-        then
-            echo "Homer database already exists in Cassandra, not configuring"
-        else
-            echo "Initializing homer Cassandra database"
-            echo "CREATE KEYSPACE homer WITH REPLICATION = {'class' : 'SimpleStrategy', 'replication_factor': 2};" | cqlsh -3 localhost
+        /usr/share/clearwater/cassandra-schemas/homer.sh
 
-            cd $HOMER_DIR
-            $HOMER_DIR/env/bin/python $HOMER_DIR/src/metaswitch/crest/tools/create_db.py
-            cd -
-        fi
         # Start monit monitoring ourselves
         cp $HOMER_DIR/*.monit /etc/monit/conf.d/
         service monit restart

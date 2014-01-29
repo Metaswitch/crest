@@ -115,18 +115,6 @@ class IRS(ProvisioningModel):
 
     cass_table = config.IRS_TABLE
 
-    # Note that CQL requires at least one non-dynamic column (hence the use of
-    # the "dummy" column below).
-    #
-    # If you change this, also update the corresponding create statement in
-    # chef (cookbooks/clearwater/recipes/cluster.rb)
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "id uuid PRIMARY KEY, " +
-            "dummy text"
-        ") WITH read_repair_chance = 1.0;"
-    )
-
     def __init__(self, row_key):
         super(IRS, self).__init__(convert_uuid(row_key))
 
@@ -270,15 +258,6 @@ class PrivateID(ProvisioningModel):
 
     cass_table = config.PRIVATE_TABLE
 
-    # If you change this, also update the corresponding create statement in
-    # chef (cookbooks/clearwater/recipes/cluster.rb)
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "private_id text PRIMARY KEY, " +
-            DIGEST_HA1+" text" +
-        ") WITH read_repair_chance = 1.0;"
-    )
-
     @defer.inlineCallbacks
     def get_digest(self):
         digest = yield self.get_column_value(self.DIGEST_HA1)
@@ -369,16 +348,6 @@ class PublicID(ProvisioningModel):
 
     cass_table = config.PUBLIC_TABLE
 
-    # If you change this, also update the corresponding create statement in
-    # chef (cookbooks/clearwater/recipes/cluster.rb)
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "public_id text PRIMARY KEY, " +
-            PUBLICIDENTITY+" text, " +
-            SERVICE_PROFILE+" text" +
-        ") WITH read_repair_chance = 1.0;"
-    )
-
     @defer.inlineCallbacks
     def get_sp(self):
         sp_uuid = yield self.get_column_value(self.SERVICE_PROFILE)
@@ -429,16 +398,6 @@ class ServiceProfile(ProvisioningModel):
     PUBLIC_ID_COLUMN_PREFIX = "public_id_"
 
     cass_table = config.SP_TABLE
-
-    # If you change this, also update the corresponding create statement in
-    # chef (cookbooks/clearwater/recipes/cluster.rb)
-    cass_create_statement = (
-        "CREATE TABLE "+cass_table+" (" +
-            "id uuid PRIMARY KEY, " +
-            IRS_COLUMN+" text, " +
-            IFC_COLUMN+" text" +
-        ") WITH read_repair_chance = 1.0;"
-    )
 
     def __init__(self, row_key):
         super(ServiceProfile, self).__init__(convert_uuid(row_key))

@@ -32,7 +32,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-LOGS_DIR = "/var/log/homestead"
+LOGS_DIR = "/var/log/homestead-prov"
 PID_FILE = "/var/run/homestead-prov.pid"
 LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead"]
