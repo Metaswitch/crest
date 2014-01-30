@@ -119,6 +119,9 @@ class LastValueCache:
                     topic = event[1:]
                     if topic in self.cache:
                         self.broadcaster.send_multipart(self.cache[topic])
+                    else:
+                        # No cached value - return empty statistic.
+                        self.broadcaster.send_multipart([topic, "OK"])
 
     def report(self, new_value, stat_name):
         # Publish the updated stat to the ipc file
