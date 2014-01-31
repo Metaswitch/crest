@@ -1,7 +1,9 @@
-# @file local_settings.py
+#!/bin/bash
+
+# @file poll_homer.sh
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2013  Metaswitch Networks Ltd
+# Copyright (C) 2014  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -32,17 +34,12 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-LOGS_DIR = "/var/log/homer"
-PID_FILE = "/var/run/homer.pid"
-LOG_FILE_PREFIX = "homer"
-INSTALLED_HANDLERS = ["homer"]
-HTTP_PORT = 7888
-XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homer/modules/common/metaswitch/common/default_simservs.xml"
+# This script uses HTTP to poll a homer process and check whether it is healthy.
 
-# Debian install will pick this up from /etc/clearwater/config
-CASS_HOST = "localhost"
+. /etc/clearwater/config
 
-# Debian install will pick this up from /etc/clearwater/config
-LOCAL_IP = MUST_BE_CONFIGURED
-SIP_DIGEST_REALM = MUST_BE_CONFIGURED
-SPROUT_HOSTNAME = MUST_BE_CONFIGURED
+PORT=7888
+
+# Not currently implemented, just return success.
+
+exit 0
