@@ -33,14 +33,13 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import logging
-import time
 
 from cyclone.web import HTTPError
 from twisted.internet import defer
 from .. import authtypes
 
 from metaswitch.crest import settings
-from metaswitch.crest.api.base import BaseHandler, hss_latency_accumulator, cache_latency_accumulator
+from metaswitch.crest.api.base import BaseHandler
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
@@ -63,23 +62,17 @@ class CacheApiHandler(BaseHandler):
         else:
             self.finish(retval)
 
-    def sequential_getter_with_latency(self, *funcpairs):
-        """Each entry in funcpairs is a pair of a getter function (called to
-        get the return value) and an accumulator (which tracks the
-        latency of the getter).
+    def sequential_getter(self, *funcs):
+        """Each entry in funcs is a getter function (called to get the return
+        value).
 
-        Returns a function that calls each getter function in turn
-        until one returns something other than None, and tracks the
-        latency of each request (successful or not) in the
-        accumulator.
+        Returns a function that calls each getter function in turn until one
+        returns something other than None.
         """
         @defer.inlineCallbacks
         def getter(*pos_args, **kwd_args):
-            for getter_function, accumulator_function in funcpairs:
-                # Track the latency of each request (in usec)
-                start_time = time.time()
+            for getter_function in funcs:
                 retval = yield getter_function(*pos_args, **kwd_args)
-                accumulator_function.accumulate((time.time() - start_time) * 1000000)
                 if retval:
                     _log.debug("Got result from %s" % getter_function)
                     defer.returnValue(retval)
@@ -97,13 +90,12 @@ class CacheApiHandler(BaseHandler):
             backend_get = self.application.backend.get_location_information
         else:
             backend_get, cache_get = self.application.backend.get_av, self.application.cache.get_av
-        backend_get_with_latency = [backend_get, hss_latency_accumulator]
+
         if use_cache:
             # Try the cache first.  If that fails go to the backend.
-            cache_get_with_latency = [cache_get, cache_latency_accumulator]
-            getter = self.sequential_getter_with_latency(cache_get_with_latency, backend_get_with_latency)
+            getter = self.sequential_getter(cache_get, backend_get)
         else:
-            getter = self.sequential_getter_with_latency(backend_get_with_latency)
+            getter = self.sequential_getter(backend_get)
         return getter
 
     def get_ims_subscription(self, *args, **kwargs):

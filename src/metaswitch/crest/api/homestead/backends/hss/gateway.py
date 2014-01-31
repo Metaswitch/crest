@@ -43,7 +43,7 @@ from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 
 from metaswitch.crest import settings
-from metaswitch.crest.api.base import penaltycounter, loadmonitor, digest_latency_accumulator, subscription_latency_accumulator
+from metaswitch.crest.api.base import penaltycounter, loadmonitor
 from metaswitch.crest.api import DeferTimeout
 from metaswitch.crest.api.exceptions import HSSNotEnabled, HSSOverloaded, HSSConnectionLost, HSSStillConnecting, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.common import utils
@@ -343,9 +343,9 @@ class HSSPeerListener(stack.PeerListener):
 
         req.addAVP(auth_avp)
 
-       # Send off message to HSS
-        start_time = time.time()
+        # Send off message to HSS
         self.peer.stack.sendByPeer(self.peer, req)
+
         # Hook up our deferred to the callback
         d = defer.Deferred()
         self.app.add_pending_response(req, d)
@@ -353,8 +353,6 @@ class HSSPeerListener(stack.PeerListener):
 
         # Have response, get the authentication scheme from it
         scheme = self.cx.findFirstAVP(answer, "SIP-Auth-Data-Item", "SIP-Authentication-Scheme")
-        # Track how long it took (in usec)
-        digest_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
 
         if scheme:
             if "SIP Digest" in scheme.getOctetString():
@@ -439,9 +437,10 @@ class HSSPeerListener(stack.PeerListener):
         else:
             req.addAVP(self.cx.getAVP('Server-Assignment-Type').withInteger32(UNREGISTERED_USER))
         req.addAVP(self.cx.getAVP('User-Data-Already-Available').withInteger32(0))
+
         # Send off message to HSS
-        start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
+
         # Hook up our deferred to the callback
         d = defer.Deferred()
         self.app.add_pending_response(req, d)
@@ -450,11 +449,11 @@ class HSSPeerListener(stack.PeerListener):
         _log.debug("Received Server-Assignment response for %s:" % private_id)
         user_data = self.cx.findFirstAVP(answer, "User-Data")
 
-        # Track how long it took (in usec)
-        subscription_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
         if not user_data:
             self.log_diameter_error(answer)
-            # If the error is an Overload response, increment the HSS penalty counter
+
+            # If the error is an Overload response, increment the HSS penalty
+            # counter
             if self.get_diameter_result_code(answer) == 3004:
                 penaltycounter.incr_hss_penalty_count()
                 raise HSSOverloaded()
@@ -486,17 +485,16 @@ class HSSPeerListener(stack.PeerListener):
         req.addAVP(self.cx.getAVP('Visited-Network-Identifier').withOctetString(bytes(visited_network)))
         req.addAVP(self.cx.getAVP('User-Authorization-Type').withInteger32(auth_type))
         req.addAVP(self.cx.getAVP('User-Name').withOctetString(bytes(private_id)))
+
         # Send off message to HSS
-        start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
+
         # Hook up our deferred to the callback
         d = defer.Deferred()
         self.app.add_pending_response(req, d)
         answer = yield d
 
         _log.debug("Received User-Authorization response for %s/%s:" % (private_id, public_id))
-        # Track how long it took (in usec)
-        subscription_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
         result_code = self.get_diameter_result_code(answer)
         exp_result_code = self.get_diameter_exp_result_code(answer)
 
@@ -557,9 +555,10 @@ class HSSPeerListener(stack.PeerListener):
             req.addAVP(self.cx.getAVP('User-Authorization-Type').withInteger32(AUTH_TYPES["CAPAB"]))
         if originating is not None:
             req.addAVP(self.cx.getAVP('Originating-Request').withInteger32(ORIGINATING))
+
         # Send off message to HSS
-        start_time = time.time()
         self.peer.stack.sendByPeer(self.peer, req)
+
         # Hook up our deferred to the callback
         d = defer.Deferred()
         self.app.add_pending_response(req, d)
@@ -567,8 +566,6 @@ class HSSPeerListener(stack.PeerListener):
 
         _log.debug("Received Location-Info response for %s:" % public_id)
 
-        # Track how long it took (in usec)
-        subscription_latency_accumulator.accumulate((time.time() - start_time) * 1000000)
         result_code = self.get_diameter_result_code(answer)
         exp_result_code = self.get_diameter_exp_result_code(answer)
 
