@@ -36,7 +36,7 @@
 
 # This script uses HTTP to poll a homestead-prov process and check whether it is healthy.
 
-# In case homestead-prov has only just restarted, give it a few seconds to come up
+# In case homestead-prov has only just restarted, give it a few seconds to come up.
 sleep 5
 
 # Grab our configuration - we just use the local IP address.
