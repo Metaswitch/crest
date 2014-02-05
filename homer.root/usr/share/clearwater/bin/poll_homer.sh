@@ -36,10 +36,26 @@
 
 # This script uses HTTP to poll a homer process and check whether it is healthy.
 
+# In case homer has only just restarted, give it a few seconds to come up.
+sleep 5
+
+# Grab our configuration - we just use the local IP address.
 . /etc/clearwater/config
 
-PORT=7888
+# For HTTP, we need to wrap IPv6 addresses in square brackets.
+http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
 
-# Not currently implemented, just return success.
+# Send HTTP request and check that the response is "OK".
+http_url=http://$http_ip:7888/ping
+curl -f -g -m 2 -s $http_url 2> /tmp/poll-homer.sh.stderr.$$ | tee /tmp/poll-homer.sh.stdout.$$ | head -1 | egrep -q "^OK$"
+rc=$?
 
-exit 0
+# Check the return code and log if appropriate.
+if [ $rc != 0 ] ; then
+  echo HTTP failed to $http_url             >&2
+  cat /tmp/poll-homer.sh.stderr.$$ >&2
+  cat /tmp/poll-homer.sh.stdout.$$ >&2
+fi
+rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
+
+exit $rc
