@@ -46,9 +46,10 @@ VALID_STATS = [
 
 
 class LastValueCache:
-    def __init__(self):
+    def __init__(self, zmq_port):
         # Set up the cache.
         self.cache = {}
+        self.zmq_address = "tcp://*:" + str(zmq_port)
 
     def bind(self, p_id, worker_proc):
         context = zmq.Context()
@@ -68,14 +69,13 @@ class LastValueCache:
 
             # Set up a tcp connection to publish all stats, including
             # repeat subscriptions. If the bind fails, log this and carry on.
-            # The bind is expected to fail on All-In-One boxes
             self.broadcaster = context.socket(zmq.XPUB)
             self.broadcaster.setsockopt(zmq.XPUB_VERBOSE, 1)
             try:
                 # Crest uses port 6667 for stats so that there isn't a port
                 # clash when homestead-prov is co-located with homestead (which
-                # uses 6666).
-                self.broadcaster.bind("tcp://*:6667")
+                # uses 6668).
+                self.broadcaster.bind(self.zmq_address)
             except zmq.error.ZMQError as e:
                 _log.debug("The broadcaster bind failed; no statistics will be published: " + str(e))
 

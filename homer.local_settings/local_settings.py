@@ -38,6 +38,7 @@ LOG_FILE_PREFIX = "homer"
 INSTALLED_HANDLERS = ["homer"]
 HTTP_PORT = 7888
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homer/modules/common/metaswitch/common/default_simservs.xml"
+ZMQ_PORT = 6665
 
 # Debian install will pick this up from /etc/clearwater/config
 CASS_HOST = "localhost"

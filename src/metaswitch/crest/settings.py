@@ -74,6 +74,7 @@ PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
 
 # Ports.
 HTTP_PORT = 8888
+ZMQ_PORT = 6667
 
 # Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.
