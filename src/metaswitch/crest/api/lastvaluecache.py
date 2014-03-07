@@ -72,9 +72,9 @@ class LastValueCache:
             self.broadcaster = context.socket(zmq.XPUB)
             self.broadcaster.setsockopt(zmq.XPUB_VERBOSE, 1)
             try:
-                # Crest uses port 6667 for stats so that there isn't a port
-                # clash when homestead-prov is co-located with homestead (which
-                # uses 6668).
+                # Crest uses port 6667 for homestead-prov stats and 6665
+                # for homer stats so that there isn't a clash when they are
+                # colocated on an all-in-one node
                 self.broadcaster.bind(self.zmq_address)
             except zmq.error.ZMQError as e:
                 _log.debug("The broadcaster bind failed; no statistics will be published: " + str(e))

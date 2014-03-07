@@ -73,8 +73,8 @@ LOG_LEVEL = logging.INFO
 PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
 
 # Ports.
-HTTP_PORT = 8888
-ZMQ_PORT = 6667
+HTTP_PORT = 7888
+ZMQ_PORT = 6665
 
 # Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.
