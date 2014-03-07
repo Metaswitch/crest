@@ -92,6 +92,7 @@ For a homestead node, you'll probably need at least the following in
 
     LOG_FILE_PREFIX = "homestead"
     INSTALLED_HANDLERS = ["homestead"]
+    ZMQ_PORT = "6667"
     HTTP_PORT = 8888
     HSS_ENABLED = False
     SIP_DIGEST_REALM = example.com
@@ -100,6 +101,7 @@ For a homer node, you'll probably need the following instead.
 
     LOG_FILE_PREFIX = "homer"
     INSTALLED_HANDLERS = ["homer"]
+    ZMQ_PORT = "6665"
     HTTP_PORT = 7888
     SIP_DIGEST_REALM = example.com
 
