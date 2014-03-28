@@ -78,7 +78,7 @@ def uuid_to_str(this_uuid):
 
     if isinstance(this_uuid, basestring) and (len(this_uuid) == 16):
         # Got a 16 length string, so this is probably the uuid as a byte stream.
-        return str(uuid.UUID(this_uuid))
+        return str(uuid.UUID(bytes=this_uuid))
     else:
         # Assume the UUID is already formatted correctly, or is a type that can
         # be converted to str sensibly.
@@ -169,7 +169,7 @@ class IRS(ProvisioningModel):
 
     @defer.inlineCallbacks
     def dissociate_service_profile(self, sp_uuid):
-        yield self.delete_columns([self.SERVICE_PROFILE_PREFIX + str(sp_uuid)])
+        yield self.delete_column(self.SERVICE_PROFILE_PREFIX + str(sp_uuid))
         yield self.rebuild()
 
     @defer.inlineCallbacks
@@ -300,14 +300,14 @@ class PrivateID(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_irs(self, irs_uuid):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.ASSOC_IRS_PREFIX + str(irs_uuid):
+        yield self.modify_columns({self.ASSOC_IRS_PREFIX + uuid_to_str(irs_uuid):
                                                             NULL_COLUMN_VALUE})
         yield IRS(irs_uuid).associate_private_id(self.row_key)
         yield self.rebuild()
 
     @defer.inlineCallbacks
     def dissociate_irs(self, irs_uuid):
-        yield self.delete_columns([self.ASSOC_IRS_PREFIX + str(irs_uuid)])
+        yield self.delete_column(self.ASSOC_IRS_PREFIX + uuid_to_str(irs_uuid))
         yield IRS(irs_uuid).dissociate_private_id(self.row_key)
         yield self.rebuild()
 
