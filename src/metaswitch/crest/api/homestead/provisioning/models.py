@@ -254,14 +254,16 @@ class PrivateID(ProvisioningModel):
     """Model representing a provisioned private ID"""
 
     DIGEST_HA1 = "digest_ha1"
+    REALM = "realm"
     ASSOC_IRS_PREFIX = "associated_irs_"
 
     cass_table = config.PRIVATE_TABLE
 
     @defer.inlineCallbacks
     def get_digest(self):
-        digest = yield self.get_column_value(self.DIGEST_HA1)
-        defer.returnValue(digest)
+        columns = yield self.get_columns([self.DIGEST_HA1, self.REALM])
+        defer.returnValue((columns[self.DIGEST_HA1],
+                           columns.get(self.REALM)))
 
     @defer.inlineCallbacks
     def get_irses(self):
@@ -277,12 +279,15 @@ class PrivateID(ProvisioningModel):
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
-    def put_digest(self, digest):
+    def put_digest(self, digest, realm=None):
         _log.debug("Create private ID %s" % self.row_key_str)
 
-        yield self.modify_columns({self.DIGEST_HA1: digest})
+        columns = {self.DIGEST_HA1: digest}
+        if realm:
+            columns[self.REALM] = realm
+        yield self.modify_columns(columns)
         yield self._cache.put_av(self.row_key,
-                                 DigestAuthVector(digest, None, None, True),
+                                 DigestAuthVector(digest, realm, None, True),
                                  self._cache.generate_timestamp())
 
     @defer.inlineCallbacks

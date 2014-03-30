@@ -60,7 +60,6 @@ from metaswitch.common import utils
 from metaswitch.common import ifcs
 from metaswitch.crest.tools.utils import create_imssubscription_xml
 
-INITIAL_FILTER_CRITERIA = ifcs.generate_ifcs(settings.SIP_DIGEST_REALM)
 with open(settings.XDM_DEFAULT_SIMSERVS_FILE, "rb") as simservs_file:
     SIMSERVS = simservs_file.read()
 
@@ -117,7 +116,8 @@ def standalone():
                     hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
 
                     public_identity_xml = "<PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity></PublicIdentity>" % public_id
-                    ims_subscription_xml = create_imssubscription_xml(private_id, public_identity_xml, INITIAL_FILTER_CRITERIA)
+                    initial_filter_xml = ifcs.generate_ifcs(utils.sip_uri_to_domain(public_id))
+                    ims_subscription_xml = create_imssubscription_xml(private_id, public_identity_xml, initial_filter_xml)
                     irs_uuid = str(uuid.uuid4())
                     sp_uuid = str(uuid.uuid4())
 
@@ -161,7 +161,7 @@ def standalone():
                                                                          irs_uuid))
                     homestead_prov_casscli_file.write(
                         "SET service_profiles['%s']['initialfiltercriteria'] = '%s';\n" % (sp_uuid,
-                                                                                           INITIAL_FILTER_CRITERIA))
+                                                                                           initial_filter_xml))
                     homestead_prov_casscli_file.write(
                         "SET service_profiles['%s']['public_id_%s'] = '%s';\n" % (sp_uuid,
                                                                                   public_id,
