@@ -163,13 +163,13 @@ class IRS(ProvisioningModel):
     @defer.inlineCallbacks
     def associate_service_profile(self, sp_uuid):
         yield self.assert_row_exists()
-        yield self.modify_columns({self.SERVICE_PROFILE_PREFIX + str(sp_uuid):
+        yield self.modify_columns({self.SERVICE_PROFILE_PREFIX + uuid_to_str(sp_uuid):
                                                             NULL_COLUMN_VALUE})
         yield self.rebuild()
 
     @defer.inlineCallbacks
     def dissociate_service_profile(self, sp_uuid):
-        yield self.delete_column(self.SERVICE_PROFILE_PREFIX + str(sp_uuid))
+        yield self.delete_column(self.SERVICE_PROFILE_PREFIX + uuid_to_str(sp_uuid))
         yield self.rebuild()
 
     @defer.inlineCallbacks
