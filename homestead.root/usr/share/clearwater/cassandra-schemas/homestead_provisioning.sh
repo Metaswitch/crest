@@ -8,3 +8,5 @@ CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercrite
 CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH read_repair_chance = 1.0;
 CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text) WITH read_repair_chance = 1.0;" | cqlsh -2
 fi
+echo "USE homestead_provisioning;
+ALTER TABLE private ADD realm text;" | cqlsh -2

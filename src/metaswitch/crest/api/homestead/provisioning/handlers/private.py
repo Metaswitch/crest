@@ -43,6 +43,7 @@ from ..models import PrivateID
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
+JSON_REALM = "realm"
 JSON_ASSOC_IRS = "associated_implicit_registration_sets"
 JSON_ASSOC_PUBLIC_IDS = "associated_public_ids"
 
@@ -51,8 +52,8 @@ class PrivateHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            digest_ha1 = yield PrivateID(private_id).get_digest()
-            body = {JSON_DIGEST_HA1: digest_ha1}
+            (digest_ha1, realm) = yield PrivateID(private_id).get_digest()
+            body = {JSON_DIGEST_HA1: digest_ha1, JSON_REALM: realm}
             self.send_json(body)
 
         except NotFoundException:
@@ -69,7 +70,8 @@ class PrivateHandler(BaseHandler):
 
             try:
                 digest_ha1 = obj[JSON_DIGEST_HA1]
-                yield PrivateID(private_id).put_digest(digest_ha1)
+                realm = obj.get(JSON_REALM) # may be absent
+                yield PrivateID(private_id).put_digest(digest_ha1, realm)
                 self.finish()
             except KeyError:
                 self.send_error(400, "Missing %s key" & JSON_DIGEST_HA1)

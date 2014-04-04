@@ -37,10 +37,10 @@ These URLs are only available when homestead is acting in place of a real HSS. W
 
 Make a GET to this URL to retrieve datails for a private ID. Response:
 
-* 200 if the private ID was found, returned as JSON: `{ "digest_ha1": "<DIGEST>" }`
+* 200 if the private ID was found, returned as JSON: `{ "digest_ha1": "<DIGEST>", "realm": "<REALM>" }`
 * 404 if the private ID was not found.
 
-Make a PUT to this URL to create a new private ID or update an existing one. The body must be in the same format as would be returned on a GET. Response:
+Make a PUT to this URL to create a new private ID or update an existing one. The body must be in the same format as would be returned on a GET, except that if the realm is omitted, it defaults to the configured home domain. Response:
 
 * 200 if the private ID was created/updated successfully.
 * 400 if the body of the request is invalid

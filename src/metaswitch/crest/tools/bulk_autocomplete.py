@@ -79,8 +79,8 @@ def standalone():
                         # Default private SIP ID to public SIP ID, stripping any sip: prefix
                         row.append(utils.sip_public_id_to_private(row[0]))
                     if len(row) == 2:
-                        # Default realm to system default
-                        row.append(settings.SIP_DIGEST_REALM)
+                        # Default realm to domain of public SIP ID
+                        row.append(utils.sip_uri_to_domain(row[0]))
                     if len(row) == 3:
                         # Missing password - generate a random one
                         row.append(utils.create_secure_human_readable_id(48))
