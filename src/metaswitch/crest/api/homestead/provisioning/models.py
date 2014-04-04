@@ -323,7 +323,7 @@ class PrivateID(ProvisioningModel):
 
         # Get all the information we need to rebuild the cache.  Do this before
         # deleting any cache entries to minimize the time the cache is empty.
-        digest = yield self.get_digest()
+        (digest, realm) = yield self.get_digest()
 
         public_ids = []
         for irs in (yield self.get_irses()):
@@ -337,7 +337,7 @@ class PrivateID(ProvisioningModel):
         # update happens after the delete.
         yield self._cache.delete_private_id(self.row_key, timestamp - 1000)
         yield self._cache.put_av(self.row_key,
-                                 DigestAuthVector(digest, None, None, True),
+                                 DigestAuthVector(digest, realm, None, True),
                                  self._cache.generate_timestamp())
         for pub_id in public_ids:
             yield self._cache.put_associated_public_id(self.row_key,
