@@ -10,7 +10,7 @@ To bulk-provision numbers, follow the following process.
     1.  Public SIP ID (mandatory)
     2.  Private SIP ID (optional, defaults to public SIP ID, stripping
         any sip: prefix)
-    3.  Realm (optional, defaults to system default)
+    3.  Realm (optional, defaults to domain of public SIP ID)
     4.  Password (optional, defaults to auto-generated random password)
 
     If you are provisioning numbers for SIPp stress testing, you will need to force them all to use the password '7kkzTyGW'. This CSV file can be generated with
