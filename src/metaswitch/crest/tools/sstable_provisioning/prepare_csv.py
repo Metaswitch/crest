@@ -83,13 +83,14 @@ def standalone():
                     sp_uuid = uuid.uuid4();
 
                     # Print a line for the user
-                    output_file.write("%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (public_id, private_id, hash, SIMSERVS, publicidentity_xml, initial_filter_xml, ims_subscription_xml, irs_uuid, sp_uuid))
+                    output_file.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (public_id, private_id, realm, hash, SIMSERVS, publicidentity_xml, initial_filter_xml, ims_subscription_xml, irs_uuid, sp_uuid))
                 else:
-                    print 'Error: row "%s" contains <4 entries - ignoring'
+                    print 'Error: row %s contains <4 entries - ignoring' % row
 
         print "Bulk provisioning input created"
         print "- BulkProvision %s homer" % (output_filename)
-        print "- BulkProvision %s homestead" % (output_filename)
+        print "- BulkProvision %s homestead-local" % (output_filename)
+        print "- BulkProvision %s homestead-hss" % (output_filename)
     except IOError as e:
         print "Failed to read/write to %s:" % (e.filename,)
         traceback.print_exc();

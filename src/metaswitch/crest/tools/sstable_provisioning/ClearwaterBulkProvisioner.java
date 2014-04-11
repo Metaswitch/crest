@@ -115,6 +115,7 @@ public class ClearwaterBulkProvisioner
                 impiWriter.newRow(bytes(entry.private_id));
                 impiWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 impiWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
+                impiWriter.addColumn(bytes("digest_realm"), bytes(entry.realm), timestamp);
                 impiWriter.addColumn(bytes("public_id_" + entry.public_id), bytes(entry.public_id), timestamp);
 
                 impuWriter.newRow(bytes(entry.public_id));
@@ -182,6 +183,7 @@ public class ClearwaterBulkProvisioner
                 privateWriter.newRow(bytes(entry.private_id));
                 privateWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
                 privateWriter.addColumn(bytes("digest_ha1"), bytes(entry.digest), timestamp);
+                privateWriter.addColumn(bytes("realm"), bytes(entry.realm), timestamp);
                 privateWriter.addColumn(bytes("associated_irs_" + entry.irs_uuid_str), entry.irs_uuid, timestamp);
             }
             lineNumber++;
@@ -216,7 +218,7 @@ public class ClearwaterBulkProvisioner
 
     static class CsvEntry
     {
-      String public_id, private_id, digest, simservs, ifc, imssubscription, publicidentity_xml, irs_uuid_str, sp_uuid_str;
+      String public_id, private_id, realm, digest, simservs, ifc, imssubscription, publicidentity_xml, irs_uuid_str, sp_uuid_str;
       ByteBuffer irs_uuid, sp_uuid;
 
         boolean parse(String line, int lineNumber, String csvfile)
@@ -224,20 +226,21 @@ public class ClearwaterBulkProvisioner
             // Ghetto csv parsing, will break if any entries contain commas.  This is fine at the moment because
             // neither the default simservs, nor the default IFC contain commas.
             String[] columns = line.split(",");
-            if (columns.length != 9)
+            if (columns.length != 10)
             {
                 System.out.println(String.format("Invalid input '%s' at line %d of %s", line, lineNumber, csvfile));
                 return false;
             }
             public_id = columns[0].trim();
             private_id = columns[1].trim();
-            digest = columns[2].trim();
-            simservs = columns[3].trim();
-            publicidentity_xml = columns[4].trim();
-            ifc = columns[5].trim();
-            imssubscription = columns[6].trim();
-            irs_uuid_str = columns[7].trim();
-            sp_uuid_str = columns[8].trim();
+            realm = columns[2].trim();
+            digest = columns[3].trim();
+            simservs = columns[4].trim();
+            publicidentity_xml = columns[5].trim();
+            ifc = columns[6].trim();
+            imssubscription = columns[7].trim();
+            irs_uuid_str = columns[8].trim();
+            sp_uuid_str = columns[9].trim();
 
             // Convert the string representation of UUID to a byte array.  Apache Commons' UUID class has this
             // as built in function (as getRawBytes) but we don't have access to that class here, so we roll our
