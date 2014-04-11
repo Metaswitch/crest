@@ -68,6 +68,7 @@ _For homestead:_
     . /etc/clearwater/config
     sstableloader -v -d $local_ip homestead_cache/impi
     sstableloader -v -d $local_ip homestead_cache/impu
-    sstableloader -v -d $local_ip homestead_provisioning/irs
+    sstableloader -v -d $local_ip homestead_provisioning/implicit_registration_sets
     sstableloader -v -d $local_ip homestead_provisioning/public
     sstableloader -v -d $local_ip homestead_provisioning/private
+    sstableloader -v -d $local_ip homestead_provisioning/service_profiles

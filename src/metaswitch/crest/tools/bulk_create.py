@@ -132,6 +132,8 @@ def standalone():
                     homestead_cache_casscli_file.write(
                         "SET impi['%s']['digest_ha1'] = '%s';\n" % (private_id, hash))
                     homestead_cache_casscli_file.write(
+                        "SET impi['%s']['digest_realm'] = '%s';\n" % (private_id, realm))
+                    homestead_cache_casscli_file.write(
                         "SET impi['%s']['public_id_%s'] = '';\n" % (private_id,
                                                                     public_id))
 
@@ -181,6 +183,8 @@ def standalone():
                     homestead_prov_casscli_file.write(
                         "SET private['%s']['digest_ha1'] = '%s';\n" % (private_id,
                                                                        hash))
+                    homestead_prov_casscli_file.write(
+                        "SET private['%s']['realm'] = '%s';\n" % (private_id, realm))
                     homestead_prov_casscli_file.write(
                         "SET private['%s']['associated_irs_%s'] = '%s';\n" % (private_id,
                                                                               irs_uuid,
