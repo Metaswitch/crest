@@ -35,7 +35,7 @@ These URLs are only available when homestead is acting in place of a real HSS. W
 
     `/private/<private ID>`
 
-Make a GET to this URL to retrieve datails for a private ID. Response:
+Make a GET to this URL to retrieve details for a private ID. Response:
 
 * 200 if the private ID was found, returned as JSON: `{ "digest_ha1": "<DIGEST>", "realm": "<REALM>" }`
 * 404 if the private ID was not found.
