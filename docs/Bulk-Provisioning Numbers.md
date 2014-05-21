@@ -1,7 +1,7 @@
 Bulk-Provisioning Numbers
 =========================
 
-To bulk-provision numbers, follow the following process.
+To bulk-provision numbers, follow the following process.  (There is an alternative bulk provisioning process documented [here] (https://github.com/Metaswitch/crest/blob/dev/src/metaswitch/crest/tools/sstable_provisioning/README.md) - while this is more complex to set up, it may be more suitable if you are provisioning very large sets of numbers.)
 
 1.  Log into any homestead node in your deployment.
 2.  Create a CSV file with one row per number, and the following
