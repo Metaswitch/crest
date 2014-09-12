@@ -280,8 +280,8 @@ Metaswitch Clearwater bulk-provisioning script creation tool
 
 This script must be run on a Homestead node.
 
-This script generates two output scripts and two configuration files that
-provision the Homestead and Homer (XDM) deployments.
+This script generates output scripts and configuration files that provision the
+Homestead, Homer (XDM), and (optionally) Memento deployments.
 """
 
     USAGE_FOOTER = """\

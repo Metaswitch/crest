@@ -216,7 +216,7 @@ public class ClearwaterBulkProvisioner
                 ex.printStackTrace();
             }
         } else {
-           System.out.println("Only homer, homestead-local and homestead-hss roles are supported");
+           System.out.println("Only homer, homestead-local, homestead-hss and memento roles are supported");
         }
     }
 
@@ -371,7 +371,7 @@ public class ClearwaterBulkProvisioner
         // The number of call list entries to write.
         final int CALL_LIST_NUM_CALLS = 150;
 
-        // The period over which to write call ist entries (1 week).
+        // The period over which to write call list entries (1 week).
         final long CALL_LIST_TIME_RANGE_MS = 7 * 24 * 60 * 60 * 1000;
 
         // Create an object to create call list XML documents.
@@ -381,7 +381,7 @@ public class ClearwaterBulkProvisioner
         // name.
         DateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
 
-        // Used to randomize call ist entries.
+        // Used to randomize call list entries.
         Random rng = new Random();
 
         /*
