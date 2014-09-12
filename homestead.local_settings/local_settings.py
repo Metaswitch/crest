@@ -56,6 +56,7 @@ SPROUT_HOSTNAME = MUST_BE_CONFIGURED
 PUBLIC_HOSTNAME = MUST_BE_CONFIGURED
 HS_HOSTNAME = MUST_BE_CONFIGURED
 LOWERCASE_UNKNOWN = False
+CCF = ""
 
 # We use this key to encrypt sensitive fields in the database that we can't
 # avoid storing.  In general, we'd like to store passwords as bcrypt hashes

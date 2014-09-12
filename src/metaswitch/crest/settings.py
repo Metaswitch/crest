@@ -96,6 +96,7 @@ SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
 SPROUT_PORT = 5054
 PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 HS_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
+CCF = "ccf"
 
 # Cache period (in seconds) for authentication details retrieved from the HSS.
 # There is no way to be notified of authentication changes over the Cx
