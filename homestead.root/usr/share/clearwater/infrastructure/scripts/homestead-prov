@@ -34,7 +34,8 @@ sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g
         s/^HTTP_PORT = .*$/HTTP_PORT = '$homestead_provisioning_port'/g
         s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$homestead_password_encryption_key'"/g
         s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$local_prov_setting'/g
-        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g' \
+        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g
+        s/^CCF = .*$/CCF = "'$cdf_identity'"/g' \
             </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 
 for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \

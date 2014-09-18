@@ -36,6 +36,7 @@ from twisted.internet import defer
 import logging
 
 from .. import config
+from metaswitch.crest import settings
 from ..cassandra import CassandraModel
 from telephus.cassandra.ttypes import NotFoundException
 
@@ -113,6 +114,7 @@ class IMPI(CacheModel):
         yield cls.delete_rows(private_ids, timestamp=timestamp)
 
 IMS_SUBSCRIPTION = "ims_subscription_xml"
+PRIMARY_CCF = "primary_ccf"
 
 
 class IMPU(CacheModel):
@@ -129,7 +131,8 @@ class IMPU(CacheModel):
 
     @defer.inlineCallbacks
     def put_ims_subscription(self, ims_subscription, ttl=None, timestamp=None):
-        yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription},
+        yield self.modify_columns({IMS_SUBSCRIPTION: ims_subscription,
+                                   PRIMARY_CCF: settings.CCF},
                                   ttl=ttl,
                                   timestamp=timestamp)
 

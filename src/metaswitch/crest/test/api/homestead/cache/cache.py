@@ -174,7 +174,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_insert.assert_called_once_with(
                                         key="pub",
                                         column_family="impu",
-                                        mapping=DictContaining({"ims_subscription_xml": "xml"}),
+                                        mapping=DictContaining({"ims_subscription_xml": "xml", "primary_ccf": "ccf"}),
                                         ttl=self.ttl,
                                         timestamp=self.timestamp)
         batch_insert.callback(None)
