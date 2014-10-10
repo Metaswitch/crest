@@ -5,4 +5,3 @@ modules usr/share/clearwater/homestead/
 homestead.local_settings/local_settings.py usr/share/clearwater/homestead/src/metaswitch/crest/
 homestead-prov.monit usr/share/clearwater/homestead/
 homestead.root/* .
-backup usr/share/clearwater/homestead/
