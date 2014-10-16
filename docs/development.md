@@ -198,7 +198,6 @@ Files
 * `src/` contains the source code for Crest
 * `build-infra/` and `modules/` contain submodules, described above.
 * `docs/` contains this documentation.
-* `backup/` contains the Crest backup system.
 * `debian/` and `*.root/`, as well as the repository root, contain files
   used for building the install package.
 * The remaining directories are mostly related to Python packaging.

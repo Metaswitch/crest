@@ -5,4 +5,3 @@ modules usr/share/clearwater/homer/
 homer.local_settings/local_settings.py usr/share/clearwater/homer/src/metaswitch/crest/
 homer.monit usr/share/clearwater/homer/
 homer.root/* .
-backup usr/share/clearwater/homer/
