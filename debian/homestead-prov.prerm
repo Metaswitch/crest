@@ -56,7 +56,7 @@ case "$1" in
     remove|upgrade|deconfigure)
         # Stop monitoring ourselves
         for f in $HOMESTEAD_DIR/*.monit; do rm -f /etc/monit/conf.d/`basename $f`; done
-        service monit restart
+        reload clearwater-monit &> /dev/null || true
         # Make sure we're stopped - do this before env is removed,
         # or init.d script won't work
         service homestead-prov stop

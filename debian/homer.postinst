@@ -74,12 +74,12 @@ case "$1" in
 
         # Start monit monitoring ourselves
         cp $HOMER_DIR/*.monit /etc/monit/conf.d/
-        service monit restart
+        reload clearwater-monit || true
         # Restart homer.  Always do this by terminating homer so monit will
         # restart it more-or-less immediately.  (monit restart seems to have
         # significant lag.)
         # Don't fail if it's already stopped.
-        service homer stop || /bin/true
+        service homer stop || true
 
         # Apply secure connection rules if enabled.
         [ ! -x /etc/init.d/clearwater-secure-connections ] || /etc/init.d/clearwater-secure-connections reload
