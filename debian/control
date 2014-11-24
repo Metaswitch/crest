@@ -11,7 +11,7 @@ Homepage: http://projectclearwater.org/
 
 Package: homer
 Architecture: any
-Depends: clearwater-infrastructure, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, monit, python-zmq, libzmq3-dev
+Depends: clearwater-infrastructure, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, python-zmq, libzmq3-dev
 Suggests: clearwater-logging, clearwater-snmpd, clearwater-secure-connections
 Description: homer, the Cassandra powered XDMS
 
