@@ -47,7 +47,8 @@ from twisted.python.failure import Failure
 from telephus.cassandra.ttypes import TimedOutException as CassandraTimeout
 from metaswitch.common import utils
 from metaswitch.crest import settings
-from metaswitch.crest.api.statistics import Accumulator, Counter, monotonic_time
+from metaswitch.crest.api.statistics import Accumulator, Counter
+from monotonic_time import monotonic_time
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.exceptions import HSSOverloaded, HSSConnectionLost, HSSStillConnecting, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.crest.api.lastvaluecache import LastValueCache
