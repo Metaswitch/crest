@@ -36,8 +36,7 @@ import time
 import logging 
 import abc
 import base
-import monotime
-from monotime import monotonic_time
+from monotonic_time import monotonic_time
 
 # Collect stats every 5 seconds
 STATS_PERIOD = 5 
