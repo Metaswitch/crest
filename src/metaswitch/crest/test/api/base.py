@@ -42,7 +42,7 @@ import time
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 from metaswitch.crest.api import base
-from metaswitch.crest.api.statistics import monotonic_time
+from metaswitch.crest.api.monotonic_time import monotonic_time
 
 from mock import patch, MagicMock
 
