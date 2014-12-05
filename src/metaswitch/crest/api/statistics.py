@@ -36,6 +36,7 @@ import time
 import logging 
 import abc
 import base
+from monotonic_time import monotonic_time
 
 # Collect stats every 5 seconds
 STATS_PERIOD = 5 
@@ -51,7 +52,7 @@ class Collector(object):
 
     def __init__(self, stat_name):
         self.stat_name = stat_name
-        self.start_time = time.time()
+        self.start_time = monotonic_time()
 
     @abc.abstractmethod
     def refresh(self):
@@ -85,7 +86,7 @@ class Counter(Collector):
         self.refresh()
 
     def refresh(self):
-        time_difference = time.time() - self.start_time
+        time_difference = monotonic_time() - self.start_time
 
         if time_difference > STATS_PERIOD:
             base.zmq.report([self.current], self.stat_name)
@@ -93,7 +94,7 @@ class Counter(Collector):
 
     def reset(self):
         self.current = 0
-        self.start_time = time.time()
+        self.start_time = monotonic_time()
  
 class Accumulator(Collector):
     """
@@ -123,7 +124,7 @@ class Accumulator(Collector):
         self.refresh()
 
     def refresh(self):
-        time_difference = time.time() - self.start_time
+        time_difference = monotonic_time() - self.start_time
         mean = 0
         variance = 0
 
@@ -143,4 +144,4 @@ class Accumulator(Collector):
         self.sigma_squared = 0
         self.lwm = 0
         self.hwm = 0
-        self.start_time = time.time()
+        self.start_time = monotonic_time()
