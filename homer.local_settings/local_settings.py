@@ -32,6 +32,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+PROCESS_NAME="homer"
 LOGS_DIR = "/var/log/homer"
 PID_FILE = "/var/run/homer.pid"
 LOG_FILE_PREFIX = "homer"
