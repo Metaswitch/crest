@@ -73,7 +73,12 @@ SCRIPTNAME=/etc/init.d/$NAME
 get_settings()
 {
   . /etc/clearwater/config
-  [ -z "$signaling_namespace" ] || namespace_prefix="ip netns exec $signaling_namespace"
+
+  if [ ! -z "$signaling_namespace" ]
+  then
+    namespace_prefix="ip netns exec $signaling_namespace"
+    signaling_opt="--signaling-namespace"
+  fi
 }
 
 #
@@ -87,6 +92,8 @@ do_start()
   #   2 if daemon could not be started
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
     || return 1
+  get_settings
+  DAEMON_ARGS="$DAEMON_ARGS $signaling_opt"
   $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS \
     || return 2
   # Add code here, if necessary, that waits for the process to be ready

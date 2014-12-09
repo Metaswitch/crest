@@ -57,6 +57,13 @@ case "$1" in
         # Stop monitoring ourselves
         for f in $HOMER_DIR/*.monit; do rm -f /etc/monit/conf.d/`basename $f`; done
         reload clearwater-monit &> /dev/null || true
+
+        # Disable the homer nginx site
+        if ( nginx_dissite homer > /dev/null )
+        then
+            service nginx reload
+        fi
+
         # Make sure we're stopped - do this before env is removed,
         # or init.d script won't work
         service homer stop

@@ -39,15 +39,11 @@
 # In case homer has only just restarted, give it a few seconds to come up.
 sleep 5
 
-# Grab our configuration - we just use the local IP address.
+# Grab our configuration 
 . /etc/clearwater/config
-[ -z $signaling_namespace ] || $namespace_prefix="ip netns exec $signaling_namespace"
 
-# For HTTP, we need to wrap IPv6 addresses in square brackets.
-http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
-
-# Send HTTP request and check that the response is "OK".
-http_url=http://$http_ip:7888/ping
+# Send HTTP request to normal/management interface and check that the response is "OK".
+http_url=http://127.0.0.1:7888/ping
 $namespace_prefix curl -f -g -m 2 -s $http_url 2> /tmp/poll-homer.sh.stderr.$$ | tee /tmp/poll-homer.sh.stdout.$$ | head -1 | egrep -q "^OK$"
 rc=$?
 
@@ -58,5 +54,25 @@ if [ $rc != 0 ] ; then
   cat /tmp/poll-homer.sh.stdout.$$ >&2
 fi
 rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
+
+if [ ! -z $signaling_namespace ] ; then
+  # For HTTP, we need to wrap IPv6 addresses in square brackets.
+  http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
+
+  # Send HTTP request to signaling interface and check that the response is "OK".
+  http_url=http://$http_ip:7888/ping
+  ip netns exec $signaling_namespace curl -f -g -m 2 -s $http_url 2> /tmp/poll-homer.sh.stderr.$$ | tee /tmp/poll-homer.sh.stdout.$$ | head -1 | egrep -q "^OK$"
+  rc_sig=$?
+
+  # Check the return code and log if appropriate.
+  if [ $rc_sig != 0 ] ; then
+    echo HTTP failed to $http_url             >&2
+    cat /tmp/poll-homer.sh.stderr.$$ >&2
+    cat /tmp/poll-homer.sh.stdout.$$ >&2
+  fi
+  rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
+
+  [ $rc == 0 ] && [ $rc_sig == 0 ] ; rc=$?
+fi
 
 exit $rc
