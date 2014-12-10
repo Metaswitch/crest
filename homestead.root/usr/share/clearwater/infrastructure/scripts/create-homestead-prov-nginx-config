@@ -45,16 +45,13 @@ split_domain_and_port()
 
 if [ -z $hs_provisioning_hostname ]
 then
-  if [ -z $hs_hostname ]
-  then
-    echo "neither hs_provisioning_hostname nor hs_hostname are defined"
-    exit 2
-  fi
-
-  read -r hs_provisioning_hostname hs_port <<< "$(split_domain_and_port $hs_hostname)"
+  echo "hs_provisioning_hostname is not defined"
+  exit 2
 fi
 
-[ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=8889 
+read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port $hs_provisioning_hostname)"
+
+[ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port 
 
 site_file=/etc/nginx/sites-available/homestead-prov
 let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
@@ -76,7 +73,7 @@ cat >> $site_file << EOF2
 
 server {
         listen       [::]:$homestead_provisioning_port ipv6only=off;
-        server_name  $hs_provisioning_hostname;
+        server_name  $hs_provisioning_domain;
 
         location / {
                 proxy_pass http://http_homestead_prov;
