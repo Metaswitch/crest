@@ -44,7 +44,7 @@ sleep 5
 
 # Send HTTP request to normal/management interface and check that the response is "OK".
 http_url=http://127.0.0.1:7888/ping
-$namespace_prefix curl -f -g -m 2 -s $http_url 2> /tmp/poll-homer.sh.stderr.$$ | tee /tmp/poll-homer.sh.stdout.$$ | head -1 | egrep -q "^OK$"
+curl -f -g -m 2 -s $http_url 2> /tmp/poll-homer.sh.stderr.$$ | tee /tmp/poll-homer.sh.stdout.$$ | head -1 | egrep -q "^OK$"
 rc=$?
 
 # Check the return code and log if appropriate.
