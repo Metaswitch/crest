@@ -38,6 +38,7 @@ PID_FILE = "/var/run/homestead-prov.pid"
 LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8889
+HTTP_UNIX = "/tmp/.homestead-prov-sock"
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
 ZMQ_PORT = 6667
 

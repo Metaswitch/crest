@@ -38,6 +38,7 @@ PID_FILE = "/var/run/homer.pid"
 LOG_FILE_PREFIX = "homer"
 INSTALLED_HANDLERS = ["homer"]
 HTTP_PORT = 7888
+HTTP_UNIX = "/tmp/.homer-sock"
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homer/modules/common/metaswitch/common/default_simservs.xml"
 ZMQ_PORT = 6665
 
