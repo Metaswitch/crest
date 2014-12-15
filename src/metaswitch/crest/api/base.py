@@ -198,7 +198,7 @@ loadmonitor = LoadMonitor(0.1, 20, 10, 10)
 penaltycounter = PenaltyCounter()
 
 # Create the accumulators and counters
-zmq = LastValueCache(settings.ZMQ_PORT)
+zmq = LastValueCache(settings.PROCESS_NAME)
 latency_accumulator = Accumulator("P_latency_us")
 queue_size_accumulator = Accumulator("P_queue_size")
 incoming_requests = Counter("P_incoming_requests")
