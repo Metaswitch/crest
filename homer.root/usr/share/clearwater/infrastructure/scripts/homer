@@ -1,11 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 # Set default values which will be overwritten if they exist in /etc/clearwater/config
 cassandra_hostname="localhost" 
 . /etc/clearwater/config
-sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g
-        s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
-        s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g
-        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g' </usr/share/clearwater/homer/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
+function escape { echo $1 | sed -e 's/\//\\\//g' ; }
+sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g
+        s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$(escape $home_domain)'"/g
+        s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$(escape $sprout_hostname)'"/g
+        s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g' </usr/share/clearwater/homer/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 for dst in /usr/share/clearwater/homer/src/metaswitch/crest/local_settings.py \
            /usr/share/clearwater/homer/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
 do

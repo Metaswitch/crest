@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Set up default values which will be overwritten if they exist in /etc/clearwater/config
 hss_hostname="0.0.0.0"
 hss_port=3868
@@ -26,16 +26,17 @@ esac
 # "hostnames" will not have port numbers appended, so we just pass those on
 # verbatim by detecting 2 or more colons.
 hs_hostname=$(echo $hs_hostname | sed -e 's/^\([^:]*\):[0-9][0-9]*$/\1/g')
-sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$local_ip'"/g
-        s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$home_domain'"/g
-        s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$sprout_hostname'"/g
-        s/^PUBLIC_HOSTNAME = .*$/PUBLIC_HOSTNAME = "'$public_hostname'"/g
-        s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$hs_hostname'"/g
-        s/^HTTP_PORT = .*$/HTTP_PORT = '$homestead_provisioning_port'/g
-        s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$homestead_password_encryption_key'"/g
-        s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$local_prov_setting'/g
-        s/^CASS_HOST = .*$/CASS_HOST = "'$cassandra_hostname'"/g
-        s/^CCF = .*$/CCF = "'$cdf_identity'"/g' \
+function escape { echo $1 | sed -e 's/\//\\\//g' ; }
+sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g
+        s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$(escape $home_domain)'"/g
+        s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$(escape $sprout_hostname)'"/g
+        s/^PUBLIC_HOSTNAME = .*$/PUBLIC_HOSTNAME = "'$(escape $public_hostname)'"/g
+        s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$(escape $hs_hostname)'"/g
+        s/^HTTP_PORT = .*$/HTTP_PORT = '$(escape $homestead_provisioning_port)'/g
+        s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$(escape $homestead_password_encryption_key)'"/g
+        s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$(escape $local_prov_setting)'/g
+        s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g
+        s/^CCF = .*$/CCF = "'$(escape $cdf_identity)'"/g' \
             </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 
 for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \
