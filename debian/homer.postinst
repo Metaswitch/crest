@@ -91,7 +91,7 @@ case "$1" in
         # Enable the homer nginx site
         if ( nginx_ensite homer > /dev/null )
         then
-            service nginx reload
+            service nginx stop
         fi
     ;;
 

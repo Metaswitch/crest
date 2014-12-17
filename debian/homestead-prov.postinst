@@ -91,7 +91,7 @@ case "$1" in
         # Enable the homestead-prov nginx site
         if ( nginx_ensite homestead-prov > /dev/null )
         then
-            service nginx reload
+            service nginx stop
         fi
     ;;
 
