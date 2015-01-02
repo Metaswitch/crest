@@ -38,7 +38,8 @@
 import logging
 
 from metaswitch.crest.tools import db
-from metaswitch.crest import logging_config
+from metaswitch.common import logging_config
+from metaswitch.crest import settings
 
 _log = logging.getLogger("crest.create_db")
 
@@ -46,5 +47,5 @@ def standalone():
     db.create_tables(_log)
 
 if __name__ == '__main__':
-    logging_config.configure_logging("create_db")
+    logging_config.configure_logging("create_db", settings)
     standalone()
