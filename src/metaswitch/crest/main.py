@@ -47,8 +47,8 @@ import twisted.internet.address
 from twisted.internet import reactor
 
 from metaswitch.crest import api
-from metaswitch.crest import settings, logging_config
-from metaswitch.common import utils
+from metaswitch.crest import settings
+from metaswitch.common import utils, logging_config
 
 _log = logging.getLogger("crest")
 
@@ -104,7 +104,7 @@ def standalone():
     utils.install_sigusr1_handler(settings.LOG_FILE_PREFIX)
 
     # Setup logging
-    logging_config.configure_logging(args.process_id)
+    logging_config.configure_logging(args.process_id, settings)
 
     # setup accumulators and counters for statistics gathering
     api.base.setupStats(args.process_id, args.worker_processes)
