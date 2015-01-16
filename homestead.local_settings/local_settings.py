@@ -32,11 +32,13 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+PROCESS_NAME="homestead"
 LOGS_DIR = "/var/log/homestead-prov"
 PID_FILE = "/var/run/homestead-prov.pid"
 LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8889
+HTTP_UNIX = "/tmp/.homestead-prov-sock"
 XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
 ZMQ_PORT = 6667
 
@@ -56,6 +58,7 @@ SPROUT_HOSTNAME = MUST_BE_CONFIGURED
 PUBLIC_HOSTNAME = MUST_BE_CONFIGURED
 HS_HOSTNAME = MUST_BE_CONFIGURED
 LOWERCASE_UNKNOWN = False
+CCF = ""
 
 # We use this key to encrypt sensitive fields in the database that we can't
 # avoid storing.  In general, we'd like to store passwords as bcrypt hashes

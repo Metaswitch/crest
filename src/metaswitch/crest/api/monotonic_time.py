@@ -1,9 +1,7 @@
-#!/bin/bash
-
-# @file list_backups.sh
+# @file monotonic_time.py
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2013  Metaswitch Networks Ltd
+# Copyright (C) 2014  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,39 +32,23 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-die () {
-  echo >&2 "$@"
-  exit 1
-}
+import ctypes, os
 
-[ "$#" -ge 1 ] || die "Usage: list_backup.sh <keyspace> [backup directory]"
-KEYSPACE=$1
-COMPONENT=$(cut -d_ -f1 <<< $KEYSPACE)
-DATABASE=$(cut -d_ -f2 <<< $KEYSPACE)
-BACKUP_DIR=$2
-DATA_DIR=/var/lib/cassandra/data
-[ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
+CLOCK_MONOTONIC_RAW = 4 # see <linux/time.h>
 
-if [[ -z "$BACKUP_DIR" ]]
-then
-  if [ -n "$DATABASE" ]
-  then
-    BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups/$DATABASE"
-  else
-    BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups"
-  fi
-  echo "No backup directory specified, defaulting to $BACKUP_DIR"
-else
-  echo "Will look for backups in $BACKUP_DIR"
-fi
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_nsec', ctypes.c_long)
+    ]
 
-if [[ "$(ls -A $BACKUP_DIR)" ]]
-then
-  for b in $BACKUP_DIR/*
-  do
-    SNAPSHOT=`basename $b`
-    echo "$SNAPSHOT"
-  done
-else
-  die "No backups exist in $BACKUP_DIR"
-fi
+librt = ctypes.CDLL('librt.so.1', use_errno=True)
+clock_gettime = librt.clock_gettime
+clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
+
+def monotonic_time():
+    t = timespec()
+    if clock_gettime(CLOCK_MONOTONIC_RAW , ctypes.pointer(t)) != 0:
+        errno_ = ctypes.get_errno()
+        raise OSError(errno_, os.strerror(errno_))
+    return t.tv_sec + t.tv_nsec * 1e-9

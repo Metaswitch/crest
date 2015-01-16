@@ -58,3 +58,8 @@ class UserNotIdentifiable(Exception):
 class UserNotAuthorized(Exception):
     """Exception to throw if we are unable to authorize a user"""
     pass
+
+# IRS-specific Exceptions
+class IRSNoSIPURI(Exception):
+    """Exception to throw if we are creating an IRS with no SIP URI"""
+    pass

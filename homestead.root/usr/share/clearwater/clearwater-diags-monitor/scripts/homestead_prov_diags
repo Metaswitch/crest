@@ -40,7 +40,7 @@ describering_file=$CURRENT_DUMP_DIR/nodetool_describering.txt
 for keyspace in homestead_cache homestead_provisioning
 do
   echo $keyspace: >>$describering_file
-  nodetool describering $keyspace >>$describering_file
+  $namespace_prefix nodetool describering $keyspace >>$describering_file
   echo >>$describering_file
 done
 

@@ -53,6 +53,7 @@ def ensure_dir_exists(d):
     if not os.path.isdir(d):
         raise RuntimeError("Failed to create dir %s" % d)
 
+PROCESS_NAME="crest"
 
 # Route configuration, which Handlers to install. Currently support "homer" and "homestead"
 # By default, include both - but for production should restrict to one or the other
@@ -71,10 +72,6 @@ LOG_FILE_MAX_BYTES = 10000000
 LOG_BACKUP_COUNT = 10
 LOG_LEVEL = logging.INFO
 PID_FILE = os.path.join(PROJECT_DIR, "server.pid")
-
-# Ports.
-HTTP_PORT = 7888
-ZMQ_PORT = 6665
 
 # Tornado cookie encryption key.  Tornado instances that share this key will
 # all trust each other's cookies.
@@ -96,6 +93,7 @@ SPROUT_HOSTNAME = "sprout.%s" % SIP_DIGEST_REALM
 SPROUT_PORT = 5054
 PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 HS_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
+CCF = "ccf"
 
 # Cache period (in seconds) for authentication details retrieved from the HSS.
 # There is no way to be notified of authentication changes over the Cx

@@ -40,7 +40,8 @@ import logging
 import time
 import random
 
-from metaswitch.crest.logging_config import configure_logging
+from metaswitch.common.logging_config import configure_logging
+from metaswitch.crest import settings
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 
@@ -60,7 +61,7 @@ def standalone(args):
     global io_loop
     global server_prefix
     global get_rate
-    configure_logging("stresstool")
+    configure_logging("stresstool", settings)
     logging.getLogger().setLevel(logging.INFO)
     logging.getLogger("crest").setLevel(logging.DEBUG)
     _log.info("Starting stress against %s", args.server)

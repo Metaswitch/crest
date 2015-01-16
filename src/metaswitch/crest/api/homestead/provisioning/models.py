@@ -39,6 +39,7 @@ import logging
 
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
+from metaswitch.crest.api.exceptions import IRSNoSIPURI
 
 from .. import config
 from ..auth_vectors import DigestAuthVector
@@ -198,21 +199,30 @@ class IRS(ProvisioningModel):
         priv_elem = ET.SubElement(root, "PrivateID")
         priv_elem.text = "Unspecified"
 
+        found_sip_uri = False
+
         sp_uuids = yield self.get_associated_service_profiles()
+
         for sp_uuid in sp_uuids:
             # Add a ServiceProfile node for each profile in this IRS with iFCs.
-            # (ignore it entirely if it doesn't have any iFCs).
             #
             # Note that the IFC XML contains a wrapping <ServiceProfile> tag.
             try:
                 ifc_xml = yield ServiceProfile(sp_uuid).get_ifc()
-                sp_elem = ET.fromstring(ifc_xml)
+            except NotFoundException:
+                ifc_xml = "<ServiceProfile><InitialFilterCriteria></InitialFilterCriteria></ServiceProfile>"
 
+            sp_elem = ET.fromstring(ifc_xml)
+
+            try:
                 # Add a PublicIdentity node for each ID in this service
                 # profile. The contents of this node are stored in the
                 # database.
                 public_ids = yield ServiceProfile(sp_uuid).get_public_ids()
+
                 for pub_id in public_ids:
+                    if pub_id.startswith("sip:"):
+                        found_sip_uri = True;
                     pub_id_xml = yield PublicID(pub_id).get_publicidentity()
                     pub_id_xml_elem = ET.fromstring(pub_id_xml)
                     sp_elem.append(pub_id_xml_elem)
@@ -223,6 +233,10 @@ class IRS(ProvisioningModel):
             except NotFoundException:
                 pass
 
+        # Throw an exception if we're building an IMS subscription that doesn't
+        # contain a SIP URI.
+        if not found_sip_uri:
+            raise IRSNoSIPURI()
 
         # Generate the new IMS subscription XML document.
         output = StringIO.StringIO()
@@ -240,15 +254,19 @@ class IRS(ProvisioningModel):
         """
         _log.debug("Rebuild cache for IRS %s" % self.row_key_str)
 
-        xml = yield self.build_imssubscription_xml()
-        timestamp = self._cache.generate_timestamp()
+        try:
+            xml = yield self.build_imssubscription_xml()
+            timestamp = self._cache.generate_timestamp()
 
-        for pub_id in (yield self.get_associated_publics()):
-            yield self._cache.put_ims_subscription(pub_id, xml, timestamp)
+            for pub_id in (yield self.get_associated_publics()):
+                yield self._cache.put_ims_subscription(pub_id, xml, timestamp)
+
+        except IRSNoSIPURI:
+            _log.warning("Not pushing to cache since IRS doesn't contain a SIP URI")
+            pass
 
         for priv_id in (yield self.get_associated_privates()):
             yield PrivateID(priv_id).rebuild()
-
 
 class PrivateID(ProvisioningModel):
     """Model representing a provisioned private ID"""

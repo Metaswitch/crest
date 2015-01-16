@@ -91,8 +91,8 @@ For a homestead node, you'll probably need at least the following in
 `local_settings.py` (replacing `example.com` with the correct domain).
 
     LOG_FILE_PREFIX = "homestead"
+    PROCESS_NAME = "homestead"
     INSTALLED_HANDLERS = ["homestead"]
-    ZMQ_PORT = "6667"
     HTTP_PORT = 8888
     HSS_ENABLED = False
     SIP_DIGEST_REALM = example.com
@@ -100,8 +100,8 @@ For a homestead node, you'll probably need at least the following in
 For a homer node, you'll probably need the following instead.
 
     LOG_FILE_PREFIX = "homer"
+    PROCESS_NAME = "homer"
     INSTALLED_HANDLERS = ["homer"]
-    ZMQ_PORT = "6665"
     HTTP_PORT = 7888
     SIP_DIGEST_REALM = example.com
 
@@ -198,7 +198,6 @@ Files
 * `src/` contains the source code for Crest
 * `build-infra/` and `modules/` contain submodules, described above.
 * `docs/` contains this documentation.
-* `backup/` contains the Crest backup system.
 * `debian/` and `*.root/`, as well as the repository root, contain files
   used for building the install package.
 * The remaining directories are mostly related to Python packaging.

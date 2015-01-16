@@ -43,11 +43,12 @@ from socket import AF_INET
 
 import cyclone.options
 import cyclone.web
+import twisted.internet.address
 from twisted.internet import reactor
 
 from metaswitch.crest import api
-from metaswitch.crest import settings, logging_config
-from metaswitch.common import utils
+from metaswitch.crest import settings
+from metaswitch.common import utils, logging_config
 
 _log = logging.getLogger("crest")
 
@@ -68,12 +69,15 @@ def standalone():
     Initializes Tornado and our application.  Forks worker processes to handle
     requests.  Does not return until all child processes exit normally.
     """
+    # Hack to work-around issue with Cyclone and UNIX domain sockets
+    twisted.internet.address.UNIXAddress.host = "localhost"
 
     # Parse arguments
     parser = argparse.ArgumentParser(description="Homer web server")
     parser.add_argument("--background", action="store_true", help="Detach and run server in background")
+    parser.add_argument("--signaling-namespace", action="store_true", help="Server running in signaling namespace")
     parser.add_argument("--worker-processes", default=1, type=int)
-    parser.add_argument("--shared-http-fd", default=None, type=int)
+    parser.add_argument("--shared-http-tcp-fd", default=None, type=int)
     parser.add_argument("--process-id", default=0, type=int)
     args = parser.parse_args()
 
@@ -100,24 +104,50 @@ def standalone():
     utils.install_sigusr1_handler(settings.LOG_FILE_PREFIX)
 
     # Setup logging
-    logging_config.configure_logging(args.process_id)
+    logging_config.configure_logging(args.process_id, settings)
 
     # setup accumulators and counters for statistics gathering
     api.base.setupStats(args.process_id, args.worker_processes)
 
-    if args.shared_http_fd:
-        reactor.adoptStreamPort(args.shared_http_fd, AF_INET, application)
-    else:
-        # Cyclone
-        _log.info("Going to listen for HTTP on port %s", settings.HTTP_PORT)
-        http_port = reactor.listenTCP(settings.HTTP_PORT, application, interface=settings.LOCAL_IP)
+    # Initialize reactor ports and create worker sub-processes
+    if args.process_id == 0:
+        # Main process startup, create UNIX domain socket for nginx front-end (used for
+        # normal operation and as a bridge from the default namespace to the signaling
+        # namespace in a multiple interface configuration).
+        unix_sock_name = settings.HTTP_UNIX + "-0"
+        _log.info("Going to listen for HTTP on UNIX socket %s", unix_sock_name)
+        reactor.listenUNIX(unix_sock_name, application)
 
-        for process_id in range(1, args.worker_processes):
-            reactor.spawnProcess(None, executable, [executable, __file__,
-                                 "--shared-http-fd", str(http_port.fileno()),
-                                 "--process-id", str(process_id)],
-                                 childFDs={0: 0, 1: 1, 2: 2, http_port.fileno(): http_port.fileno()},
-                                 env = os.environ)
+        if args.signaling_namespace and settings.PROCESS_NAME == "homer":
+            # Running in signaling namespace as Homer, create TCP socket for XDMS requests
+            # from signaling interface
+            _log.info("Going to listen for HTTP on TCP port %s", settings.HTTP_PORT)
+            http_tcp_port = reactor.listenTCP(settings.HTTP_PORT, application, interface=settings.LOCAL_IP)
+
+            # Spin up worker sub-processes, passing TCP file descriptor
+            for process_id in range(1, args.worker_processes):
+                reactor.spawnProcess(None, executable, [executable, __file__,
+                                     "--shared-http-tcp-fd", str(http_tcp_port.fileno()),
+                                     "--process-id", str(process_id)],
+                                     childFDs={0: 0, 1: 1, 2: 2, http_tcp_port.fileno(): http_tcp_port.fileno()},
+                                     env = os.environ)
+        else:
+            # Spin up worker sub-processes
+            for process_id in range(1, args.worker_processes):
+                reactor.spawnProcess(None, executable, [executable, __file__,
+                                     "--process-id", str(process_id)],
+                                     childFDs={0: 0, 1: 1, 2: 2},
+                                     env = os.environ)
+    else:
+        # Sub-process startup, create UNIX domain socket for nginx front-end based on
+        # process ID. 
+        unix_sock_name = settings.HTTP_UNIX + "-" + str(args.process_id)
+        _log.info("Going to listen for HTTP on UNIX socket %s", unix_sock_name)
+        reactor.listenUNIX(unix_sock_name, application)
+
+        # Create TCP socket if file descriptor was passed.
+        if args.shared_http_tcp_fd:
+            reactor.adoptStreamPort(args.shared_http_tcp_fd, AF_INET, application)
 
     # Kick off the reactor to start listening on configured ports
     reactor.run()

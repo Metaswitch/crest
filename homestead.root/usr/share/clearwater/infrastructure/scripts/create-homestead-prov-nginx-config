@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# @file do_backup.sh
+# @file create-homestead-prov-nginx-config
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2013  Metaswitch Networks Ltd
+# Copyright (C) 2014 Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,59 +34,54 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-die () {
-  echo >&2 "$@"
-  exit 1
+# This file creates an nginx config file for homestead-prov.
+
+split_domain_and_port()
+{
+  echo $1 | perl -ne '$_ =~ /(.+):([0-9]+)$/ && print "$1 $2\n"'
 }
 
-[ "$#" -eq 1 ] || die "Usage: do_backup.sh <keyspace>"
-KEYSPACE=$1
-COMPONENT=$(cut -d_ -f1 <<< $KEYSPACE)
-DATABASE=$(cut -d_ -f2 <<< $KEYSPACE)
-DATA_DIR=/var/lib/cassandra/data
-if [ -n "$DATABASE" ]
+. /etc/clearwater/config
+
+if [ -z $hs_provisioning_hostname ]
 then
-  BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups/$DATABASE"
-else
-  BACKUP_DIR="/usr/share/clearwater/$COMPONENT/backup/backups"
-fi
-[ -d "$DATA_DIR/$KEYSPACE" ] || die "Keyspace $KEYSPACE does not exist"
-if [[ ! -d "$BACKUP_DIR" ]]
-then
-  mkdir -p $BACKUP_DIR
-  echo "Created backup directory $BACKUP_DIR"
+  echo "hs_provisioning_hostname is not defined"
+  exit 2
 fi
 
-# Remove old backups (keeping last 3)
-# Cassandra keeps snapshots per columnfamily, so we need to delete them individually
-DIRS=$(find $DATA_DIR/$KEYSPACE/ -type d | grep 'snapshots$')
-for d in $DIRS
+read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port $hs_provisioning_hostname)"
+
+[ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port 
+
+site_file=/etc/nginx/sites-available/homestead-prov
+let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
+
+cat > $site_file << EOF1
+upstream http_homestead_prov {
+EOF1
+
+for sock_index in `seq 0 $sock_seq_end`;
 do
-  for f in $(ls -t $d | tail -n +4)
-  do
-    echo "Deleting old backup: $d/$f"
-    rm -r $d/$f
-  done
+  echo "        server unix:/tmp/.homestead-prov-sock-$sock_index;" >> $site_file
 done
 
-for f in $(ls -t $BACKUP_DIR | tail -n +4)
-do
-  echo "Deleting old backup: $BACKUP_DIR/$f"
-  rm -r $BACKUP_DIR/$f
-done
+cat >> $site_file << EOF2
 
-echo "Creating backup for keyspace $KEYSPACE..."
-nodetool -h localhost -p 7199 snapshot $KEYSPACE
+        # The minimum number of idle connections to keep alive to the upstream.
+        keepalive 16;
+}
 
-for t in $DATA_DIR/$KEYSPACE/*
-do
-  TABLE=`basename $t`
-  for s in $DATA_DIR/$KEYSPACE/$TABLE/snapshots/*
-  do
-    SNAPSHOT=`basename $s`
-    mkdir -p $BACKUP_DIR/$SNAPSHOT/$TABLE
-    cp -al $DATA_DIR/$KEYSPACE/$TABLE/snapshots/$SNAPSHOT/* $BACKUP_DIR/$SNAPSHOT/$TABLE
-  done
-done
+server {
+        listen       [::]:$homestead_provisioning_port ipv6only=off;
+        server_name  $hs_provisioning_domain;
 
-echo "Backups can be found at: $BACKUP_DIR"
+        location / {
+                proxy_pass http://http_homestead_prov;
+                proxy_http_version 1.1;
+
+                # The client may have instructed the server to close the
+                # connection - do not forward this upstream.
+                proxy_set_header Connection "";
+        }
+}
+EOF2
