@@ -6,7 +6,7 @@ All the scripts assume they are being run on a homer or homestead node with a co
 
 ## Pre-requisites
 
-* This code - Automatically installed alongside homer/homestead to 
+* This code - Automatically installed alongside homer/homestead to
 
         /usr/share/clearwater/<role>/src/metaswitch/crest/tools/sstable_provisioning/
 
@@ -51,8 +51,14 @@ This will generate `<csvfilename>_prepared.csv` in the current folder.  This sho
     sudo ./BulkProvision <csvfilename>_prepared.csv homer
     sudo ./BulkProvision <csvfilename>_prepared.csv homestead-local
     sudo ./BulkProvision <csvfilename>_prepared.csv homestead-hss
+    sudo ./BulkProvision <csvfilename>_prepared.csv memento
 
-This will create a `homer` or `homestead_cache` and `homestead_provisioning` folders in the current directory which will contain the various sstable files for that node type.  `homestead-local` will generate both homestead_cache and homestead_provisioning directories, to simulate use of the local provisioning API.  `homestead-hss` will only produce the homestead_cache directory, to simulate use of an external HSS.
+This will create one or more new directories containing various sstable files for that node type:
+
+* `homer` creates a single directory called homer
+* `memento` creates a single directory called memento
+* `homestead-local` generates both homestead\_cache and homestead\_provisioning directories, to simulate use of the local provisioning API.
+* `homestead-hss` only produces the homestead\_cache directory, to simulate use of an external HSS.
 
 ## Injecting the sstables
 
@@ -72,3 +78,8 @@ _For homestead:_
     sstableloader -v -d $local_ip homestead_provisioning/public
     sstableloader -v -d $local_ip homestead_provisioning/private
     sstableloader -v -d $local_ip homestead_provisioning/service_profiles
+
+_For memento:_
+
+    . /etc/clearwater/config
+    sstableloader -v -d $local_ip memento/call_lists
