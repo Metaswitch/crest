@@ -60,7 +60,7 @@ Pre-requisites
 6. ZMQ libraries
 
    ```
-   sudo apt-get install python-zmq libzmq3-dev 
+   sudo apt-get install python-zmq libzmq3-dev
    ```
 
 Setting up a virtualenv
@@ -90,8 +90,8 @@ that could be put at the bottom of `settings.py` can be put in `local_settings.p
 For a homestead node, you'll probably need at least the following in
 `local_settings.py` (replacing `example.com` with the correct domain).
 
-    LOG_FILE_PREFIX = "homestead"
-    PROCESS_NAME = "homestead"
+    LOG_FILE_PREFIX = "homestead-prov"
+    PROCESS_NAME = "homestead-prov"
     INSTALLED_HANDLERS = ["homestead"]
     HTTP_PORT = 8888
     HSS_ENABLED = False
