@@ -137,6 +137,7 @@ For Homestead-prov:
           CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text) WITH read_repair_chance = 1.0;" | cqlsh -2
 
 For Homer:
+
     echo "CREATE KEYSPACE homer WITH strategy_class='org.apache.cassandra.locator.SimpleStrategy' AND strategy_options:replication_factor=2;
          USE homer;
          CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH read_repair_chance = 1.0;" | cqlsh -2
