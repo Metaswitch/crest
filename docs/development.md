@@ -30,7 +30,7 @@ Pre-requisites
 1. Pip and virtualenv
 
     ```
-    sudo apt-get install python-pip python-dev python-virtualenv build-essential
+    sudo apt-get install python-pip python-dev python-virtualenv build-essential libffi-dev
     ```
 
 2. Lib-curl
@@ -60,7 +60,7 @@ Pre-requisites
 6. ZMQ libraries
 
    ```
-   sudo apt-get install python-zmq libzmq3-dev
+   sudo apt-get install python-zmq
    ```
 
 Setting up a virtualenv
@@ -95,7 +95,8 @@ For a homestead node, you'll probably need at least the following in
     INSTALLED_HANDLERS = ["homestead"]
     HTTP_PORT = 8888
     HSS_ENABLED = False
-    SIP_DIGEST_REALM = example.com
+    SIP_DIGEST_REALM = "example.com"
+    HTTP_UNIX = "/tmp/.homestead-prov-sock"
 
 For a homer node, you'll probably need the following instead.
 
@@ -103,7 +104,8 @@ For a homer node, you'll probably need the following instead.
     PROCESS_NAME = "homer"
     INSTALLED_HANDLERS = ["homer"]
     HTTP_PORT = 7888
-    SIP_DIGEST_REALM = example.com
+    SIP_DIGEST_REALM = "example.com"
+    HTTP_UNIX = "/tmp/.homer-sock"
 
 Logging
 =======
@@ -122,21 +124,28 @@ by the debian package. For development it is useful to run a local Cassandra dat
 Alternatively, just point Crest at an existing Cassandra database, by modifying the
 `CASS_HOST` parameter `local_settings.py`.
 
-Once you have a database running, you will need to make sure the correct keyspace exists.
-This is setup by the `debian/<component>.postinst` scripts, so make sure you run the relevant
-command before developing - e.g. for homer:
+Once you have a database running, you will need to make sure the correct keyspaces exist.
+These are setup by the cassandra-schemas scripts - to run these manually the commands are:
 
-    echo "create KEYSPACE homer with strategy_class = 'SimpleStrategy' AND strategy_options:replication_factor = 2;" | cqlsh -3 localhost
+For Homestead-prov:
 
-Next, to actually create the database run the `create_db.py` script:
+    echo "CREATE KEYSPACE homestead_provisioning WITH strategy_class='org.apache.cassandra.locator.SimpleStrategy' AND strategy_options:replication_factor=2;
+          USE homestead_provisioning;
+          CREATE TABLE implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH read_repair_chance = 1.0;
+          CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH read_repair_chance = 1.0;
+          CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH read_repair_chance = 1.0;
+          CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text) WITH read_repair_chance = 1.0;" | cqlsh -2
 
-    PYTHONPATH=src bin/python src/metaswitch/crest/tools/create_db.py
+For Homer:
+    echo "CREATE KEYSPACE homer WITH strategy_class='org.apache.cassandra.locator.SimpleStrategy' AND strategy_options:replication_factor=2;
+         USE homer;
+         CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH read_repair_chance = 1.0;" | cqlsh -2
 
 The easiest way to examine what is in the database is to use cqlsh, e.g.
 
-    cqlsh -3
-    use homestead_cache;
-    SELECT * FROM impi;
+    cqlsh -2
+    use <keyspace>;
+    SELECT * FROM <table>;
 
 For details of the CQL syntax, see [the CQL documentation](http://cassandra.apache.org/doc/cql3/CQL.html).
 
