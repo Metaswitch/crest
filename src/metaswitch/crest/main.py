@@ -38,8 +38,9 @@
 import os
 import argparse
 import logging
-from sys import executable
+from sys import executable, exit
 from socket import AF_INET
+from fcntl import flock, LOCK_EX, LOCK_NB
 
 import cyclone.options
 import cyclone.web
@@ -51,6 +52,26 @@ from metaswitch.crest import settings
 from metaswitch.common import utils, logging_config
 
 _log = logging.getLogger("crest")
+_lock_fd = None
+
+def bind_safely(reactor, process_id, application):
+    unix_sock_name = settings.HTTP_UNIX + "-" + str(process_id)
+    unix_sock_lock_name = unix_sock_name + ".lockfile"
+    fd = open(unix_sock_lock_name, "a+")
+    try:
+        flock(fd, LOCK_EX | LOCK_NB)
+    except IOError:
+        _log.error("Lock %s is held by another process, exiting", unix_sock_lock_name)
+        exit(1)
+
+    if os.path.exists(unix_sock_name):
+        _log.warning("UNIX socket %s exists, but lock %s is not held - deleting stale %s", unix_sock_name, unix_sock_lock_name, unix_sock_name)
+        os.remove(unix_sock_name)
+        
+    _log.info("Going to listen for HTTP on UNIX socket %s", unix_sock_name)
+    reactor.listenUNIX(unix_sock_name, application)
+    return fd
+
 
 def create_application():
     app_settings = {
@@ -114,9 +135,7 @@ def standalone():
         # Main process startup, create UNIX domain socket for nginx front-end (used for
         # normal operation and as a bridge from the default namespace to the signaling
         # namespace in a multiple interface configuration).
-        unix_sock_name = settings.HTTP_UNIX + "-0"
-        _log.info("Going to listen for HTTP on UNIX socket %s", unix_sock_name)
-        reactor.listenUNIX(unix_sock_name, application)
+        _lock_fd = bind_safely(reactor, args.process_id, application)
 
         if args.signaling_namespace and settings.PROCESS_NAME == "homer":
             # Running in signaling namespace as Homer, create TCP socket for XDMS requests
@@ -141,9 +160,7 @@ def standalone():
     else:
         # Sub-process startup, create UNIX domain socket for nginx front-end based on
         # process ID. 
-        unix_sock_name = settings.HTTP_UNIX + "-" + str(args.process_id)
-        _log.info("Going to listen for HTTP on UNIX socket %s", unix_sock_name)
-        reactor.listenUNIX(unix_sock_name, application)
+        _lock_fd = bind_safely(reactor, args.process_id, application)
 
         # Create TCP socket if file descriptor was passed.
         if args.shared_http_tcp_fd:
