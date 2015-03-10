@@ -53,8 +53,7 @@ rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
 if [ ! -z $signaling_namespace ] ; then
   # For the signalling address, wrap IPv6 addresses in square brackets. This should be the local_ip. 
   http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
-  http_url=http://$http_ip:7888/ping
-  /usr/share/clearwater/bin/poll-http $http_url
+  /usr/share/clearwater/bin/poll-http $http_ip:7888
   rc_sig=$?
 
   [ $rc == 0 ] && [ $rc_sig == 0 ] ; rc=$?
