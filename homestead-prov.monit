@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # @file homestead-prov.monit
 #
 # Project Clearwater - IMS in the Cloud
@@ -53,5 +51,5 @@ check process homestead-prov with pidfile /var/run/homestead-prov.pid
 
   # Check the service's resource usage, and abort the process if it's too high. This will
   # generate a core file and trigger diagnostics collection.
-  if cpu > 80% for 6 cycles then exec "etc/init.d/homestead-prov abort"
-  if memory > 80% for 6 cycles then exec "etc/init.d/homestead-prov abort"
+  if cpu > 80% for 6 cycles then exec "/etc/init.d/homestead-prov abort"
+  if memory > 80% for 6 cycles then exec "/etc/init.d/homestead-prov abort"
