@@ -34,10 +34,6 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# This script uses HTTP to poll a homestead-prov process and check whether it is healthy.
-
-# In case homestead-prov has only just restarted, give it a few seconds to come up.
-sleep 5
 
 # Send HTTP request and check that the response is "OK".
 http_url=http://127.0.0.1:8889/ping

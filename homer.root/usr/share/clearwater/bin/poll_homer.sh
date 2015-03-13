@@ -34,11 +34,6 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# This script uses HTTP to poll a homer process and check whether it is healthy.
-
-# In case homer has only just restarted, give it a few seconds to come up.
-sleep 5
-
 # Grab our configuration 
 . /etc/clearwater/config
 
@@ -49,28 +44,17 @@ rc=$?
 
 # Check the return code and log if appropriate.
 if [ $rc != 0 ] ; then
-  echo HTTP failed to $http_url             >&2
+  echo HTTP failed to $http_url    >&2
   cat /tmp/poll-homer.sh.stderr.$$ >&2
   cat /tmp/poll-homer.sh.stdout.$$ >&2
 fi
 rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
 
 if [ ! -z $signaling_namespace ] ; then
-  # For HTTP, we need to wrap IPv6 addresses in square brackets.
+  # For the signalling address, wrap IPv6 addresses in square brackets. This should be the local_ip. 
   http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
-
-  # Send HTTP request to signaling interface and check that the response is "OK".
-  http_url=http://$http_ip:7888/ping
-  ip netns exec $signaling_namespace curl -f -g -m 2 -s $http_url 2> /tmp/poll-homer.sh.stderr.$$ | tee /tmp/poll-homer.sh.stdout.$$ | head -1 | egrep -q "^OK$"
+  /usr/share/clearwater/bin/poll-http $http_ip:7888
   rc_sig=$?
-
-  # Check the return code and log if appropriate.
-  if [ $rc_sig != 0 ] ; then
-    echo HTTP failed to $http_url             >&2
-    cat /tmp/poll-homer.sh.stderr.$$ >&2
-    cat /tmp/poll-homer.sh.stdout.$$ >&2
-  fi
-  rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
 
   [ $rc == 0 ] && [ $rc_sig == 0 ] ; rc=$?
 fi
