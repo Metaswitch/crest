@@ -34,15 +34,7 @@
 
 # Check the Homestead-prov process.
 
-# Check the HTTP interface. This depends on the Homestead-prov process (and so won't run
-# unless the Homestead-prov process is running)
-check program poll_homestead-prov with path "/usr/share/clearwater/bin/poll_homestead-prov.sh"
-  depends on homestead-prov
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/homestead-prov abort'"
-
-# Monitor the service's PID file, CPU and memory use.
+# Monitor the service's PID file and memory use.
 check process homestead-prov with pidfile /var/run/homestead-prov.pid
 
   start program = "/etc/monit/run_logged /etc/init.d/homestead-prov start"
@@ -51,5 +43,12 @@ check process homestead-prov with pidfile /var/run/homestead-prov.pid
 
   # Check the service's resource usage, and abort the process if it's too high. This will
   # generate a core file and trigger diagnostics collection.
-  if cpu > 80% for 6 cycles then exec "/etc/init.d/homestead-prov abort"
   if memory > 80% for 6 cycles then exec "/etc/init.d/homestead-prov abort"
+
+# Check the HTTP interface. This depends on the Homestead-prov process (and so won't run
+# unless the Homestead-prov process is running)
+check program poll_homestead-prov with path "/usr/share/clearwater/bin/poll_homestead-prov.sh"
+  depends on homestead-prov
+
+  # Aborting generates a core file and triggers diagnostic collection.
+  if status != 0 for 2 cycles then exec "/etc/init.d/homestead-prov abort'"
