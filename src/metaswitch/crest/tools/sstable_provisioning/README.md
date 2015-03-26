@@ -35,6 +35,10 @@ This will compile the ClearwaterBulkProvisioner classes.  If the compiler cannot
 
 ## Preparing the sstables
 
+The sstables can be created either from CSV files describing each subscriber or from command-line parameters specifying a range.  The latter is better for setting up stress runs (where you often want all your subscribers to be the same anyway) - the former is better for real subscribers.
+
+### From CSV
+
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
 Use the python executable bundled with homer/homestead.
@@ -46,12 +50,31 @@ Prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
     python ./prepare_csv.py <csvfilename>.csv
 
-This will generate `<csvfilename>_prepared.csv` in the current folder.  This should now be converted into sstables with one of the following
+This will generate `<csvfilename>_prepared.csv` in the current folder.  This filename should now be passed to BulkProvision as a command-line parameter, e.g. as follows - see more detail below.
 
-    sudo ./BulkProvision <csvfilename>_prepared.csv homer
-    sudo ./BulkProvision <csvfilename>_prepared.csv homestead-local
-    sudo ./BulkProvision <csvfilename>_prepared.csv homestead-hss
-    sudo ./BulkProvision <csvfilename>_prepared.csv memento
+    sudo ./BulkProvision homestead-local <csvfilename>_prepared.csv
+
+### From a range
+
+To create sstables for a range of subscribers, all with identical configuration, pass the following parameters to BulkProvision.
+
+*   start directory number
+*   end directory number
+*   domain
+*   password
+
+For example, to create sstables for running clearwater-sip-stress stress tests with 1 million subscribers, the parameters might be as follows - see more detail below.
+
+    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW
+
+### Running BulkProvision
+
+Now that you've got the parameters, run one of the following commands.
+
+    sudo ./BulkProvision homer <parameters>
+    sudo ./BulkProvision homestead-local <parameters>
+    sudo ./BulkProvision homestead-hss <parameters>
+    sudo ./BulkProvision memento <parameters>
 
 This will create one or more new directories containing various sstable files for that node type:
 
