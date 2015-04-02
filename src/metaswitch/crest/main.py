@@ -125,7 +125,7 @@ def standalone():
     utils.install_sigusr1_handler(settings.LOG_FILE_PREFIX)
 
     # Setup logging
-    logging_config.configure_logging(args.process_id, settings)
+    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, args.process_id)
 
     # setup accumulators and counters for statistics gathering
     api.base.setupStats(args.process_id, args.worker_processes)
