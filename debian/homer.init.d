@@ -104,7 +104,7 @@ do_start()
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
     || return 1
   get_daemon_args
-  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --exec $DAEMON -- --background $DAEMON_ARGS \
+  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --exec $DAEMON -- $DAEMON_ARGS --background \
     || return 2
   # Add code here, if necessary, that waits for the process to be ready
   # to handle requests from services started subsequently which depend
