@@ -49,7 +49,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC=homer       # Introduce a short description here
 NAME=homer       # Introduce the short server's name here (not suitable for --name)
 DAEMON=/usr/share/clearwater/homer/env/bin/python # Introduce the server's location here
-DAEMON_ARGS="-m metaswitch.crest.main --background --worker-processes $(cat /proc/cpuinfo | grep processor | wc -l)"
+DAEMON_ARGS="-m metaswitch.crest.main --worker-processes $(cat /proc/cpuinfo | grep processor | wc -l)"
 DAEMON_DIR=/usr/share/clearwater/homer/
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
@@ -82,6 +82,17 @@ get_settings()
 }
 
 #
+# Function to get the arguments to pass to the process
+#
+get_daemon_args()
+{
+  # Get the settings
+  get_settings
+
+  DAEMON_ARGS="$DAEMON_ARGS $signaling_opt"
+}
+
+#
 # Function that starts the daemon/service
 #
 do_start()
@@ -92,13 +103,22 @@ do_start()
   #   2 if daemon could not be started
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
     || return 1
-  get_settings
-  DAEMON_ARGS="$DAEMON_ARGS $signaling_opt"
-  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --pidfile $PIDFILE --exec $DAEMON -- $DAEMON_ARGS \
+  get_daemon_args
+  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --exec $DAEMON -- $DAEMON_ARGS --background \
     || return 2
   # Add code here, if necessary, that waits for the process to be ready
   # to handle requests from services started subsequently which depend
   # on this one.  As a last resort, sleep for some time.
+}
+
+#
+# Function that runs the daemon/service in the foreground
+#
+do_run()
+{
+  get_daemon_args
+  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --exec $DAEMON -- $DAEMON_ARGS \
+    || return 2
 }
 
 #
@@ -159,23 +179,18 @@ case "$1" in
       2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
     esac
     ;;
+  run)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Running $DESC" "$NAME"
+    do_run
+    case "$?" in
+      0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+      2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
   status)
     status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
     ;;
-  #reload|force-reload)
-    #
-    # If do_reload() is not implemented then leave this commented out
-    # and leave 'force-reload' as an alias for 'restart'.
-    #
-    #log_daemon_msg "Reloading $DESC" "$NAME"
-    #do_reload
-    #log_end_msg $?
-    #;;
   restart|force-reload)
-    #
-    # If the "reload" option is implemented then remove the
-    # 'force-reload' alias
-    #
     log_daemon_msg "Restarting $DESC" "$NAME"
     do_stop
     case "$?" in
@@ -216,8 +231,7 @@ case "$1" in
     esac
     ;;
   *)
-    #echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
-    echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+    echo "Usage: $SCRIPTNAME {start|stop|run|status|restart|force-reload|abort|abort-restart}" >&2
     exit 3
     ;;
 esac
