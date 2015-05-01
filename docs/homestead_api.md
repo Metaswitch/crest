@@ -138,7 +138,7 @@ Make a GET to this URL to list the public IDs that use this service profile.  Re
 
 Make a PUT to this URL to create a new public ID, or update an existing one, that uses the specified service profile. The body must be an XML document containing a complete IMS `PublicIdentity` element. Response:
 
-* 200 if the public ID was created / updated sucessfully.
+* 200 if the public ID was created / updated successfully.
 * 400 if the body of the request is invalid.
 * 403 if the identity specified in the URL does not match the identity specified in the PublicIdentity element.
 * 404 if the service profile does not exist.
