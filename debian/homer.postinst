@@ -75,6 +75,11 @@ case "$1" in
         # Start monit monitoring ourselves
         cp $HOMER_DIR/*.monit /etc/monit/conf.d/
         service monit restart
+
+        # Stop the cluster manager, so that it is restarted by Monit and picks
+        # up the new Cassandra scaling plugin.
+        service clearwater-cluster-manager stop || /bin/true
+
         # Restart homer.  Always do this by terminating homer so monit will
         # restart it more-or-less immediately.  (monit restart seems to have
         # significant lag.)
