@@ -91,7 +91,7 @@ Crest server is made into a Homer or Homestead server. For example, the
 ROUTES for Homestead are defined in `src/metaswitch/crest/api/homestead/__init__.py`
 
 Which Handlers are installed at runtime is defined by the INSTALLED_HANDLERS
-parameter in `settings.py`. When Homer and Homestead are packaged into debian
+parameter in `settings.py`. When Homer and Homestead are packaged into Debian
 packages, this setting is configured in their respective `local_settings.py` file.
 
 Twisted basics

@@ -6,7 +6,7 @@ All the scripts assume they are being run on a homer or homestead node with a co
 
 ## Pre-requisites
 
-* This code - Automatically installed alongside homer/homestead to 
+* This code - Automatically installed alongside homer/homestead to
 
         /usr/share/clearwater/<role>/src/metaswitch/crest/tools/sstable_provisioning/
 
@@ -35,6 +35,10 @@ This will compile the ClearwaterBulkProvisioner classes.  If the compiler cannot
 
 ## Preparing the sstables
 
+The sstables can be created either from CSV files describing each subscriber or from command-line parameters specifying a range.  The latter is better for setting up stress runs (where you often want all your subscribers to be the same anyway) - the former is better for real subscribers.
+
+### From CSV
+
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
 Use the python executable bundled with homer/homestead.
@@ -46,13 +50,38 @@ Prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
     python ./prepare_csv.py <csvfilename>.csv
 
-This will generate `<csvfilename>_prepared.csv` in the current folder.  This should now be converted into sstables with one of the following
+This will generate `<csvfilename>_prepared.csv` in the current folder.  This filename should now be passed to BulkProvision as a command-line parameter, e.g. as follows - see more detail below.
 
-    sudo ./BulkProvision <csvfilename>_prepared.csv homer
-    sudo ./BulkProvision <csvfilename>_prepared.csv homestead-local
-    sudo ./BulkProvision <csvfilename>_prepared.csv homestead-hss
+    sudo ./BulkProvision homestead-local <csvfilename>_prepared.csv
 
-This will create a `homer` or `homestead_cache` and `homestead_provisioning` folders in the current directory which will contain the various sstable files for that node type.  `homestead-local` will generate both homestead_cache and homestead_provisioning directories, to simulate use of the local provisioning API.  `homestead-hss` will only produce the homestead_cache directory, to simulate use of an external HSS.
+### From a range
+
+To create sstables for a range of subscribers, all with identical configuration, pass the following parameters to BulkProvision.
+
+*   start directory number
+*   end directory number
+*   domain
+*   password
+
+For example, to create sstables for running clearwater-sip-stress stress tests with 1 million subscribers, the parameters might be as follows - see more detail below.
+
+    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW
+
+### Running BulkProvision
+
+Now that you've got the parameters, run one of the following commands.
+
+    sudo ./BulkProvision homer <parameters>
+    sudo ./BulkProvision homestead-local <parameters>
+    sudo ./BulkProvision homestead-hss <parameters>
+    sudo ./BulkProvision memento <parameters>
+
+This will create one or more new directories containing various sstable files for that node type:
+
+* `homer` creates a single directory called homer
+* `memento` creates a single directory called memento
+* `homestead-local` generates both homestead\_cache and homestead\_provisioning directories, to simulate use of the local provisioning API.
+* `homestead-hss` only produces the homestead\_cache directory, to simulate use of an external HSS.
 
 ## Injecting the sstables
 
@@ -72,3 +101,8 @@ _For homestead:_
     sstableloader -v -d $local_ip homestead_provisioning/public
     sstableloader -v -d $local_ip homestead_provisioning/private
     sstableloader -v -d $local_ip homestead_provisioning/service_profiles
+
+_For memento:_
+
+    . /etc/clearwater/config
+    sstableloader -v -d $local_ip memento/call_lists

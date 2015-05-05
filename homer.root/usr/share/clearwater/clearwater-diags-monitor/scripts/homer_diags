@@ -36,6 +36,6 @@
 # (in the clearwater-infrastructure project).
 
 describering_file=$CURRENT_DUMP_DIR/nodetool_describering.txt
-nodetool describering homer >> $describering_file
+$namespace_prefix nodetool describering homer >> $describering_file
 
 cp $(find /usr/share/clearwater/homestead/env -name local_settings.py) $CURRENT_DUMP_DIR

@@ -1,7 +1,7 @@
-# @file homestead-prov.monit
+# @file monotonic_time.py
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2015  Metaswitch Networks Ltd
+# Copyright (C) 2014  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -32,23 +32,23 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Check the Homestead-prov process.
+import ctypes, os
 
-# Monitor the service's PID file and memory use.
-check process homestead-prov with pidfile /var/run/homestead-prov.pid
+CLOCK_MONOTONIC_RAW = 4 # see <linux/time.h>
 
-  start program = "/etc/monit/run_logged /etc/init.d/homestead-prov start"
-  stop program = "/etc/monit/run_logged /etc/init.d/homestead-prov stop"
-  restart program = "/etc/monit/run_logged /etc/init.d/homestead-prov restart"
+class timespec(ctypes.Structure):
+    _fields_ = [
+        ('tv_sec', ctypes.c_long),
+        ('tv_nsec', ctypes.c_long)
+    ]
 
-  # Check the service's resource usage, and abort the process if it's too high. This will
-  # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/homestead-prov abort"
+librt = ctypes.CDLL('librt.so.1', use_errno=True)
+clock_gettime = librt.clock_gettime
+clock_gettime.argtypes = [ctypes.c_int, ctypes.POINTER(timespec)]
 
-# Check the HTTP interface. This depends on the Homestead-prov process (and so won't run
-# unless the Homestead-prov process is running)
-check program poll_homestead-prov with path "/usr/share/clearwater/bin/poll_homestead-prov.sh"
-  depends on homestead-prov
-
-  # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/homestead-prov abort'"
+def monotonic_time():
+    t = timespec()
+    if clock_gettime(CLOCK_MONOTONIC_RAW , ctypes.pointer(t)) != 0:
+        errno_ = ctypes.get_errno()
+        raise OSError(errno_, os.strerror(errno_))
+    return t.tv_sec + t.tv_nsec * 1e-9

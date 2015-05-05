@@ -28,10 +28,10 @@ done > users.csv
         to log your phone(s) in.
 
 4.  Run
-    /usr/share/clearwater/homestead/src/metaswitch/crest/tools/bulk\_create.py users.csv (or users.auto.csv if you used bulk\_autocomplete.py)
-    - This will create four files - two \*.create\_homestead.\* files and two \*.create\_xdm.\* files.
+    `/usr/share/clearwater/homestead/src/metaswitch/crest/tools/bulk_create.py users.csv` (or `users.auto.csv` if you used bulk\_autocomplete.py). If you need example call list data add the `--memento` option.  This will create a number of files in the current directory.
 5.  Run the resulting \*.create\_homestead.sh script on the homestead
     node.
 6.  Copy the \*.create\_xdm.\* files to a homer node and run the
     \*.create\_xdm.sh script there, as instructed.
+7.  If you need call list data, copy the \*.create\_memento.\* files to a memento node and run the \*create\_memento.sh script there, as instructed.
 

@@ -5,7 +5,7 @@ All access must go via this API, rather than directly to the database.
 
 ## IMPI
 
-    `/impi/<private ID>/digest`
+    /impi/<private ID>/digest
 
 Make a GET request to this URL to retrieve the digest of the specified private ID
 
@@ -18,7 +18,7 @@ Response:
 
 ## IMPU
 
-    `/impu/<public ID>`
+    /impu/<public ID>
 
 Make a GET request to this URL to retrieve the IMS subscription document for this public ID
 
@@ -33,7 +33,7 @@ Response:
 
 These URLs are only available when homestead is acting in place of a real HSS. When acting as an HSS cache they all return a 404 error.
 
-    `/private/<private ID>`
+    /private/<private ID>
 
 Make a GET to this URL to retrieve details for a private ID. Response:
 
@@ -114,7 +114,7 @@ Make a PUT to this URL to configure the private ID to authenticate the specified
 
 ## Service Profiles
 
-    `/irs/<irs-uuid>/service_profiles`
+    /irs/<irs-uuid>/service_profiles
 
 Make a POST to this URL to create a new service profile. Response:
 
@@ -138,7 +138,7 @@ Make a GET to this URL to list the public IDs that use this service profile.  Re
 
 Make a PUT to this URL to create a new public ID, or update an existing one, that uses the specified service profile. The body must be an XML document containing a complete IMS `PublicIdentity` element. Response:
 
-* 200 if the public ID was created / updated sucessfully.
+* 200 if the public ID was created / updated successfully.
 * 400 if the body of the request is invalid.
 * 403 if the identity specified in the URL does not match the identity specified in the PublicIdentity element.
 * 404 if the service profile does not exist.
@@ -162,7 +162,7 @@ Make a GET to this URL to retrieve the iFCs for this service profile. Response:
 
 ## Public IDs (read only)
 
-    `/public/<public-id>/service_profile`
+    /public/<public-id>/service_profile
 
 Make a GET to this URL to be redirected to the public ID's service profile. Response:
 

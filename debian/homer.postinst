@@ -56,6 +56,10 @@ HOMER_DIR=/usr/share/clearwater/homer
 
 case "$1" in
     configure)
+        # Restart clearwater-infrastructure to run the script that creates the
+        # homer nginx site.
+        service clearwater-infrastructure restart
+
         rm -rf $HOMER_DIR/build
         virtualenv --python=$(which python) $HOMER_DIR/env
         $HOMER_DIR/env/bin/easy_install --allow-hosts=None -f $HOMER_DIR/eggs/ $HOMER_DIR/eggs/*.egg
@@ -74,7 +78,8 @@ case "$1" in
 
         # Start monit monitoring ourselves
         cp $HOMER_DIR/*.monit /etc/monit/conf.d/
-        service monit restart
+
+        reload clearwater-monit || true
 
         # Stop the cluster manager, so that it is restarted by Monit and picks
         # up the new Cassandra scaling plugin.
@@ -84,10 +89,16 @@ case "$1" in
         # restart it more-or-less immediately.  (monit restart seems to have
         # significant lag.)
         # Don't fail if it's already stopped.
-        service homer stop || /bin/true
+        service homer stop || true
 
         # Apply secure connection rules if enabled.
         [ ! -x /etc/init.d/clearwater-secure-connections ] || /etc/init.d/clearwater-secure-connections reload
+
+        # Enable the homer nginx site
+        if ( nginx_ensite homer > /dev/null )
+        then
+            service nginx stop
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
