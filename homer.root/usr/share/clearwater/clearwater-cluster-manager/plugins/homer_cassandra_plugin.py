@@ -6,7 +6,7 @@ from metaswitch.clearwater.cluster_manager.alarms import issue_alarm
 from metaswitch.clearwater.cluster_manager import constants
 import logging
 
-_log = logging.getLogger("cassandra_plugin")
+_log = logging.getLogger("homer_cassandra_plugin")
 
 
 class HomerCassandraPlugin(SynchroniserPluginBase):
@@ -39,6 +39,9 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         leave_cassandra_cluster()
         issue_alarm(constants.CLEAR_CASSANDRA_NOT_YET_DECOMMISSIONED)
         pass
+
+    def files(self):
+        return ["/etc/cassandra/cassandra.yaml"]
 
 
 def load_as_plugin(ip):
