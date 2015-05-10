@@ -61,7 +61,7 @@ def standalone(args):
     global io_loop
     global server_prefix
     global get_rate
-    configure_logging("stresstool", settings)
+    configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, "stresstool")
     logging.getLogger().setLevel(logging.INFO)
     logging.getLogger("crest").setLevel(logging.DEBUG)
     _log.info("Starting stress against %s", args.server)

@@ -47,5 +47,6 @@ def standalone():
     db.create_tables(_log)
 
 if __name__ == '__main__':
-    logging_config.configure_logging("create_db", settings)
+    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, "create_db")
+
     standalone()
