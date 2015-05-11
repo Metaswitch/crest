@@ -51,7 +51,7 @@ fi
 
 read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port $hs_provisioning_hostname)"
 
-[ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port 
+[ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port
 
 site_file=/etc/nginx/sites-available/homestead-prov
 let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1

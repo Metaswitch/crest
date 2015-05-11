@@ -67,7 +67,7 @@ def bind_safely(reactor, process_id, application):
     if os.path.exists(unix_sock_name):
         _log.warning("UNIX socket %s exists, but lock %s is not held - deleting stale %s", unix_sock_name, unix_sock_lock_name, unix_sock_name)
         os.remove(unix_sock_name)
-        
+
     _log.info("Going to listen for HTTP on UNIX socket %s", unix_sock_name)
     reactor.listenUNIX(unix_sock_name, application)
     return fd
@@ -159,7 +159,7 @@ def standalone():
                                      env = os.environ)
     else:
         # Sub-process startup, create UNIX domain socket for nginx front-end based on
-        # process ID. 
+        # process ID.
         _lock_fd = bind_safely(reactor, args.process_id, application)
 
         # Create TCP socket if file descriptor was passed.

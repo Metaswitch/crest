@@ -34,7 +34,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Grab our configuration 
+# Grab our configuration
 . /etc/clearwater/config
 
 # Send HTTP request to normal/management interface and check that the response is "OK".
@@ -51,7 +51,7 @@ fi
 rm -f /tmp/poll-homer.sh.stderr.$$ /tmp/poll-homer.sh.stdout.$$
 
 if [ ! -z $signaling_namespace ] ; then
-  # For the signalling address, wrap IPv6 addresses in square brackets. This should be the local_ip. 
+  # For the signalling address, wrap IPv6 addresses in square brackets. This should be the local_ip.
   http_ip=$(/usr/share/clearwater/bin/bracket_ipv6_address.py $local_ip)
   /usr/share/clearwater/bin/poll-http $http_ip:7888
   rc_sig=$?

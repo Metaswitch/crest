@@ -70,7 +70,7 @@ cat >> $site_file << EOF2
 }
 
 server {
-        listen       [::]:$xdms_port ipv6only=off; 
+        listen       [::]:$xdms_port ipv6only=off;
         server_name  $xdms_domain;
 
         location / {
