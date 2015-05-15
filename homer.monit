@@ -35,8 +35,8 @@
 # Check the Homer process.
 
 # Monitor the service's PID file and memory use.
-check process homer with pidfile /var/run/homer.pid
-
+check process homer_process with pidfile /var/run/homer.pid
+  group homer
   start program = "/etc/monit/run_logged /etc/init.d/homer start"
   stop program = "/etc/monit/run_logged /etc/init.d/homer stop"
   restart program = "/etc/monit/run_logged /etc/init.d/homer restart"
@@ -48,7 +48,8 @@ check process homer with pidfile /var/run/homer.pid
 # Check the HTTP interface. This depends on the Homer process (and so won't run
 # unless the Homer process is running)
 check program poll_homer with path "/usr/share/clearwater/bin/poll_homer.sh"
-  depends on homer
+  group homer
+  depends on homer_process
 
   # Aborting generates a core file and triggers diagnostic collection.
   if status != 0 for 2 cycles then exec "/etc/init.d/homer abort'"
