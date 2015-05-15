@@ -196,7 +196,7 @@ def write_homer_scripts(csv_filename):
         xdm_file.write("# The %s file must also be present on this system\n" % (xdm_cqlsh_filename))
         xdm_file.write("\n")
         xdm_file.write("[ -f %s ] || echo \"The %s file must be present on this system.\"\n" % (xdm_cqlsh_filename, xdm_cqlsh_filename))
-        xdm_file.write("cqlsh -3 -f %s\n" % (xdm_cqlsh_filename))
+        xdm_file.write("cqlsh -f %s\n" % (xdm_cqlsh_filename))
         xdm_cqlsh_file.write("USE homer;\n")
 
         for public_id, private_id, realm, password in csv_iterator(csv_filename):

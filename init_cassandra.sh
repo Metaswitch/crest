@@ -37,7 +37,7 @@
 
 set -e
 
-cqlsh -3 < init_cassandra.cql
+cqlsh < init_cassandra.cql
 bin/python src/metaswitch/homer/data/create_db.py
 
 echo "Finished creating DB."
