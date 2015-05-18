@@ -41,7 +41,7 @@ _log = logging.getLogger("homestead_prov_cassandra_plugin")
 
 
 class HomesteadProvCassandraPlugin(SynchroniserPluginBase):
-    def __init__(self, _ip, local_site, remote_site):
+    def __init__(self, ip, local_site, remote_site):
         self._key = "/clearwater/{}/homestead_prov/clustering/cassandra".format(local_site)
         self._ip = ip
 
@@ -52,7 +52,7 @@ class HomesteadProvCassandraPlugin(SynchroniserPluginBase):
         return False
 
     def files(self):
-        pass
+        return []
 
     def on_cluster_changing(self, cluster_view):
         pass
