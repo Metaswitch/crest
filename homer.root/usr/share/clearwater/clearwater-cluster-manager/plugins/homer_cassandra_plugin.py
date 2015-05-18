@@ -35,7 +35,7 @@
 from metaswitch.clearwater.cluster_manager.plugin_base import \
     SynchroniserPluginBase
 from metaswitch.clearwater.cluster_manager.plugin_utils import \
-    join_cassandra_cluster, leave_cassandra_cluster
+    join_cassandra_cluster, leave_cassandra_cluster, run_command
 from metaswitch.clearwater.cluster_manager.alarms import issue_alarm
 from metaswitch.clearwater.cluster_manager import constants
 import logging
