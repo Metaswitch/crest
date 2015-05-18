@@ -10,8 +10,9 @@ _log = logging.getLogger("homer_cassandra_plugin")
 
 
 class HomerCassandraPlugin(SynchroniserPluginBase):
-    def __init__(self, ip):
+    def __init__(self, ip, local_site, remote_site):
         self._ip = ip
+        self._local_site = local_site
         _log.debug("Raising Cassandra not-clustered alarm")
         issue_alarm(constants.RAISE_CASSANDRA_NOT_YET_CLUSTERED)
 
@@ -24,7 +25,9 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
     def on_joining_cluster(self, cluster_view):
         join_cassandra_cluster(cluster_view,
                                "/etc/cassandra/cassandra.yaml",
-                               self._ip)
+                               "/etc/cassandra/cassandra-rackdc.properties",
+                               self._ip,
+                               self._local_site)
         _log.debug("Clearing Cassandra not-clustered alarm")
         issue_alarm(constants.CLEAR_CASSANDRA_NOT_YET_CLUSTERED)
 
@@ -44,5 +47,5 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         return ["/etc/cassandra/cassandra.yaml"]
 
 
-def load_as_plugin(ip):
-    return HomerCassandraPlugin(ip)
+def load_as_plugin(ip, local_site, remote_site):
+    return HomerCassandraPlugin(ip, local_site, remote_site)
