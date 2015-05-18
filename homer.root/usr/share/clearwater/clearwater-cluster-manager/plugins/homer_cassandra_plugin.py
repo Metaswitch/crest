@@ -63,14 +63,9 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
                                self._ip,
                                self._local_site)
 
-        _log.error(self._ip)
-        _log.error(cluster_view)
-        _log.error(cluster_view.keys())
-        _log.error(cluster_view.keys().sort()[0])
-
-        if (self._ip == cluster_view.keys().sort()[0]):
+        if (self._ip == sorted(cluster_view.keys())[0]):
             _log.debug("Adding Homer schema")
-            run_command(/usr/share/clearwater/cassandra-schemas/homer.sh)
+            run_command("/usr/share/clearwater/cassandra-schemas/homer.sh")
 
         _log.debug("Clearing Cassandra not-clustered alarm")
         issue_alarm(constants.CLEAR_CASSANDRA_NOT_YET_CLUSTERED)

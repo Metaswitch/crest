@@ -11,7 +11,7 @@ All the scripts assume they are being run on a homer or homestead node with a co
         /usr/share/clearwater/<role>/src/metaswitch/crest/tools/sstable_provisioning/
 
 * `make` - `sudo apt-get install make`
-* `javac` - `sudo apt-get install openjdk-6-jdk`
+* `javac` - `sudo apt-get install openjdk-7-jdk`
 * `python` - Installed with homer/homestead
 * `/etc/cassandra/cassandra.yaml` - Installed during clustering
 * `/usr/share/cassandra/*` - Installed with dsc1.1

@@ -60,9 +60,9 @@ class HomesteadProvCassandraPlugin(SynchroniserPluginBase):
     def on_joining_cluster(self, cluster_view):
         # The Homestead-prov clustering is done by the Homestead plugin. 
         # This plugin is only used to insert the Homestead-prov schema
-        if (self._ip == cluster_view.keys().sort()[0]):
+        if (self._ip == sorted(cluster_view.keys())[0]):
             _log.debug("Adding Homestead-prov schema")
-            run_command(/usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh)
+            run_command("/usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh")
 
     def on_new_cluster_config_ready(self, cluster_view):
         pass
