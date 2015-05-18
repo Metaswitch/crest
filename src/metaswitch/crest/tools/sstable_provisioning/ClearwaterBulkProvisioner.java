@@ -382,6 +382,7 @@ public class ClearwaterBulkProvisioner
     {
         String role = null;
         Iterator<Subscriber> subs = null;
+        Iterator<Subscriber> subs2 = null;
         if (args.length == 2)
         {
             role = args[0];
@@ -391,6 +392,7 @@ public class ClearwaterBulkProvisioner
         {
             role = args[0];
             subs = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4]);
+            subs2 = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4]);
         }
         else
         {
@@ -403,7 +405,7 @@ public class ClearwaterBulkProvisioner
         } else if (role.equals("homestead-local")) {
             // Provision Homestead with cache and provisioning tables
             provision_homestead_cache(subs);
-            provision_homestead_provisioning(subs);
+            provision_homestead_provisioning(subs2);
         } else if (role.equals("homestead-hss")) {
             // Provision Homestead with cache tables only
             provision_homestead_cache(subs);
