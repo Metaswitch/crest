@@ -64,6 +64,8 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
                                self._local_site)
 
         if (self._ip == sorted(cluster_view.keys())[0]):
+            # The schema could have been lost, or not installed due to cassandra 
+            # not running. Add it now to one of the Homers. 
             _log.debug("Adding Homer schema")
             run_command("/usr/share/clearwater/cassandra-schemas/homer.sh")
 
