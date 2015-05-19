@@ -74,7 +74,7 @@ case "$1" in
         done
 
         /usr/share/clearwater/infrastructure/scripts/homer
-        /usr/share/clearwater/cassandra-schemas/homer.sh
+        /usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
 
         # Start monit monitoring ourselves
         cp $HOMER_DIR/*.monit /etc/monit/conf.d/

@@ -74,7 +74,7 @@ case "$1" in
         done
 
         /usr/share/clearwater/infrastructure/scripts/homestead-prov
-        /usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh
+        /usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh || true
 
         # Start monit monitoring ourselves
         cp $HOMESTEAD_DIR/*.monit /etc/monit/conf.d/
