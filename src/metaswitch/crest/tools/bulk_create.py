@@ -129,13 +129,13 @@ def write_homestead_scripts(csv_filename):
             homestead_prov_casscli_file.write(
                 create_row_command("implicit_registration_sets", irs_uuid))
             homestead_prov_casscli_file.write(
-                "SET implicit_registration_sets['%s']['service_profile_%s'] = '%s';\n" % (irs_uuid,
-                                                                                          sp_uuid,
-                                                                                          sp_uuid))
+                "SET implicit_registration_sets['%s']['service_profile_%s'] = lexicaluuid('%s');\n" % (irs_uuid,
+                                                                                                       sp_uuid,
+                                                                                                       sp_uuid))
             homestead_prov_casscli_file.write(
-                "SET implicit_registration_sets['%s']['associated_private_%s'] = '%s';\n" % (irs_uuid,
-                                                                                             private_id,
-                                                                                             private_id))
+                "SET implicit_registration_sets['%s']['associated_private_%s'] = utf8('%s');\n" % (irs_uuid,
+                                                                                                   private_id,
+                                                                                                   private_id))
 
             homestead_prov_casscli_file.write(
                 create_row_command("service_profiles", sp_uuid))
@@ -146,9 +146,9 @@ def write_homestead_scripts(csv_filename):
                 "SET service_profiles['%s']['initialfiltercriteria'] = '%s';\n" % (sp_uuid,
                                                                                    initial_filter_xml))
             homestead_prov_casscli_file.write(
-                "SET service_profiles['%s']['public_id_%s'] = '%s';\n" % (sp_uuid,
-                                                                          public_id,
-                                                                          public_id))
+                "SET service_profiles['%s']['public_id_%s'] = utf8('%s');\n" % (sp_uuid,
+                                                                                public_id,
+                                                                                public_id))
 
             homestead_prov_casscli_file.write(
                 create_row_command("public", public_id))
@@ -167,9 +167,9 @@ def write_homestead_scripts(csv_filename):
             homestead_prov_casscli_file.write(
                 "SET private['%s']['realm'] = '%s';\n" % (private_id, realm))
             homestead_prov_casscli_file.write(
-                "SET private['%s']['associated_irs_%s'] = '%s';\n" % (private_id,
-                                                                      irs_uuid,
-                                                                      irs_uuid))
+                "SET private['%s']['associated_irs_%s'] = lexicaluuid('%s');\n" % (private_id,
+                                                                                   irs_uuid,
+                                                                                   irs_uuid))
 
     # Make the created .sh files executable
     permissions = stat.S_IEXEC | stat.S_IREAD | stat.S_IWRITE
@@ -250,19 +250,19 @@ def write_memento_scripts(csv_filename):
                 if answered:
                     begin_fragment, end_fragment = create_answered_call_list_entries(public_id, outgoing, t)
                     memento_casscli_file.write(
-                        "SET call_lists['%s']['%s'] = '%s';\n" % (public_id,
-                                                                  column_prefix + "begin",
-                                                                  begin_fragment))
+                        "SET call_lists['%s']['%s'] = utf8('%s');\n" % (public_id,
+                                                                        column_prefix + "begin",
+                                                                        begin_fragment))
                     memento_casscli_file.write(
-                        "SET call_lists['%s']['%s'] = '%s';\n" % (public_id,
-                                                                  column_prefix + "end",
-                                                                  end_fragment))
+                        "SET call_lists['%s']['%s'] = utf8('%s');\n" % (public_id,
+                                                                        column_prefix + "end",
+                                                                        end_fragment))
                 else:
                     rejected_fragment = create_rejected_call_list_entry(public_id, outgoing, t)
                     memento_casscli_file.write(
-                        "SET call_lists['%s']['%s'] = '%s';\n" % (public_id,
-                                                                  column_prefix + "rejected",
-                                                                  rejected_fragment))
+                        "SET call_lists['%s']['%s'] = utf8('%s');\n" % (public_id,
+                                                                        column_prefix + "rejected",
+                                                                        rejected_fragment))
 
     # Make the created .sh files executable
     permissions = stat.S_IEXEC | stat.S_IREAD | stat.S_IWRITE

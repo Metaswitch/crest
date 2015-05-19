@@ -42,11 +42,10 @@ _log = logging.getLogger("homestead_prov_cassandra_plugin")
 
 class HomesteadProvCassandraPlugin(SynchroniserPluginBase):
     def __init__(self, ip, local_site, remote_site):
-        self._key = "/clearwater/{}/homestead_prov/clustering/cassandra".format(local_site)
         self._ip = ip
 
     def key(self):
-        return self._key
+        return "/homestead/clustering/cassandra"
 
     def should_be_in_cluster(self):
         return False
@@ -65,6 +64,11 @@ class HomesteadProvCassandraPlugin(SynchroniserPluginBase):
             run_command("/usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh")
 
     def on_new_cluster_config_ready(self, cluster_view):
+        # The Homestead-prov clustering is done by the Homestead plugin.
+        # This plugin is only used to insert the Homestead-prov schema
+        if (self._ip == sorted(cluster_view.keys())[0]):
+            _log.debug("Adding Homestead-prov schema")
+            run_command("/usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh")
         pass
 
     def on_stable_cluster(self, cluster_view):
