@@ -3,4 +3,4 @@ ONE_GIG=1073741824
 max_log_directory_size=$ONE_GIG
 . /etc/clearwater/config
 
-python2.7 /usr/share/clearwater/bin/log_cleanup.py /var/log/homestead-prov homestead-prov_ $max_log_directory_size
+python2.7 /usr/share/clearwater/bin/log_cleanup.py /var/log/homestead-prov --prefix homestead-prov_ --maxsize $max_log_directory_size

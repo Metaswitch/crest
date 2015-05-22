@@ -3,5 +3,5 @@ ONE_GIG=1073741824
 max_log_directory_size=$ONE_GIG
 . /etc/clearwater/config
 
-python2.7 /usr/share/clearwater/bin/log_cleanup.py /var/log/homer homer_ $max_log_directory_size
+python2.7 /usr/share/clearwater/bin/log_cleanup.py /var/log/homer --prefix homer_ --maxsize $max_log_directory_size
 python2.7 /usr/share/clearwater/bin/log_cleanup.py /var/lib/cassandra --suffix hprof --count 2
