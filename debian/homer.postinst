@@ -56,10 +56,6 @@ HOMER_DIR=/usr/share/clearwater/homer
 
 case "$1" in
     configure)
-        # Restart clearwater-infrastructure to run the script that creates the
-        # homer nginx site.
-        service clearwater-infrastructure restart
-
         rm -rf $HOMER_DIR/build
         virtualenv --python=$(which python) $HOMER_DIR/env
         $HOMER_DIR/env/bin/easy_install --allow-hosts=None -f $HOMER_DIR/eggs/ $HOMER_DIR/eggs/*.egg
@@ -73,7 +69,9 @@ case "$1" in
             cd -
         done
 
-        /usr/share/clearwater/infrastructure/scripts/homer
+        # Restart clearwater-infrastructure to run the script that creates the
+        # homer nginx site.
+        service clearwater-infrastructure restart
         /usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
 
         # Start monit monitoring ourselves
@@ -93,12 +91,6 @@ case "$1" in
 
         # Apply secure connection rules if enabled.
         [ ! -x /etc/init.d/clearwater-secure-connections ] || /etc/init.d/clearwater-secure-connections reload
-
-        # Enable the homer nginx site
-        if ( nginx_ensite homer > /dev/null )
-        then
-            service nginx stop
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

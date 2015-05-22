@@ -46,24 +46,25 @@ split_domain_and_port()
 if [ -z $xdms_hostname ]
 then
   echo "xdms_hostname is not defined"
-  exit 2
+  exit
 fi
 
 read -r xdms_domain xdms_port <<< "$(split_domain_and_port $xdms_hostname)"
 
 site_file=/etc/nginx/sites-available/homer
+temp_file=$(mktemp homer.nginx.XXXXXXXX)
 let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
 
-cat > $site_file << EOF1
+cat > $temp_file << EOF1
 upstream http_homer {
 EOF1
 
 for sock_index in `seq 0 $sock_seq_end`;
 do
-  echo "        server unix:/tmp/.homer-sock-$sock_index;" >> $site_file
+  echo "        server unix:/tmp/.homer-sock-$sock_index;" >> $temp_file
 done
 
-cat >> $site_file << EOF2
+cat >> $temp_file << EOF2
 
         # The minimum number of idle connections to keep alive to the upstream.
         keepalive 16;
@@ -83,3 +84,17 @@ server {
         }
 }
 EOF2
+
+if ! diff $temp_file $site_file > /dev/null 2>&1
+then
+  # Update the site file
+  mv $temp_file $site_file
+
+  # Enable the homestead-prov nginx site
+  if ( nginx_ensite homer > /dev/null )
+  then
+    service nginx stop
+  fi
+else
+  rm $temp_file
+fi
