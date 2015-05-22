@@ -56,10 +56,6 @@ HOMESTEAD_DIR=/usr/share/clearwater/homestead
 
 case "$1" in
     configure)
-        # Restart clearwater-infrastructure to run the script that creates the
-        # homestead-prov nginx site.
-        service clearwater-infrastructure restart
-
         rm -rf $HOMESTEAD_DIR/build
         virtualenv --python=$(which python) $HOMESTEAD_DIR/env
         $HOMESTEAD_DIR/env/bin/easy_install --allow-hosts=None -f $HOMESTEAD_DIR/eggs/ $HOMESTEAD_DIR/eggs/*.egg
@@ -73,7 +69,10 @@ case "$1" in
             cd -
         done
 
-        /usr/share/clearwater/infrastructure/scripts/homestead-prov
+        # Restart clearwater-infrastructure to run the script that creates the
+        # homestead-prov nginx site.
+        service clearwater-infrastructure restart
+
         /usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh || true
 
         # Start monit monitoring ourselves
@@ -87,12 +86,6 @@ case "$1" in
 
         # Apply secure connection rules if enabled.
         [ ! -x /etc/init.d/clearwater-secure-connections ] || /etc/init.d/clearwater-secure-connections reload
-
-        # Enable the homestead-prov nginx site
-        if ( nginx_ensite homestead-prov > /dev/null )
-        then
-            service nginx stop
-        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
