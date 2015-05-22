@@ -46,7 +46,7 @@ split_domain_and_port()
 if [ -z $hs_provisioning_hostname ]
 then
   echo "hs_provisioning_hostname is not defined"
-  exit 2
+  exit
 fi
 
 read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port $hs_provisioning_hostname)"
