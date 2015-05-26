@@ -54,6 +54,7 @@ read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port
 [ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port
 
 site_file=/etc/nginx/sites-available/homestead-prov
+enabled_file=/etc/nginx/sites-enabled/homestead-prov
 temp_file=$(mktemp homestead-prov.nginx.XXXXXXXX)
 let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
 
@@ -87,7 +88,7 @@ server {
 }
 EOF2
 
-if ! diff $temp_file $site_file > /dev/null 2>&1
+if ! diff $temp_file $enabled_file > /dev/null 2>&1
 then
   # Update the site file
   mv $temp_file $site_file
