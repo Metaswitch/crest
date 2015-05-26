@@ -52,6 +52,7 @@ fi
 read -r xdms_domain xdms_port <<< "$(split_domain_and_port $xdms_hostname)"
 
 site_file=/etc/nginx/sites-available/homer
+enabled_file=/etc/nginx/sites-enabled/homer
 temp_file=$(mktemp homer.nginx.XXXXXXXX)
 let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
 
@@ -85,7 +86,7 @@ server {
 }
 EOF2
 
-if ! diff $temp_file $site_file > /dev/null 2>&1
+if ! diff $temp_file $enabled_file > /dev/null 2>&1
 then
   # Update the site file
   mv $temp_file $site_file
