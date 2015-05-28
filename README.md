@@ -16,7 +16,7 @@ projects for more details. The common features and instructions for both are lis
 
 Further info
 ------------
-* [Install guide](https://github.com/Metaswitch/clearwater-docs/wiki/Installation-Instructions)
+* [Install guide](http://clearwater.readthedocs.org/en/latest/Installation_Instructions/index.html)
 * [Design guide](docs/design.md)
 * [Development guide](docs/development.md)
 * [Homer API guide](docs/homer_api.md)
