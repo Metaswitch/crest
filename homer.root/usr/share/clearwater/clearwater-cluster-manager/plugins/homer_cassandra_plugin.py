@@ -44,9 +44,10 @@ _log = logging.getLogger("homer_cassandra_plugin")
 
 
 class HomerCassandraPlugin(SynchroniserPluginBase):
-    def __init__(self, ip, local_site, remote_site):
-        self._ip = ip
-        self._local_site = local_site
+    def __init__(self, params):
+        self._ip = params.ip
+        self._local_site = params.local_site
+        self._sig_namespace = params.signaling_namespace
         _log.debug("Raising Cassandra not-clustered alarm")
         issue_alarm(constants.RAISE_CASSANDRA_NOT_YET_CLUSTERED)
 
@@ -64,8 +65,8 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
                                self._local_site)
 
         if (self._ip == sorted(cluster_view.keys())[0]):
-            # The schema could have been lost, or not installed due to cassandra 
-            # not running. Add it now to one of the Homers. 
+            # The schema could have been lost, or not installed due to cassandra
+            # not running. Add it now to one of the Homers.
             _log.debug("Adding Homer schema")
             run_command("/usr/share/clearwater/cassandra-schemas/homer.sh")
 
@@ -80,7 +81,7 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
 
     def on_leaving_cluster(self, cluster_view):
         issue_alarm(constants.RAISE_CASSANDRA_NOT_YET_DECOMMISSIONED)
-        leave_cassandra_cluster()
+        leave_cassandra_cluster(self._sig_namespace)
         issue_alarm(constants.CLEAR_CASSANDRA_NOT_YET_DECOMMISSIONED)
         pass
 
@@ -88,5 +89,5 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         return ["/etc/cassandra/cassandra.yaml"]
 
 
-def load_as_plugin(ip, local_site, remote_site):
-    return HomerCassandraPlugin(ip, local_site, remote_site)
+def load_as_plugin(params):
+    return HomerCassandraPlugin(params)
