@@ -87,7 +87,7 @@ override file from `src/metaswitch/crest/local_settings.py`.  The file is
 executed in the context of `settings.py` after `settings.py` completes.  Anything
 that could be put at the bottom of `settings.py` can be put in `local_settings.py`.
 
-For a homestead node, you'll probably need at least the following in
+For Homestead-prov, you'll probably need at least the following in
 `local_settings.py` (replacing `example.com` with the correct domain).
 
     LOG_FILE_PREFIX = "homestead-prov"
@@ -98,7 +98,7 @@ For a homestead node, you'll probably need at least the following in
     SIP_DIGEST_REALM = "example.com"
     HTTP_UNIX = "/tmp/.homestead-prov-sock"
 
-For a homer node, you'll probably need the following instead.
+For a Homer node, you'll probably need the following instead.
 
     LOG_FILE_PREFIX = "homer"
     PROCESS_NAME = "homer"
@@ -129,22 +129,22 @@ These are set up by the cassandra-schemas scripts - to run these manually the co
 
 For Homestead-prov:
 
-    echo "CREATE KEYSPACE homestead_provisioning WITH strategy_class='org.apache.cassandra.locator.SimpleStrategy' AND strategy_options:replication_factor=2;
+    echo "CREATE KEYSPACE homestead_provisioning WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 2};
           USE homestead_provisioning;
-          CREATE TABLE implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH read_repair_chance = 1.0;
-          CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH read_repair_chance = 1.0;
-          CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH read_repair_chance = 1.0;
-          CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text) WITH read_repair_chance = 1.0;" | cqlsh -2
+          CREATE TABLE implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+          CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+          CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+          CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | cqlsh 
 
 For Homer:
 
-    echo "CREATE KEYSPACE homer WITH strategy_class='org.apache.cassandra.locator.SimpleStrategy' AND strategy_options:replication_factor=2;
-         USE homer;
-         CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH read_repair_chance = 1.0;" | cqlsh -2
+    echo "CREATE KEYSPACE homer WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': 2};
+          USE homer;
+          CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | cqlsh
 
 The easiest way to examine what is in the database is to use cqlsh, e.g.
 
-    cqlsh -2
+    cqlsh 
     use <keyspace>;
     SELECT * FROM <table>;
 
@@ -188,7 +188,7 @@ code into a Python egg as well as including the other Python dependencies as egg
 the list of dependencies, see buildout.cfg.
 
 The files required for Debian packaging are in the Debian directory, prefixed with the component
-name, i.e. the installation script for homer is at `debian/homer.postinst`.
+name, i.e. the installation script for Homer is at `debian/homer.postinst`.
 
 At the root of the Crest project are a number of configuration files that are copied into
 the Debian packages, again following the prefix.path pattern. Of particular note are the

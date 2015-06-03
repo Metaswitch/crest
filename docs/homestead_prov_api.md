@@ -1,7 +1,8 @@
-# Homestead - API Guide
+# Homestead-prov - API Guide
 
-Homestead provides a RESTful API. This is used by the Ellis and Sprout components.
-All access must go via this API, rather than directly to the database.
+Homestead-prov provides a RESTful API. This is used by the Ellis component to create/delete/query subscribers. It shouldn't be used if the deployment uses a real HSS. 
+
+All access must go via this API, rather than directly to the database. 
 
 ## IMPI
 
@@ -9,7 +10,7 @@ All access must go via this API, rather than directly to the database.
 
 Make a GET request to this URL to retrieve the digest of the specified private ID
 
-The URL takes an optional query parameter: `public_id=<public_id>` If specified a digest is only returned if the private ID is able to authenticate the public ID.
+The URL takes an optional query parameter: `public_id=<public_id>` If specified a digest is only returned if the private ID is able to authenticate the public ID. 
 
 Response:
 
@@ -22,16 +23,28 @@ Response:
 
 Make a GET request to this URL to retrieve the IMS subscription document for this public ID
 
-The URL takes an optional query parameter: `private_id=<private_id>` If specified, and if homestead is acting as an HSS cache, this public ID will be used on any Server Assignment Request sent to the HSS.
-
 Response:
 
-* 200 if the public ID is found, returned as an IMSSubscription XML document.
+* 200 if the public ID is found, returned as an IMSSubscription XML document, e.g.:
+
+    <IMSSubscription>
+        <PrivateID>...</PrivateID>
+        <ServiceProfile>
+            <InitialFilterCriteria>
+                <TriggerPoint>...</SPT></TriggerPoint>
+                <ApplicationServer>
+                    <ServerName>...</ServerName>
+                </ApplicationServer>
+            </InitialFilterCriteria>
+            <PublicIdentity>
+                <Identity>...</Identity>
+            </PublicIdentity>
+        </ServiceProfile>
+    </IMSSubscription>
+
 * 404 if the public ID is not found.
 
 ## Private ID
-
-These URLs are only available when homestead is acting in place of a real HSS. When acting as an HSS cache they all return a 404 error.
 
     /private/<private ID>
 

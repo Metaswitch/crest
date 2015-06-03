@@ -7,20 +7,15 @@ It gives an overview of the major components and interfaces, and
 provides pointers into the code. It is intended for people who wish
 to modify, fix, or extend Crest.
 
-The Homer and Homestead components are built on top of Crest. The design
-of these are discussed in the following documents, which build on the
-information described here.
-
-* [Homer Design](homer_design.md)
-* [Homestead Design](homestead_design.md)
+The Homer and Homestead-prov components are built on top of Crest. 
 
 Requirement
 ===========
 
-Crest is used in Homer and Homestead, two components which act as
+Crest is used in Homer and Homestead-prov, two components which act as
 distributed databases in a Clearwater system. Homer is an XDMS server,
-which stores the call services for subscribers, while Homestead is
-a HSS cache, storing authentication and iFCs.
+which stores the call services for subscribers, while Homestead-Prov is
+a provisioning interface to Homestead, our [HSS mirror](https://github.com/Metaswitch/homestead).
 
 Both of these use cases necessitate quick read performance, but can
 sacrifice write performance, as the bulk of the load on the database 
@@ -60,7 +55,7 @@ is a good place to start.
 Crest core
 ==========
 
-The main entry point to a Crest application is `src/metaswitch/ellis/main.py`.
+The main entry point to a Crest application is `src/metaswitch/crest/main.py`.
 
 When loaded this will start a Cyclone application, and look for ROUTES to serve
 in `src/metaswitch/crest/api/__init__.py`. The ROUTES array contains tuples
@@ -87,11 +82,11 @@ API Modules
 To provide flexibility, Crest has the concept of *installed Handlers*. These
 are modules which are added into the `api` directory to provide additional
 ROUTES and associated Handlers. It is through this mechanism that a vanilla
-Crest server is made into a Homer or Homestead server. For example, the
-ROUTES for Homestead are defined in `src/metaswitch/crest/api/homestead/__init__.py`
+Crest server is made into a Homer or Homestead-prov server. For example, the
+ROUTES for Homestead-prov are defined in `src/metaswitch/crest/api/homestead/__init__.py`
 
 Which Handlers are installed at runtime is defined by the INSTALLED_HANDLERS
-parameter in `settings.py`. When Homer and Homestead are packaged into Debian
+parameter in `settings.py`. When Homer and Homestead-prov are packaged into Debian
 packages, this setting is configured in their respective `local_settings.py` file.
 
 Twisted basics
@@ -104,3 +99,18 @@ see the following tests:
     tests/api/passthrough.py:test_get_mainline()
     tests/api/passthrough.py:test_get_not_found()
 
+Homer specific - Simservs validation
+====================================
+
+The XSD validator is implemented as a python decorator, such that a route
+method can be decorated with it in order to protect PUT requests from getting
+through if they fail the validation. E.g.
+
+    @xsd.validate(SCHEMA_PATH)
+    def put(self, *args):
+        PassthroughHandler.put(self, *args)
+
+As the XSD validation schema are complicated, in addition to unit tests
+Homer has functional tests which allow asserting of whether certain
+documents pass or fail validation. See `src/metaswitch/crest/test/api/homer/simservs.py`
+and the xml documents in `src/metaswitch/crest/test/api/homer/test_xml`
