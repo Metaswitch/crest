@@ -14,8 +14,9 @@ Requirement
 
 Crest is used in Homer and Homestead-prov, two components which act as
 distributed databases in a Clearwater system. Homer is an XDMS server,
-which stores the call services for subscribers, while Homestead-Prov is
-a provisioning interface to Homestead, our [HSS mirror](https://github.com/Metaswitch/homestead).
+which stores the call services for subscribers, while Homestead-prov is
+a provisioning interface to [Homestead](https://github.com/Metaswitch/homestead),
+and it's used when Homestead is acting as a standalone subscriber store. 
 
 Both of these use cases necessitate quick read performance, but can
 sacrifice write performance, as the bulk of the load on the database 
@@ -102,8 +103,8 @@ see the following tests:
 Homer specific - Simservs validation
 ====================================
 
-The XSD validator is implemented as a python decorator, such that a route
-method can be decorated with it in order to protect PUT requests from getting
+The XSD validator is implemented as a Python decorator, such that a route
+method can be decorated with it in order to prevent PUT requests from getting
 through if they fail the validation. E.g.
 
     @xsd.validate(SCHEMA_PATH)

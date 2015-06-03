@@ -93,7 +93,7 @@ For Homestead-prov, you'll probably need at least the following in
     LOG_FILE_PREFIX = "homestead-prov"
     PROCESS_NAME = "homestead-prov"
     INSTALLED_HANDLERS = ["homestead"]
-    HTTP_PORT = 8888
+    HTTP_PORT = 8889
     HSS_ENABLED = False
     SIP_DIGEST_REALM = "example.com"
     HTTP_UNIX = "/tmp/.homestead-prov-sock"

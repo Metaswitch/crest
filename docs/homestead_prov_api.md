@@ -10,7 +10,7 @@ All access must go via this API, rather than directly to the database.
 
 Make a GET request to this URL to retrieve the digest of the specified private ID
 
-The URL takes an optional query parameter: `public_id=<public_id>` If specified a digest is only returned if the private ID is able to authenticate the public ID. 
+The URL takes an optional query parameter: `public_id=<public_id>` If specified a digest is only returned if the private ID is able to authenticate the public ID.
 
 Response:
 
