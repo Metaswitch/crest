@@ -4,6 +4,12 @@ Homestead-prov provides a RESTful API. This is used by the Ellis component to cr
 
 All access must go via this API, rather than directly to the database. 
 
+## Liveness checking
+
+    /ping
+
+Make a GET request to this endpoint to check whether Homestead-prov is running. It will return 200 OK if so.
+
 ## IMPI
 
     /impi/<private ID>/digest
