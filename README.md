@@ -20,7 +20,7 @@ Further info
 * [Design guide](docs/design.md)
 * [Development guide](docs/development.md)
 * [Homer API guide](docs/homer_api.md)
-* [Homestead API guide](docs/homesteadi_prov_api.md)
+* [Homestead API guide](docs/homestead_prov_api.md)
 * [Homer Feature List](docs/homer_features.md)
 * [Homestead Feature List](docs/homestead_prov_features.md)
 * [Changelog](CHANGELOG.md)
