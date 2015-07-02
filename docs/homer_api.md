@@ -4,6 +4,13 @@ Homer - API Guide
 Homer provides a RESTful API. This is used by the Ellis and Sprout components. 
 All access must go via this API, rather than directly to the database.
 
+Liveness checking
+==================
+
+    /ping
+
+Make a GET request to this endpoint to check whether Homer is running. It will return 200 OK if so.
+
 Simservs documents
 ==================
 
