@@ -1,7 +1,7 @@
 Crest - Development Guide
 ===========
 
-These instructions have been tested on Ubuntu 12.04, using Python version 2.7.3.
+These instructions have been tested on Ubuntu 14.04, using Python version 2.7.3.
 
 Get the code
 ============
