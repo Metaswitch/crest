@@ -33,18 +33,18 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import time
-import logging 
+import logging
 import abc
 import base
-from monotonic_time import monotonic_time
+from metaswitch.common.monotonic_time import monotonic_time
 
 # Collect stats every 5 seconds
-STATS_PERIOD = 5 
+STATS_PERIOD = 5
 _log = logging.getLogger("crest.api")
 
 class Collector(object):
     """
-    Abstract base class for all statistics collectors that can be 
+    Abstract base class for all statistics collectors that can be
     used in homestead or homer.
     """
 
@@ -58,14 +58,14 @@ class Collector(object):
     def refresh(self):
         """
         Publish the stat to the ipc files, if enough time has passed
-        since the stat was last published. 
+        since the stat was last published.
         """
         pass
 
     @abc.abstractmethod
     def reset(self):
         """
-        Reset the collected stats after they have been published. 
+        Reset the collected stats after they have been published.
         """
         pass
 
@@ -95,11 +95,11 @@ class Counter(Collector):
     def reset(self):
         self.current = 0
         self.start_time = monotonic_time()
- 
+
 class Accumulator(Collector):
     """
-    Accumulators track how many times a particular event happens over a period, 
-    as well as the mean, variance, hwm and lwm values for the stat. 
+    Accumulators track how many times a particular event happens over a period,
+    as well as the mean, variance, hwm and lwm values for the stat.
     """
 
     def __init__(self, stat_name):
@@ -109,7 +109,7 @@ class Accumulator(Collector):
         self.sigma_squared = 0
         self.lwm = 0
         self.hwm = 0
- 
+
     def accumulate(self, latency):
         self.current += 1
         self.sigma += latency
