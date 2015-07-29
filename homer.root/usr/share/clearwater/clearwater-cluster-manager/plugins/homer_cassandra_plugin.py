@@ -37,7 +37,7 @@ from metaswitch.clearwater.cluster_manager.plugin_base import \
 from metaswitch.clearwater.cluster_manager.plugin_utils import \
     join_cassandra_cluster, leave_cassandra_cluster, run_command
 from metaswitch.clearwater.cluster_manager.alarms import issue_alarm
-from metaswitch.clearwater.cluster_manager import constants, pdlogs
+from metaswitch.clearwater.cluster_manager import alarm_constants, pdlogs
 import logging
 
 _log = logging.getLogger("homer_cassandra_plugin")
@@ -49,7 +49,7 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         self._local_site = params.local_site
         self._sig_namespace = params.signaling_namespace
         _log.debug("Raising Cassandra not-clustered alarm")
-        issue_alarm(constants.RAISE_CASSANDRA_NOT_YET_CLUSTERED)
+        issue_alarm(alarm_constants.CASSANDRA_NOT_YET_CLUSTERED_MAJOR)
         pdlogs.NOT_YET_CLUSTERED_ALARM.log(cluster_desc=self.cluster_description())
 
     def key(self):
@@ -75,7 +75,7 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
             run_command("/usr/share/clearwater/cassandra-schemas/homer.sh")
 
         _log.debug("Clearing Cassandra not-clustered alarm")
-        issue_alarm(constants.CLEAR_CASSANDRA_NOT_YET_CLUSTERED)
+        issue_alarm(alarm_constants.CASSANDRA_NOT_YET_CLUSTERED_CLEARED)
 
     def on_new_cluster_config_ready(self, cluster_view):
         pass
@@ -84,9 +84,9 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         pass
 
     def on_leaving_cluster(self, cluster_view):
-        issue_alarm(constants.RAISE_CASSANDRA_NOT_YET_DECOMMISSIONED)
+        issue_alarm(alarm_constants.CASSANDRA_NOT_YET_DECOMMISSIONED_MAJOR)
         leave_cassandra_cluster(self._sig_namespace)
-        issue_alarm(constants.CLEAR_CASSANDRA_NOT_YET_DECOMMISSIONED)
+        issue_alarm(alarm_constants.CASSANDRA_NOT_YET_DECOMMISSIONED_CLEARED)
         pass
 
     def files(self):
