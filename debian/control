@@ -11,11 +11,11 @@ Homepage: http://projectclearwater.org/
 
 Package: homer
 Architecture: any
-Depends: clearwater-infrastructure, clearwater-nginx, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, python-zmq, libzmq3-dev
+Depends: clearwater-infrastructure, clearwater-nginx, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, python-zmq, libzmq3-dev, clearwater-cassandra
 Suggests: clearwater-logging, clearwater-snmpd, clearwater-secure-connections
 Description: homer, the Cassandra powered XDMS
 
 Package: homestead-prov
 Architecture: any
-Depends: clearwater-infrastructure, clearwater-nginx, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev
+Depends: clearwater-infrastructure, clearwater-nginx, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, clearwater-cassandra
 Description: Provisioning backend for Homestead, the Cassandra powered HSS gateway
