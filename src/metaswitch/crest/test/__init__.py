@@ -31,6 +31,3 @@
 # "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
-
-# Make sure common tests are pulled in by make test.
-from metaswitch.common.test.utils import *

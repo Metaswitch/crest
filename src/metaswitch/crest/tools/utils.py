@@ -33,7 +33,7 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import xml.etree.ElementTree as ET
-import random, time, datetime, StringIO
+import random, datetime, StringIO
 
 def create_imssubscription_xml(private_id, publicidentity_xml, ifc_xml):
     """

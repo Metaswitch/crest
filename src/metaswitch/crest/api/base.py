@@ -37,7 +37,6 @@ import logging
 import json
 import traceback
 import httplib
-import time
 
 import msgpack
 import cyclone.web

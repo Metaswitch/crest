@@ -38,7 +38,6 @@
 import sys
 import unittest
 import uuid
-import time
 from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 from metaswitch.crest.api import base

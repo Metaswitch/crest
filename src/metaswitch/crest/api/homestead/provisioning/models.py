@@ -178,8 +178,8 @@ class IRS(ProvisioningModel):
         _log.debug("Delete IRS %s" % self.row_key_str)
 
         sp_uuids = yield self.get_associated_service_profiles()
-        for uuid in sp_uuids:
-            yield ServiceProfile(uuid).delete()
+        for sp_uuid in sp_uuids:
+            yield ServiceProfile(sp_uuid).delete()
 
         private_ids = yield self.get_associated_privates()
         for priv in private_ids:
@@ -313,8 +313,8 @@ class PrivateID(ProvisioningModel):
         _log.debug("Delete private ID %s" % self.row_key_str)
 
         irs_uuids = yield self.get_irses()
-        for uuid in irs_uuids:
-            yield IRS(uuid).dissociate_private_id(self.row_key)
+        for irs_uuid in irs_uuids:
+            yield IRS(irs_uuid).dissociate_private_id(self.row_key)
 
         yield self.delete_row()
         yield self._cache.delete_private_id(self.row_key,

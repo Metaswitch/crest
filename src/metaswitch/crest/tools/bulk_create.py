@@ -34,8 +34,7 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import sys, string, csv, os, stat, uuid, traceback, random, time, argparse
-import xml.etree.ElementTree as ET
+import string, csv, os, stat, uuid, traceback, random, time, argparse
 
 from metaswitch.crest import settings
 from metaswitch.common import utils
