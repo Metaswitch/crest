@@ -135,7 +135,7 @@ def standalone():
         # Main process startup, create UNIX domain socket for nginx front-end (used for
         # normal operation and as a bridge from the default namespace to the signaling
         # namespace in a multiple interface configuration).
-        _lock_fd = bind_safely(reactor, args.process_id, application)
+        bind_safely(reactor, args.process_id, application)
 
         if args.signaling_namespace and settings.PROCESS_NAME == "homer":
             # Running in signaling namespace as Homer, create TCP socket for XDMS requests
@@ -160,7 +160,7 @@ def standalone():
     else:
         # Sub-process startup, create UNIX domain socket for nginx front-end based on
         # process ID.
-        _lock_fd = bind_safely(reactor, args.process_id, application)
+        bind_safely(reactor, args.process_id, application)
 
         # Create TCP socket if file descriptor was passed.
         if args.shared_http_tcp_fd:

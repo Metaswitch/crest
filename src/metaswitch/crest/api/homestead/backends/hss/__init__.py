@@ -34,4 +34,4 @@
 
 # Import the HSS backend into this module so that users of the package don't
 # need to know the package structure.
-from .backend import HSSBackend
+from .backend import HSSBackend  # noqa

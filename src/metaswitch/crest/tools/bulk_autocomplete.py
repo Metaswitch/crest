@@ -58,7 +58,6 @@ to bulk-provision these users.
 """
 
 import sys, string, csv, traceback
-from metaswitch.crest import settings
 from metaswitch.common import utils
 
 def standalone():
