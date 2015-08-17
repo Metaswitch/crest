@@ -54,7 +54,7 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         pdlogs.NOT_YET_CLUSTERED_ALARM.log(cluster_desc=self.cluster_description())
 
     def key(self):
-        return "/" + self._key + "/clearwater/homer/clustering/cassandra"
+        return "/" + self._key + "/homer/clustering/cassandra"
 
     def cluster_description(self):
         return "Cassandra cluster"
