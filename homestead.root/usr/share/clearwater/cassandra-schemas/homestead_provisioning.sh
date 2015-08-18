@@ -48,3 +48,9 @@ CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercrite
 CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
 CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | $namespace_prefix cqlsh 
 fi
+
+echo "USE homestead_provisioning; DESC TABLE private" | cqlsh | grep plaintext_password > /dev/null
+if [ $? != 0 ]; then
+  echo "USE homestead_provisioning;
+  ALTER TABLE private ADD plaintext_password text;" | $namespace_prefix cqlsh
+fi
