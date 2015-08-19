@@ -85,7 +85,7 @@ Make a GET to this URL to retrieve details for a private ID. Response:
 Make a DELETE to this URL to delete an existing private ID. Response:
 
 * 200 if the private ID was deleted successfully.
-* 201 if the private ID could not be found.
+* 204 if the private ID could not be found.
 
     `/private/<private id>/associated_implicit_registration_sets/`
 
@@ -104,7 +104,7 @@ Make a PUT to this URL to configure the private ID to authenticate the specified
 Make a DELETE to this URL to configure the private ID to no longer authenticate the specified IRS. Response:
 
 * 200 if the private ID has been updated to _not_ authenticate the IRS.
-* 201 if the private ID could not be found.
+* 204 if the private ID could not be found.
 
     `/private/<private ID>/associated_public_ids`
 
@@ -126,7 +126,7 @@ Make a POST to this URL to create a new IRS. Response:
 Make a DELETE to this URL to delete an existing IRS. Response:
 
 * 200 if the IRS has been deleted.
-* 201 if the IRS could not be found.
+* 204 if the IRS could not be found.
 
     `/irs/<irs-uuid>/public_ids`
 
@@ -162,7 +162,7 @@ Make a POST to this URL to create a new service profile. Response:
 Make a DELETE to this URL to delete an existing service profile. Response:
 
 * 200 if the service profile has been deleted.
-* 201 if the service profile could not be found.
+* 204 if the service profile could not be found.
 
     `/irs/<irs-uuid>/service_profiles/<service-profile-uuid>/public_ids`
 
