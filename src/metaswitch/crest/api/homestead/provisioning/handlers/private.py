@@ -56,10 +56,8 @@ class PrivateHandler(BaseHandler):
     def get(self, private_id):
         try:
             (digest_ha1, plaintext_password, realm) = yield PrivateID(private_id).get_digest()
-            body = {JSON_DIGEST_HA1: digest_ha1}
+            body = {JSON_DIGEST_HA1: digest_ha1, JSON_REALM: realm}
 
-            if realm != None:
-                body[JSON_REALM] = realm
             if plaintext_password != "":
                 body[JSON_PLAINTEXT_PASSWORD] = plaintext_password
 
@@ -76,6 +74,7 @@ class PrivateHandler(BaseHandler):
                 obj = json.loads(body)
             except ValueError:
                 self.send_error(400, "Invalid JSON")
+                return
 
             # There must be a digest_ha1 or plaintext_password (not both)
             # and there may be a realm
@@ -88,6 +87,7 @@ class PrivateHandler(BaseHandler):
                 # Calculate the digest from the password
                 if digest_ha1:
                     self.send_error(400, "Invalid JSON - too many keys")
+                    return
                 else:
                     digest_ha1 = utils.md5("%s:%s:%s" % (private_id,
                                                          realm,
@@ -95,6 +95,7 @@ class PrivateHandler(BaseHandler):
             elif not digest_ha1:
                 # There must be either the password or the digest
                 self.send_error(400, "Invalid JSON - missing keys")
+                return
             else:
                 # Set the password to the empty string if it's not set so
                 # that we can store this in Cassandra. We have to do this
@@ -106,6 +107,7 @@ class PrivateHandler(BaseHandler):
                                                    plaintext_password,
                                                    realm)
             self.finish()
+
         else:
             self.send_error(400, "Empty body")
 
