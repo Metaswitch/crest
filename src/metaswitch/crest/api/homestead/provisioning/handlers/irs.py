@@ -56,8 +56,11 @@ class IRSHandler(BaseHandler):
     @BaseHandler.requires_empty_body
     @defer.inlineCallbacks
     def delete(self, irs_uuid):
-        yield IRS(irs_uuid).delete()
-        self.finish()
+        try:
+            yield IRS(irs_uuid).delete()
+            self.finish()
+        except NotFoundException:
+            self.send_error(204)
 
 
 class IRSAllPublicIDsHandler(BaseHandler):

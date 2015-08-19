@@ -165,8 +165,11 @@ class SPPublicIDHandler(BaseHandler):
     @verify_relationships()
     @defer.inlineCallbacks
     def delete(self, irs_uuid, sp_uuid, public_id):
-        yield PublicID(public_id).delete()
-        self.finish()
+        try:
+            yield PublicID(public_id).delete()
+            self.finish()
+        except NotFoundException:
+            self.send_error(204)
 
 
 class SPFilterCriteriaHandler(BaseHandler):
