@@ -54,15 +54,35 @@ Response:
 
     /private/<private ID>
 
-Make a GET to this URL to retrieve details for a private ID. Response:
+Make a PUT to this URL to create a new private ID or update an existing one. The private ID will store the digest of the subscriber's password, and it can optinally store the subscriber's password in plaintext as well.
 
-* 200 if the private ID was found, returned as JSON: `{ "digest_ha1": "<DIGEST>", "realm": "<REALM>" }`
-* 404 if the private ID was not found.
+The PUT request has a mandatory JSON body which has the format:
 
-Make a PUT to this URL to create a new private ID or update an existing one. The body must be in the same format as would be returned on a GET, except that if the realm is omitted, it defaults to the configured home domain. Response:
+    { "digest_ha1": "<DIGEST>" [, "realm": "<REALM>"] }
+
+or
+
+    { "plaintext_password": "<PLAINTEXT_PASSWORD>" [, "realm": "<REALM>"] }
+
+If `digest_ha1` is used, Homestead-prov will store this digest in the Private ID (note, this is the recommended method).
+If `plaintext_password` is used, Homestead-prov will calculate the digest from the password, and store the digest and the password (in plain text) in the Private ID. This option is available for RCS integration (and ease-of-use for testing), but this is less secure and so should not be used unless you particularly need it.
+If the realm is omitted, homestead-prov defaults it to the configured home domain.
+
+Response:
 
 * 200 if the private ID was created/updated successfully.
 * 400 if the body of the request is invalid
+
+If an existing private ID has stored the subscriber's password in plaintext, but it's then updated using `digest_ha1` call, then the password is deleted from the Private ID.
+
+Make a GET to this URL to retrieve details for a private ID. Response:
+
+* 200 if the private ID was found, returned as JSON:
+
+    { "digest_ha1": "<DIGEST>", "plaintext_password": "<PLAINTEXT_PASSWORD>", "realm": "<REALM>" }
+
+  The `plaintext_password` value is only included if the subscriber was provisioned in a way to store the plaintext password.
+* 404 if the private ID was not found.
 
 Make a DELETE to this URL to delete an existing private ID. Response:
 

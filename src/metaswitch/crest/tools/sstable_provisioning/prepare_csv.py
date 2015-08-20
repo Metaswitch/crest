@@ -82,7 +82,7 @@ def standalone():
                     sp_uuid = uuid.uuid4();
 
                     # Print a line for the user
-                    output_file.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (public_id, private_id, realm, hash, SIMSERVS, publicidentity_xml, initial_filter_xml, ims_subscription_xml, irs_uuid, sp_uuid))
+                    output_file.write("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (public_id, private_id, realm, hash, SIMSERVS, publicidentity_xml, initial_filter_xml, ims_subscription_xml, irs_uuid, sp_uuid, password))
                 else:
                     print 'Error: row %s contains <4 entries - ignoring' % row
 

@@ -37,12 +37,15 @@ import json
 
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
+from metaswitch.crest import settings
 from metaswitch.crest.api.base import BaseHandler
 from ..models import PrivateID
+from metaswitch.common import utils
 
 _log = logging.getLogger("crest.api.homestead.cache")
 
 JSON_DIGEST_HA1 = "digest_ha1"
+JSON_PLAINTEXT_PASSWORD = "plaintext_password"
 JSON_REALM = "realm"
 JSON_ASSOC_IRS = "associated_implicit_registration_sets"
 JSON_ASSOC_PUBLIC_IDS = "associated_public_ids"
@@ -52,8 +55,12 @@ class PrivateHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self, private_id):
         try:
-            (digest_ha1, realm) = yield PrivateID(private_id).get_digest()
+            (digest_ha1, plaintext_password, realm) = yield PrivateID(private_id).get_digest()
             body = {JSON_DIGEST_HA1: digest_ha1, JSON_REALM: realm}
+
+            if plaintext_password != "":
+                body[JSON_PLAINTEXT_PASSWORD] = plaintext_password
+
             self.send_json(body)
 
         except NotFoundException:
@@ -67,14 +74,40 @@ class PrivateHandler(BaseHandler):
                 obj = json.loads(body)
             except ValueError:
                 self.send_error(400, "Invalid JSON")
+                return
 
-            try:
-                digest_ha1 = obj[JSON_DIGEST_HA1]
-                realm = obj.get(JSON_REALM) # may be absent
-                yield PrivateID(private_id).put_digest(digest_ha1, realm)
-                self.finish()
-            except KeyError:
-                self.send_error(400, "Missing %s key" & JSON_DIGEST_HA1)
+            # There must be a digest_ha1 or plaintext_password (not both)
+            # and there may be a realm
+            plaintext_password = obj.get(JSON_PLAINTEXT_PASSWORD)
+            digest_ha1 = obj.get(JSON_DIGEST_HA1)
+            realm = obj.get(JSON_REALM) or settings.SIP_DIGEST_REALM
+
+            if plaintext_password:
+                # If there's a password then there mustn't be a digest.
+                # Calculate the digest from the password
+                if digest_ha1:
+                    self.send_error(400, "Invalid JSON - both digest_ha1 and plaintext_password present")
+                    return
+                else:
+                    digest_ha1 = utils.md5("%s:%s:%s" % (private_id,
+                                                         realm,
+                                                         plaintext_password))
+            elif not digest_ha1:
+                # There must be either the password or the digest
+                self.send_error(400, "Invalid JSON - neither digest_ha1 and plaintext_password present")
+                return
+            else:
+                # Set the password to the empty string if it's not set so
+                # that we can store this in Cassandra. We have to do this
+                # so that we can invalidate passwords when we receive a
+                # PUT that contains a digest.
+                plaintext_password = ""
+
+            yield PrivateID(private_id).put_digest(digest_ha1,
+                                                   plaintext_password,
+                                                   realm)
+            self.finish()
+
         else:
             self.send_error(400, "Empty body")
 

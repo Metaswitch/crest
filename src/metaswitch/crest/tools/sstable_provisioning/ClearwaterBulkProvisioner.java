@@ -190,23 +190,25 @@ class CallListDocBuilder
 // A subscriber to be provisioned.
 class Subscriber
 {
-    String public_id, private_id, realm, digest, simservs, ifc, imssubscription, publicidentity_xml, irs_uuid_str, sp_uuid_str;
+    String public_id, private_id, realm, digest, simservs, ifc, imssubscription, publicidentity_xml, irs_uuid_str, sp_uuid_str, password_to_write;
     ByteBuffer irs_uuid, sp_uuid;
 }
 
 // A subscriber parsed from a CSV file.
 class CsvSubscriber extends Subscriber
 {
-    boolean parse(String line, int lineNumber, String csvfile)
+    boolean parse(String line, int lineNumber, String csvfile, boolean writePlaintextPassword)
     {
         // Ghetto csv parsing, will break if any entries contain commas.  This is fine at the moment because
         // neither the default simservs, nor the default IFC contain commas.
         String[] columns = line.split(",");
-        if (columns.length != 10)
+
+        if (columns.length != 11)
         {
             System.out.println(String.format("Invalid input '%s' at line %d of %s", line, lineNumber, csvfile));
             return false;
         }
+
         public_id = columns[0].trim();
         private_id = columns[1].trim();
         realm = columns[2].trim();
@@ -217,6 +219,7 @@ class CsvSubscriber extends Subscriber
         imssubscription = columns[7].trim();
         irs_uuid_str = columns[8].trim();
         sp_uuid_str = columns[9].trim();
+        password_to_write = writePlaintextPassword ? columns[10].trim() : "";
 
         // Convert the string representation of UUID to a byte array.  Apache Commons' UUID class has this
         // as built in function (as getRawBytes) but we don't have access to that class here, so we roll our
@@ -270,12 +273,14 @@ class CsvSubscriberIterator extends BaseSubscriberIterator
 {
     private String mCsvfile;
     private BufferedReader mReader;
+    private boolean mWritePlaintextPassword;
     private int mLineNumber = 1;
 
-    CsvSubscriberIterator(String csvfile) throws IOException
+    CsvSubscriberIterator(String csvfile, boolean writePlaintextPassword) throws IOException
     {
         mCsvfile = csvfile;
         mReader = new BufferedReader(new FileReader(csvfile));
+        mWritePlaintextPassword = writePlaintextPassword;
     }
 
     protected Subscriber getNextSubscriber()
@@ -284,11 +289,13 @@ class CsvSubscriberIterator extends BaseSubscriberIterator
         try
         {
             String line;
+
             if (((line = mReader.readLine()) == null) ||
-                sub.parse(line, mLineNumber, mCsvfile))
+                (!sub.parse(line, mLineNumber, mCsvfile, mWritePlaintextPassword)))
             {
                 sub = null;
             }
+
             mLineNumber++;
         }
         catch (IOException e)
@@ -324,16 +331,18 @@ class RangeSubscriberIterator extends BaseSubscriberIterator
     String mDomain;
     String mPassword;
     MessageDigest mDigest;
+    boolean mWritePlaintextPassword;
 
     // Somewhat limited set of parameters at the moment.  We might extend this in future, but
     // it's sufficient for stress testing (which is what this is aimed at).
-    RangeSubscriberIterator(long startNumber, long endNumber, String domain, String password) throws NoSuchAlgorithmException
+    RangeSubscriberIterator(long startNumber, long endNumber, String domain, String password, boolean writePlaintextPassword) throws NoSuchAlgorithmException
     {
         mNumber = startNumber;
         mEndNumber = endNumber;
         mDomain = domain;
         mPassword = password;
         mDigest = MessageDigest.getInstance("MD5");
+        mWritePlaintextPassword = writePlaintextPassword;
     }
 
     protected Subscriber getNextSubscriber()
@@ -345,6 +354,7 @@ class RangeSubscriberIterator extends BaseSubscriberIterator
             sub.public_id = "sip:" + mNumber + "@" + mDomain;
             sub.private_id = mNumber + "@" + mDomain;
             sub.realm = mDomain;
+            sub.password_to_write = mWritePlaintextPassword ? mPassword : "";
             sub.digest = ha1(sub.private_id);
             sub.simservs = XML_DECLARATION + EMPTY_SIMSERVS_XML;
             sub.publicidentity_xml = PUBLIC_IDENTITY_XML_PREFIX + sub.public_id + PUBLIC_IDENTITY_XML_SUFFIX;
@@ -383,44 +393,75 @@ public class ClearwaterBulkProvisioner
         String role = null;
         Iterator<Subscriber> subs = null;
         Iterator<Subscriber> subs2 = null;
+
+        // Decide how we've been called based on the number of args. This is fairly hacky
+        // and will break as soon as we add another optional parameter, but it's good
+        // enough for now.
+        // If there are 2/3 args, we're pulling values from a CSV file. 5/6 args and we're
+        // taking values from the command line.
         if (args.length == 2)
         {
             role = args[0];
-            subs = new CsvSubscriberIterator(args[1]);
+            subs = new CsvSubscriberIterator(args[1], false);
+            subs2 = new CsvSubscriberIterator(args[1], false);
+        }
+        else if (args.length == 3)
+        {
+            role = args[0];
+            subs = new CsvSubscriberIterator(args[1], true);
+            subs2 = new CsvSubscriberIterator(args[1], true);
         }
         else if (args.length == 5)
         {
             role = args[0];
-            subs = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4]);
-            subs2 = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4]);
+            subs = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4], false);
+            subs2 = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4], false);
+        }
+        else if (args.length == 6)
+        {
+            role = args[0];
+            subs = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4], true);
+            subs2 = new RangeSubscriberIterator(Long.parseLong(args[1]), Long.parseLong(args[2]), args[3], args[4], true);
         }
         else
         {
-            System.out.println("Usage:\n  BulkProvision <role> (<csv_file>|<start_dn> <end_dn> <domain> <password>)");
+            System.out.println("Usage:\n  BulkProvision <role> (<csv_file>|<start_dn> <end_dn> <domain> <password>) [<plaintext_password>]");
             System.exit(1);
         }
 
-        if (role.equals("homer")) {
+        if (role.equals("homer"))
+        {
             provision_homer(subs);
-        } else if (role.equals("homestead-local")) {
+        }
+        else if (role.equals("homestead-local"))
+        {
             // Provision Homestead with cache and provisioning tables
             provision_homestead_cache(subs);
             provision_homestead_provisioning(subs2);
-        } else if (role.equals("homestead-hss")) {
+        }
+        else if (role.equals("homestead-hss"))
+        {
             // Provision Homestead with cache tables only
             provision_homestead_cache(subs);
-        } else if (role.equals("memento")) {
-            try {
+        }
+        else if (role.equals("memento"))
+        {
+            try
+            {
                 // Provision test memento data.
                 provision_memento(subs);
             }
-            catch(ParserConfigurationException ex) {
+            catch(ParserConfigurationException ex)
+            {
                 ex.printStackTrace();
             }
-            catch (TransformerException ex) {
+            catch (TransformerException ex)
+            {
                 ex.printStackTrace();
             }
-        } else {
+        }
+        else
+        {
            System.out.println("Only homer, homestead-local, homestead-hss and memento roles are supported");
         }
     }
@@ -538,6 +579,7 @@ public class ClearwaterBulkProvisioner
             privateWriter.newRow(bytes(sub.private_id));
             privateWriter.addColumn(bytes("_exists"), bytes(""), timestamp);
             privateWriter.addColumn(bytes("digest_ha1"), bytes(sub.digest), timestamp);
+            privateWriter.addColumn(bytes("plaintext_password"), bytes(sub.password_to_write), timestamp);
             privateWriter.addColumn(bytes("realm"), bytes(sub.realm), timestamp);
             privateWriter.addColumn(bytes("associated_irs_" + sub.irs_uuid_str), sub.irs_uuid, timestamp);
         }
