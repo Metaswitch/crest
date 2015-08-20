@@ -64,7 +64,9 @@ or
 
     { "plaintext_password": "<PLAINTEXT_PASSWORD>" [, "realm": "<REALM>"] }
 
-If `digest_ha1` is used, Homestead-prov will store this digest in the Private ID. If `plaintext_password` is used, Homestead-prov will calculate the digest from the password, and store the digest and the password (in plain text) in the private ID. If the realm is omitted, homestead-prov defaults it to the configured home domain.
+If `digest_ha1` is used, Homestead-prov will store this digest in the Private ID (note, this is the recommended method).
+If `plaintext_password` is used, Homestead-prov will calculate the digest from the password, and store the digest and the password (in plain text) in the Private ID. This option is available for RCS integration (and ease-of-use for testing), but this is less secure and so should not be used unless you particularly need it.
+If the realm is omitted, homestead-prov defaults it to the configured home domain.
 
 Response:
 

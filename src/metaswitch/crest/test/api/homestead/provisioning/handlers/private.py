@@ -71,13 +71,13 @@ class TestPrivateHandler(unittest.TestCase):
     def test_put_missing_keys(self, send_error):
         self.request.body = "{\"realm\":\"REALM\"}"
         self.handler.put("private_id")
-        send_error.assert_called_once_with(400, "Invalid JSON - missing keys")
+        send_error.assert_called_once_with(400, "Invalid JSON - neither digest_ha1 and plaintext_password present")
 
     @mock.patch("metaswitch.crest.api.base.BaseHandler.send_error")
     def test_put_too_many_keys(self, send_error):
         self.request.body = "{\"digest_ha1\":\"DIGEST\", \"plaintext_password\":\"PLAINTEXT_PASSWORD\"}"
         self.handler.put("private_id")
-        send_error.assert_called_once_with(400, "Invalid JSON - too many keys")
+        send_error.assert_called_once_with(400, "Invalid JSON - both digest_ha1 and plaintext_password present")
 
     @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.put_digest")
     def test_put_digest(self, put_digest):

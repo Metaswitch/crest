@@ -394,6 +394,11 @@ public class ClearwaterBulkProvisioner
         Iterator<Subscriber> subs = null;
         Iterator<Subscriber> subs2 = null;
 
+        // Decide how we've been called based on the number of args. This is fairly hacky
+        // and will break as soon as we add another optional parameter, but it's good
+        // enough for now.
+        // If there are 2/3 args, we're pulling values from a CSV file. 5/6 args and we're
+        // taking values from the command line.
         if (args.length == 2)
         {
             role = args[0];

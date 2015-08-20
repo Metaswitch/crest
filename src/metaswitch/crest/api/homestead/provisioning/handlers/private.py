@@ -86,7 +86,7 @@ class PrivateHandler(BaseHandler):
                 # If there's a password then there mustn't be a digest.
                 # Calculate the digest from the password
                 if digest_ha1:
-                    self.send_error(400, "Invalid JSON - too many keys")
+                    self.send_error(400, "Invalid JSON - both digest_ha1 and plaintext_password present")
                     return
                 else:
                     digest_ha1 = utils.md5("%s:%s:%s" % (private_id,
@@ -94,7 +94,7 @@ class PrivateHandler(BaseHandler):
                                                          plaintext_password))
             elif not digest_ha1:
                 # There must be either the password or the digest
-                self.send_error(400, "Invalid JSON - missing keys")
+                self.send_error(400, "Invalid JSON - neither digest_ha1 and plaintext_password present")
                 return
             else:
                 # Set the password to the empty string if it's not set so

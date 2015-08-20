@@ -344,7 +344,7 @@ class PrivateID(ProvisioningModel):
 
         # Get all the information we need to rebuild the cache.  Do this before
         # deleting any cache entries to minimize the time the cache is empty.
-        (digest, realm) = yield self.get_digest()
+        (digest, plaintext_password, realm) = yield self.get_digest()
 
         public_ids = []
         for irs in (yield self.get_irses()):
