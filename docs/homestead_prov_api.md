@@ -79,7 +79,7 @@ Make a GET to this URL to retrieve details for a private ID. Response:
 
 * 200 if the private ID was found, returned as JSON:
 
-    { "digest_ha1": "<DIGEST>", "plaintext_password": "<PLAINTEXT_PASSWORD>", "realm": "<REALM>" }
+    `{ "digest_ha1": "<DIGEST>", "plaintext_password": "<PLAINTEXT_PASSWORD>", "realm": "<REALM>" }`
 
   The `plaintext_password` value is only included if the subscriber was provisioned in a way to store the plaintext password.
 * 404 if the private ID was not found.
