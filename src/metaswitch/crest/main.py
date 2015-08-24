@@ -73,6 +73,9 @@ def bind_safely(reactor, process_id, application):
     return fd
 
 
+def on_before_shutdown():
+    api.base.shutdownStats()
+
 def create_application():
     app_settings = {
         "gzip": True,
@@ -165,6 +168,11 @@ def standalone():
         # Create TCP socket if file descriptor was passed.
         if args.shared_http_tcp_fd:
             reactor.adoptStreamPort(args.shared_http_tcp_fd, AF_INET, application)
+
+    # We need to catch the shutdown request so that we can properly stop
+    # the ZMQ interface; otherwise the reactor won't shut down on a SIGTERM 
+    # and will be SIGKILLed when the service is stopped.
+    reactor.addSystemEventTrigger('before', 'shutdown', on_before_shutdown)
 
     # Kick off the reactor to start listening on configured ports
     reactor.run()

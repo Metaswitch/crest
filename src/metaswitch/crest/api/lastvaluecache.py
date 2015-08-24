@@ -52,15 +52,15 @@ class LastValueCache:
         self.zmq_address = "ipc:///var/run/clearwater/stats/" + process_name
 
     def bind(self, p_id, worker_proc):
-        context = zmq.Context()
+        self.context = zmq.Context()
 
         # Connect to the ipc file where all stats are published.
-        self.publisher = context.socket(zmq.PUB)
+        self.publisher = self.context.socket(zmq.PUB)
         self.publisher.connect("ipc:///tmp/stats0")
 
         # If this is the parent process, then subscribe to the ipc file.
         if p_id == 0:
-            self.subscriber = context.socket(zmq.SUB)
+            self.subscriber = self.context.socket(zmq.SUB)
             self.subscriber.bind("ipc:///tmp/stats0")
             for process_id in range (0, worker_proc):
                 for stat in VALID_STATS:
@@ -69,7 +69,7 @@ class LastValueCache:
 
             # Set up a tcp connection to publish all stats, including
             # repeat subscriptions. If the bind fails, log this and carry on.
-            self.broadcaster = context.socket(zmq.XPUB)
+            self.broadcaster = self.context.socket(zmq.XPUB)
             self.broadcaster.setsockopt(zmq.XPUB_VERBOSE, 1)
             try:
                 self.broadcaster.bind(self.zmq_address)
@@ -83,6 +83,14 @@ class LastValueCache:
             self.poller.register(self.broadcaster, zmq.POLLIN)
 
             self.forward()
+
+    def unbind(self):
+        self.context.destroy()
+        self.context = None
+        self.publisher = None
+        self.subscriber = None
+        self.broadcaster = None
+        self.poller = None
 
     @defer.inlineCallbacks
     def last_cache(self):
