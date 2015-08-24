@@ -43,6 +43,10 @@ split_domain_and_port()
 
 . /etc/clearwater/config
 
+# Only create the nginx config if the xdms_hostname has been set.
+# We need this configuration when Homer is running on a multiple
+# networks system; if this isn't created then poll_homer will fail
+# and cyclically reboot Homer (on a multiple networks system)
 if [ -n "$xdms_hostname" ]
 then
   read -r xdms_domain xdms_port <<< "$(split_domain_and_port $xdms_hostname)"
