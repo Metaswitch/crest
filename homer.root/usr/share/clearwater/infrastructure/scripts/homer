@@ -59,3 +59,6 @@ then
   done
   rm /tmp/local_settings.py.$$
 fi
+
+# Create Cassandra schema
+/usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
