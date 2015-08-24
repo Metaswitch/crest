@@ -212,6 +212,9 @@ def setupStats(p_id, worker_proc):
     incoming_requests.set_process_id(p_id)
     overload_counter.set_process_id(p_id)
 
+def shutdownStats():
+    zmq.unbind()
+
 def _guess_mime_type(body):
     if (body == "null" or
         (body[0] == "{" and
