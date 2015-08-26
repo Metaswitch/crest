@@ -229,11 +229,9 @@ def _guess_mime_type(body, client_ip):
          body[-1] == "}") or
         (body[0] == "[" and
          body[-1] == "]")):
-        pdlogs.API_GUESSED_JSON.log(client_ip=client_ip)
         _log.warning("Guessed MIME type of uploaded data as JSON. Client should specify.")
         return "json"
     else:
-        pdlogs.API_GUESSED_URLENCODED.log(client_ip=client_ip)
         _log.warning("Guessed MIME type of uploaded data as URL-encoded. Client should specify.")
         return "application/x-www-form-urlencoded"
 
@@ -444,6 +442,5 @@ class UnknownApiHandler(BaseHandler):
     Handler that sends a 404 JSON/msgpack/etc response to all requests.
     """
     def get(self):
-        pdlogs.API_UNKNOWN.log(url="%s://%s%s" % (self.request.protocol, self.request.host, self.request.uri))
         _log.info("Request for unknown API")
-        self.send_error(404, "Invalid API")
+        self.send_error(404, "Request for unknown API")

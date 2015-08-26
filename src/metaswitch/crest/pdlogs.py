@@ -57,32 +57,8 @@ CREST_UP = PDLog(
     action="None.",
     priority=PDLog.LOG_NOTICE)
 
-API_UNKNOWN = PDLog(
-    number=PDLog.CL_CREST_ID + 4,
-    desc="Request for unknown API - {url}.",
-    cause="A client made a request using an unknown API.",
-    effect="A 404 error is returned to the client.",
-    action="None.",
-    priority=PDLog.LOG_NOTICE)
-
-API_GUESSED_JSON = PDLog(
-    number=PDLog.CL_CREST_ID + 5,
-    desc="Guessed MIME type of uploaded data as JSON from client {client_ip}.",
-    cause="A client sent data of unspecified type, so it was assumed to be JSON.",
-    effect="JSON mime type is assumed.",
-    action="The client should be fixed so as to specify a MIME type.",
-    priority=PDLog.LOG_WARNING)
-
-API_GUESSED_URLENCODED = PDLog(
-    number=PDLog.CL_CREST_ID + 6,
-    desc="Guessed MIME type of uploaded data as URL encoded from client {client_ip}.",
-    cause="A client sent data of unspecified type, so it was assumed to be URL encoded.",
-    effect="URL encoding is assumed.",
-    action="The client should be fixed so as to specify a MIME type for the data.",
-    priority=PDLog.LOG_WARNING)
-
 API_OVERLOADED = PDLog(
-    number=PDLog.CL_CREST_ID + 7,
+    number=PDLog.CL_CREST_ID + 4,
     desc="Service '%s' has become overloaded and rejecting requests." % settings.LOG_FILE_PREFIX,
     cause="The service has received too many requests and has become overloaded.",
     effect="Requests are being rejected.",
@@ -90,7 +66,7 @@ API_OVERLOADED = PDLog(
     priority=PDLog.LOG_NOTICE)
 
 API_NOTOVERLOADED = PDLog(
-    number=PDLog.CL_CREST_ID + 8,
+    number=PDLog.CL_CREST_ID + 5,
     desc="Service '%s' is no longer overloaded and is accepting requests." % settings.LOG_FILE_PREFIX,
     cause="The service is no longer overloaded.",
     effect="Requests are being accepted.",
@@ -98,7 +74,7 @@ API_NOTOVERLOADED = PDLog(
     priority=PDLog.LOG_NOTICE)
 
 API_HTTPERROR = PDLog(
-    number=PDLog.CL_CREST_ID + 9,
+    number=PDLog.CL_CREST_ID + 6,
     desc="HTTP error: {error}.",
     cause="The service has hit an error processing an HTTP request.",
     effect="The request has been rejected.",
@@ -106,17 +82,17 @@ API_HTTPERROR = PDLog(
     priority=PDLog.LOG_WARNING)
 
 API_UNCAUGHT_EXCEPTION = PDLog(
-    number=PDLog.CL_CREST_ID + 10,
+    number=PDLog.CL_CREST_ID + 7,
     desc="Uncaught exception: {exception}.",
     cause="An unexpected exception has occurred while processing a request.",
     effect="The request has been rejected.",
-    action="Gather diagnostics and report to customer service.",
+    action="Ensure that the node has been installed correctly and that it has valid configuration.",
     priority=PDLog.LOG_ERR)
 
 TWISTED_ERROR = PDLog(
-    number=PDLog.CL_CREST_ID + 11,
+    number=PDLog.CL_CREST_ID + 8,
     desc="Internal 'twisted' error: {error}.",
     cause="An unexpected internal error has occurred within the 'Twisted' component.",
     effect="Unknown.",
-    action="Gather diagnostics and report to customer service.",
+    action="Ensure that the node has been installed correctly and that it has valid configuration.",
     priority=PDLog.LOG_ERR)
