@@ -51,6 +51,7 @@ from metaswitch.common.monotonic_time import monotonic_time
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.exceptions import HSSOverloaded, HSSConnectionLost, HSSStillConnecting, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.crest.api.lastvaluecache import LastValueCache
+from metaswitch.crest import pdlogs
 
 _log = logging.getLogger("crest.api")
 
@@ -136,10 +137,14 @@ class LoadMonitor:
         self.bucket = LeakyBucket(max_bucket_size, init_token_rate)
         self.adjust_count = self.ADJUST_PERIOD
         self.min_token_rate = min_token_rate
+        self.overloaded = False
 
     def admit_request(self):
         if self.bucket.get_token():
             # Got a token from the bucket, so admit the request
+            if self.overloaded:
+                pdlogs.API_NOTOVERLOADED.log()
+                self.overloaded = False
             self.accepted += 1
             self.pending_count += 1
             queue_size_accumulator.accumulate(self.pending_count)
@@ -147,6 +152,9 @@ class LoadMonitor:
                 self.max_pending_count = self.pending_count
             return True
         else:
+            if not self.overloaded:
+                pdlogs.API_OVERLOADED.log()
+                self.overloaded = True
             self.rejected += 1
             return False
 
@@ -215,15 +223,17 @@ def setupStats(p_id, worker_proc):
 def shutdownStats():
     zmq.unbind()
 
-def _guess_mime_type(body):
+def _guess_mime_type(body, client_ip):
     if (body == "null" or
         (body[0] == "{" and
          body[-1] == "}") or
         (body[0] == "[" and
          body[-1] == "]")):
+        pdlogs.API_GUESSED_JSON.log(client_ip=client_ip)
         _log.warning("Guessed MIME type of uploaded data as JSON. Client should specify.")
         return "json"
     else:
+        pdlogs.API_GUESSED_URLENCODED.log(client_ip=client_ip)
         _log.warning("Guessed MIME type of uploaded data as URL-encoded. Client should specify.")
         return "application/x-www-form-urlencoded"
 
@@ -298,8 +308,10 @@ class BaseHandler(cyclone.web.RequestHandler):
             if e.log_message:
                 format = "%d %s: " + e.log_message
                 args = [e.status_code, self._request_summary()] + list(e.args)
+                pdlogs.API_HTTPERROR.log(error=format % tuple(args))
                 _log.warning(format, *args)
             if e.status_code not in httplib.responses:
+                pdlogs.API_HTTPERROR.log(error="bad status code %d for %s" % (e.status_code, self._request_summary()))
                 _log.warning("Bad HTTP status code: %d", e.status_code)
                 cyclone.web.RequestHandler._handle_request_exception(self, e)
             else:
@@ -318,6 +330,7 @@ class BaseHandler(cyclone.web.RequestHandler):
                 _log.error("Translating user not authorized error into a 403 status code", type(e))
                 self.send_error(403)
         else:
+            pdlogs.API_UNCAUGHT_EXCEPTION.log(exception="%s - %s" % (repr(e), self._request_summary()))
             _log.error("Uncaught exception %s\n%r", self._request_summary(), self.request)
             _log.error("Exception: %s" % repr(e))
             _log.error(err_traceback)
@@ -334,7 +347,7 @@ class BaseHandler(cyclone.web.RequestHandler):
                 headers = self.request.headers
                 type = headers.get("Content-Type", None)
                 if type is None:
-                    type = _guess_mime_type(body)
+                    type = _guess_mime_type(body, self.request.remote_ip)
                 if "json" in type:
                     self.__request_data = json.loads(body)
                 else:
@@ -431,5 +444,6 @@ class UnknownApiHandler(BaseHandler):
     Handler that sends a 404 JSON/msgpack/etc response to all requests.
     """
     def get(self):
+        pdlogs.API_UNKNOWN.log(url="%s://%s%s" % (self.request.protocol, self.request.host, self.request.uri))
         _log.info("Request for unknown API")
         self.send_error(404, "Invalid API")
