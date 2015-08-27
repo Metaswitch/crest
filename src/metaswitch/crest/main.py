@@ -82,13 +82,7 @@ def on_twisted_log(eventDict):
     text = twisted.python.log.textFromEventDict(eventDict)
     if text is None:
         return
-    if eventDict['isError']:
-        level = logging.ERROR
-    elif 'level' in eventDict:
-        level = eventDict['level']
-    else:
-        level = settings.LOG_LEVEL
-    if level >= logging.ERROR:
+    if eventDict['isError'] or eventDict.get('level', 0) >= logging.ERROR:
         fmtDict = {'text': text.replace("\n", "\n\t")}
         msgStr = twisted.python.log._safeFormat("twisted %(text)s\n", fmtDict)
         pdlogs.TWISTED_ERROR.log(error=msgStr)

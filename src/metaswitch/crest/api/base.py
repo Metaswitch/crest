@@ -223,7 +223,7 @@ def setupStats(p_id, worker_proc):
 def shutdownStats():
     zmq.unbind()
 
-def _guess_mime_type(body, client_ip):
+def _guess_mime_type(body):
     if (body == "null" or
         (body[0] == "{" and
          body[-1] == "}") or
@@ -345,7 +345,7 @@ class BaseHandler(cyclone.web.RequestHandler):
                 headers = self.request.headers
                 type = headers.get("Content-Type", None)
                 if type is None:
-                    type = _guess_mime_type(body, self.request.remote_ip)
+                    type = _guess_mime_type(body)
                 if "json" in type:
                     self.__request_data = json.loads(body)
                 else:
