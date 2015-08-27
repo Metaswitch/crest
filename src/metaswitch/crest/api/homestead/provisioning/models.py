@@ -377,6 +377,11 @@ class PublicID(ProvisioningModel):
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
+    def get_sp_str(self):
+        sp_uuid = yield self.get_sp()
+        defer.returnValue(uuid_to_str(sp_uuid))
+
+    @defer.inlineCallbacks
     def get_publicidentity(self):
         _log.debug("Create public ID %s" % self.row_key_str)
         xml = yield self.get_column_value(self.PUBLICIDENTITY)
@@ -387,6 +392,11 @@ class PublicID(ProvisioningModel):
         sp_uuid = yield self.get_sp()
         irs_uuid = yield ServiceProfile(sp_uuid).get_irs()
         defer.returnValue(irs_uuid)
+
+    @defer.inlineCallbacks
+    def get_irs_str(self):
+        irs_uuid = yield self.get_irs()
+        defer.returnValue(uuid_to_str(irs_uuid))
 
     @defer.inlineCallbacks
     def get_private_ids(self):
