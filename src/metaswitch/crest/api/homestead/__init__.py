@@ -35,10 +35,6 @@
 from .. import settings
 
 from .cache.cache import Cache
-from .backends.hss import HSSBackend
-from .backends.provisioning import ProvisioningBackend
-
-from .cache.handlers import DigestHandler, AuthVectorHandler, IMSSubscriptionHandler, RegistrationStatusHandler, LocationInformationHandler
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
 from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
@@ -60,44 +56,7 @@ UUID = '(%s{8}-%s{4}-%s{4}-%s{4}-%s{12})' % (HEX, HEX, HEX, HEX, HEX)
 # - The actual route regex, with capture groups for parameters that will be
 # passed to the the Handler.
 # - The Handler to process the request.
-CACHE_ROUTES = [
-    #
-    # Routes for accessing the cache.
-    #
-
-    # IMPI: the read-only API for accessing either registration status, authentication vector,
-    # or the digest and associated public IDs for a private ID. For registration status,
-    # public ID is mandatory, and there are two optional parameters, "visited-network" and
-    # "auth-type". For authentication vector anddigest, can optionally validate whether a specific
-    # public ID is associated.
-
-    # /impi/<private ID>/registration-status?impu=xxx[&visited-network=xxx][&auth-type=xxx]
-    (r'/impi/'+ANY+r'/registration-status/?',  RegistrationStatusHandler),
-
-    # /impi/<private ID>/digest?public_id=xxx
-    (r'/impi/'+ANY+r'/digest/?',  DigestHandler),
-
-    # /impi/<private ID>/av/aka/?impu=xxx&autn=xxx
-    # /impi/<private ID>/av/digest/?impu=xxx
-    (r'/impi/'+ANY+r'/av/'+AUTHTYPE+r'/?',  AuthVectorHandler),
-    # /impi/<private ID>/av/?impu=xxx&autn=xxx
-    (r'/impi/'+ANY+r'/av/?',  AuthVectorHandler),
-
-    # IMPU: the read-only API for accessing either XMLSubscription or location
-    # information associated with a particular public ID. For location information,
-    # there are two optional parameters. The parameter "originating" is added and set
-    # to "true" if the request relates to an originating request. The parameter
-    # "auth_type" is added and set to "CAPAB" if IMS
-    # Restoration Procedures are occuring.
-
-    # /impu/<public ID>/location?[originating=true][&auth-type=REGISTRATION_AND_CAPABILITIES]
-    (r'/impu/'+ANY+r'/location/?',  LocationInformationHandler),
-
-    # /impu/<public ID>?private_id=xxx
-    (r'/impu/'+ANY+r'/?',  IMSSubscriptionHandler),
-]
-
-PROVISIONING_ROUTES = [
+ROUTES = [
     #
     # Private ID provisioning.
     #
@@ -171,12 +130,8 @@ PROVISIONING_ROUTES = [
     (r'/public/'+ANY+r'/associated_private_ids/?', PublicIDPrivateIDHandler),
 ]
 
-ROUTES = CACHE_ROUTES
-if settings.LOCAL_PROVISIONING_ENABLED:
-    ROUTES += PROVISIONING_ROUTES
-
 # List of all the tables used by homestead.
-TABLES = [IMPI, IMPU, PrivateID, IRS, ServiceProfile, PublicID]
+TABLES = [PrivateID, IRS, ServiceProfile, PublicID]
 
 def initialize(application):
     """Module initialization"""
@@ -185,11 +140,6 @@ def initialize(application):
     # the denormalized tables in sync with the normalized ones).
     application.cache = Cache()
     ProvisioningModel.register_cache(application.cache)
-
-    if settings.HSS_ENABLED:
-        application.backend = HSSBackend(application.cache)
-    else:
-        application.backend = ProvisioningBackend(application.cache)
 
     # Connect to the cache and provisioning databases.
     ProvisioningModel.start_connection()
