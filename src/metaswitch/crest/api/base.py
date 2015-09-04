@@ -386,18 +386,20 @@ class BaseHandler(cyclone.web.RequestHandler):
 
     def write_error(self, status_code, reason="unknown", detail={}, **kwargs):
         """
-        Writes the error page as a JSON blob containing information about the
-        error.
+        If the status code is not 204 (No Content), write the error page as a
+        JSON blob containing information about the error.
         """
-        data = {
-            "error": True,
-            "status": status_code,
-            "message": httplib.responses[status_code],
-            "reason": reason,
-            "detail": detail,
-        }
-        if self.settings.get("debug") and "exc_info" in kwargs:
-            data["exception"] = traceback.format_exception(*kwargs["exc_info"])
+        data = None
+        if status_code != 204:
+            data = {
+                "error": True,
+                "status": status_code,
+                "message": httplib.responses[status_code],
+                "reason": reason,
+                "detail": detail,
+            }
+            if self.settings.get("debug") and "exc_info" in kwargs:
+                data["exception"] = traceback.format_exception(*kwargs["exc_info"])
         self.finish(data)
 
     def send_json(self, obj):
