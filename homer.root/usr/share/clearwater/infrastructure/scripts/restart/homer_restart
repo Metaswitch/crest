@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# @file homer
+# @file homer_restart
 #
 # Project Clearwater - IMS in the Cloud
-# Copyright (C) 2013 Metaswitch Networks Ltd
+# Copyright (C) 2015  Metaswitch Networks Ltd
 #
 # This program is free software: you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,31 +34,4 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# Set default values which will be overwritten if they exist in /etc/clearwater/config
-cassandra_hostname="localhost" 
-. /etc/clearwater/config
-
-# Only modify local_settings if the home_domain, sprout_hostname and local_ip
-# are available (they might not be if shared_config hasn't been propagated
-# round the deployment yet). Homer will cyclically restart until this has
-# been set up correctly
-if [ -n "$home_domain" ] && [ -n "$sprout_hostname" ] && [ -n "$local_ip" ]
-then
-  function escape { echo $1 | sed -e 's/\//\\\//g' ; }
-  sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g
-          s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$(escape $home_domain)'"/g
-          s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$(escape $sprout_hostname)'"/g
-          s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g' </usr/share/clearwater/homer/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
-  for dst in /usr/share/clearwater/homer/src/metaswitch/crest/local_settings.py \
-             /usr/share/clearwater/homer/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
-  do
-    if [ -f $dst ]
-    then
-      cp /tmp/local_settings.py.$$ $dst
-    fi
-  done
-  rm /tmp/local_settings.py.$$
-fi
-
-# Create Cassandra schema
-/usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
+service homer stop

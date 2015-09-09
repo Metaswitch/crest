@@ -15,7 +15,7 @@ All the scripts assume they are being run on a homer or homestead node with a co
 * `python` - Installed with homer/homestead
 * `/etc/cassandra/cassandra.yaml` - Installed during clustering
 * `/usr/share/cassandra/*` - Installed with dsc1.1
-* Users CSV file - In the format output by `bulk_autocomplete.py`
+* Users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
 
 ## Disk space
 
@@ -54,6 +54,11 @@ This will generate `<csvfilename>_prepared.csv` in the current folder.  This fil
 
     sudo ./BulkProvision homestead-local <csvfilename>_prepared.csv
 
+To store the passwords for the subscribers (in plaintext), add the `plaintext_password` parameter, e.g.:
+
+    sudo ./BulkProvision homestead-local <csvfilename>_prepared.csv plaintext_password
+
+
 ### From a range
 
 To create sstables for a range of subscribers, all with identical configuration, pass the following parameters to BulkProvision.
@@ -66,6 +71,10 @@ To create sstables for a range of subscribers, all with identical configuration,
 For example, to create sstables for running clearwater-sip-stress stress tests with 1 million subscribers, the parameters might be as follows - see more detail below.
 
     sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW
+
+To store the passwords for the subscribers (in plaintext), add the `plaintext_password` parameter, e.g.:
+
+    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_parameter
 
 ### Running BulkProvision
 
@@ -90,19 +99,19 @@ To inject the data into the current cluster run:
 _For homer:_
 
     . /etc/clearwater/config
-    sstableloader -v -d $local_ip homer/simservs
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homer/simservs
 
 _For homestead:_
 
     . /etc/clearwater/config
-    sstableloader -v -d $local_ip homestead_cache/impi
-    sstableloader -v -d $local_ip homestead_cache/impu
-    sstableloader -v -d $local_ip homestead_provisioning/implicit_registration_sets
-    sstableloader -v -d $local_ip homestead_provisioning/public
-    sstableloader -v -d $local_ip homestead_provisioning/private
-    sstableloader -v -d $local_ip homestead_provisioning/service_profiles
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homestead_cache/impi
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homestead_cache/impu
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homestead_provisioning/implicit_registration_sets
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homestead_provisioning/public
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homestead_provisioning/private
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} homestead_provisioning/service_profiles
 
 _For memento:_
 
     . /etc/clearwater/config
-    sstableloader -v -d $local_ip memento/call_lists
+    sstableloader -v -d ${cassandra_hostname:-$local_ip} memento/call_lists

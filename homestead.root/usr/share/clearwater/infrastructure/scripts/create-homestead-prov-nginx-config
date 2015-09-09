@@ -43,31 +43,31 @@ split_domain_and_port()
 
 . /etc/clearwater/config
 
-if [ -z $hs_provisioning_hostname ]
+# Only create the nginx config if the hs_provisioning_hostname has been set.
+# We need this configuration when Homestead-prov is running on a multiple
+# networks system; if this isn't created then poll_homestead_prov will fail
+# and cyclically reboot Homestead-prov (on a multiple networks system)
+if [ -n "$hs_provisioning_hostname" ]
 then
-  echo "hs_provisioning_hostname is not defined"
-  exit
-fi
+  read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port $hs_provisioning_hostname)"
 
-read -r hs_provisioning_domain hs_provisioning_port <<< "$(split_domain_and_port $hs_provisioning_hostname)"
+  [ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port
 
-[ ! -z $homestead_provisioning_port ] || homestead_provisioning_port=$hs_provisioning_port
+  site_file=/etc/nginx/sites-available/homestead-prov
+  enabled_file=/etc/nginx/sites-enabled/homestead-prov
+  temp_file=$(mktemp homestead-prov.nginx.XXXXXXXX)
+  let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
 
-site_file=/etc/nginx/sites-available/homestead-prov
-enabled_file=/etc/nginx/sites-enabled/homestead-prov
-temp_file=$(mktemp homestead-prov.nginx.XXXXXXXX)
-let sock_seq_end=$(cat /proc/cpuinfo | grep processor | wc -l)-1
-
-cat > $temp_file << EOF1
-upstream http_homestead_prov {
+  cat > $temp_file << EOF1
+  upstream http_homestead_prov {
 EOF1
 
-for sock_index in `seq 0 $sock_seq_end`;
-do
-  echo "        server unix:/tmp/.homestead-prov-sock-$sock_index;" >> $temp_file
-done
+  for sock_index in `seq 0 $sock_seq_end`;
+  do
+    echo "        server unix:/tmp/.homestead-prov-sock-$sock_index;" >> $temp_file
+  done
 
-cat >> $temp_file << EOF2
+  cat >> $temp_file << EOF2
 
         # The minimum number of idle connections to keep alive to the upstream.
         keepalive 16;
@@ -88,16 +88,17 @@ server {
 }
 EOF2
 
-if ! diff $temp_file $enabled_file > /dev/null 2>&1
-then
-  # Update the site file
-  mv $temp_file $site_file
-
-  # Enable the homestead-prov nginx site
-  if ( nginx_ensite homestead-prov > /dev/null )
+  if ! diff $temp_file $enabled_file > /dev/null 2>&1
   then
-    service nginx stop
+    # Update the site file
+    mv $temp_file $site_file
+
+    # Enable the homestead-prov nginx site
+    if ( nginx_ensite homestead-prov > /dev/null )
+    then
+      service nginx stop
+    fi
+  else
+    rm $temp_file
   fi
-else
-  rm $temp_file
 fi

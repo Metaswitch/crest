@@ -22,29 +22,40 @@ case "$LOCAL_PROVISIONING_ENABLED" in
   *) local_prov_setting=False ;;
 esac
 
+# Only modify local_settings if the home_domain, sprout_hostname, hs_hostname,
+# public_hostname and local_ip are available (they might not be if shared_config
+# hasn't been propagated round the deployment yet).
+# Homestead-prov will cyclically restart until this has been set up
+
 # Legacy configuration may have a port numbers - strip it.  Note that IPv6
 # "hostnames" will not have port numbers appended, so we just pass those on
 # verbatim by detecting 2 or more colons.
-hs_hostname=$(echo $hs_hostname | sed -e 's/^\([^:]*\):[0-9][0-9]*$/\1/g')
-function escape { echo $1 | sed -e 's/\//\\\//g' ; }
-sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g
-        s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$(escape $home_domain)'"/g
-        s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$(escape $sprout_hostname)'"/g
-        s/^PUBLIC_HOSTNAME = .*$/PUBLIC_HOSTNAME = "'$(escape $public_hostname)'"/g
-        s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$(escape $hs_hostname)'"/g
-        s/^HTTP_PORT = .*$/HTTP_PORT = '$(escape $homestead_provisioning_port)'/g
-        s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$(escape $homestead_password_encryption_key)'"/g
-        s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$(escape $local_prov_setting)'/g
-        s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g
-        s/^CCF = .*$/CCF = "'$(escape $cdf_identity)'"/g' \
-            </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
+if [ -n "$home_domain" ] && [ -n "$sprout_hostname" ] && [ -n "$local_ip" ] && [ -n "$public_hostname" ] && [ -n "$hs_hostname" ]
+then
+  hs_hostname=$(echo $hs_hostname | sed -e 's/^\([^:]*\):[0-9][0-9]*$/\1/g')
+  function escape { echo $1 | sed -e 's/\//\\\//g' ; }
+  sed -e 's/^LOCAL_IP = .*$/LOCAL_IP = "'$(escape $local_ip)'"/g
+          s/^SIP_DIGEST_REALM = .*$/SIP_DIGEST_REALM = "'$(escape $home_domain)'"/g
+          s/^SPROUT_HOSTNAME = .*$/SPROUT_HOSTNAME = "'$(escape $sprout_hostname)'"/g
+          s/^PUBLIC_HOSTNAME = .*$/PUBLIC_HOSTNAME = "'$(escape $public_hostname)'"/g
+          s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$(escape $hs_hostname)'"/g
+          s/^HTTP_PORT = .*$/HTTP_PORT = '$(escape $homestead_provisioning_port)'/g
+          s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$(escape $homestead_password_encryption_key)'"/g
+          s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$(escape $local_prov_setting)'/g
+          s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g
+          s/^CCF = .*$/CCF = "'$(escape $cdf_identity)'"/g' \
+              </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
 
-for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \
-           /usr/share/clearwater/homestead/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
-do
-  if [ -f $dst ]
-  then
-    cp /tmp/local_settings.py.$$ $dst
-  fi
-done
-rm /tmp/local_settings.py.$$
+  for dst in /usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py \
+             /usr/share/clearwater/homestead/env/lib/python2.7/site-packages/crest-0.1-py2.7.egg/metaswitch/crest/local_settings.py
+  do
+    if [ -f $dst ]
+    then
+      cp /tmp/local_settings.py.$$ $dst
+    fi
+  done
+  rm /tmp/local_settings.py.$$
+fi
+
+# Create Cassandra schema
+/usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh || /bin/true

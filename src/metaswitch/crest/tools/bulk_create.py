@@ -72,7 +72,7 @@ def create_row_command(table, row_key):
     return "SET %s['%s']['_exists'] = '';\n" % (table, row_key)
 
 
-def write_homestead_scripts(csv_filename):
+def write_homestead_scripts(csv_filename, write_plaintext_password):
     csv_filename_prefix = string.replace(csv_filename, ".csv", "")
     homestead_filename = "%s.create_homestead.sh" % (csv_filename_prefix)
     homestead_prov_casscli_filename = "%s.create_homestead_provisioning.casscli" % (csv_filename_prefix)
@@ -158,11 +158,15 @@ def write_homestead_scripts(csv_filename):
                 "SET public['%s']['service_profile'] = '%s';\n" % (public_id,
                                                                    sp_uuid))
 
+            password_to_write = password if write_plaintext_password else ""
             homestead_prov_casscli_file.write(
                 create_row_command("private", private_id))
             homestead_prov_casscli_file.write(
                 "SET private['%s']['digest_ha1'] = '%s';\n" % (private_id,
                                                                hash))
+            homestead_prov_casscli_file.write(
+                "SET private['%s']['plaintext_password'] = '%s';\n" % (private_id,
+                                                                       password_to_write))
             homestead_prov_casscli_file.write(
                 "SET private['%s']['realm'] = '%s';\n" % (private_id, realm))
             homestead_prov_casscli_file.write(
@@ -299,6 +303,7 @@ columns using the bulk_autocomplete.py script.
                                      formatter_class = argparse.RawTextHelpFormatter)
     parser.add_argument("csv_filename", help="Generate example memento call list entries")
     parser.add_argument("--memento", action="store_true", help="Generate example memento call list entries")
+    parser.add_argument("--plaintext_password", action="store_true", help="Store plaintext passwords for the subscriber")
     return parser.parse_args()
 
 def standalone():
@@ -308,7 +313,7 @@ def standalone():
     print "Generating bulk provisioning scripts for users in %s..." % (csv_filename)
 
     try:
-        write_homestead_scripts(csv_filename)
+        write_homestead_scripts(csv_filename, args.plaintext_password)
         write_homer_scripts(csv_filename)
 
         if args.memento:

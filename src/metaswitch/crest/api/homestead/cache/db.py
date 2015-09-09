@@ -68,7 +68,6 @@ class IMPI(CacheModel):
 
             realm = columns.get(DIGEST_REALM, None)
             qop = columns.get(DIGEST_QOP, None)
-            _log.error("Value in DB is %r", columns.get(KNOWN_PREFERRED))
             preferred = (columns.get(KNOWN_PREFERRED, '\x01') == '\x01')
 
             # It the user has supplied a public ID, they care about whether the

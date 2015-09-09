@@ -54,20 +54,40 @@ Response:
 
     /private/<private ID>
 
-Make a GET to this URL to retrieve details for a private ID. Response:
+Make a PUT to this URL to create a new private ID or update an existing one. The private ID will store the digest of the subscriber's password, and it can optinally store the subscriber's password in plaintext as well.
 
-* 200 if the private ID was found, returned as JSON: `{ "digest_ha1": "<DIGEST>", "realm": "<REALM>" }`
-* 404 if the private ID was not found.
+The PUT request has a mandatory JSON body which has the format:
 
-Make a PUT to this URL to create a new private ID or update an existing one. The body must be in the same format as would be returned on a GET, except that if the realm is omitted, it defaults to the configured home domain. Response:
+    { "digest_ha1": "<DIGEST>" [, "realm": "<REALM>"] }
+
+or
+
+    { "plaintext_password": "<PLAINTEXT_PASSWORD>" [, "realm": "<REALM>"] }
+
+If `digest_ha1` is used, Homestead-prov will store this digest in the Private ID (note, this is the recommended method).
+If `plaintext_password` is used, Homestead-prov will calculate the digest from the password, and store the digest and the password (in plain text) in the Private ID. This option is available for RCS integration (and ease-of-use for testing), but this is less secure and so should not be used unless you particularly need it.
+If the realm is omitted, homestead-prov defaults it to the configured home domain.
+
+Response:
 
 * 200 if the private ID was created/updated successfully.
 * 400 if the body of the request is invalid
 
+If an existing private ID has stored the subscriber's password in plaintext, but it's then updated using `digest_ha1` call, then the password is deleted from the Private ID.
+
+Make a GET to this URL to retrieve details for a private ID. Response:
+
+* 200 if the private ID was found, returned as JSON:
+
+    `{ "digest_ha1": "<DIGEST>", "plaintext_password": "<PLAINTEXT_PASSWORD>", "realm": "<REALM>" }`
+
+  The `plaintext_password` value is only included if the subscriber was provisioned in a way to store the plaintext password.
+* 404 if the private ID was not found.
+
 Make a DELETE to this URL to delete an existing private ID. Response:
 
 * 200 if the private ID was deleted successfully.
-* 201 if the private ID could not be found.
+* 204 if the private ID could not be found.
 
     `/private/<private id>/associated_implicit_registration_sets/`
 
@@ -86,7 +106,7 @@ Make a PUT to this URL to configure the private ID to authenticate the specified
 Make a DELETE to this URL to configure the private ID to no longer authenticate the specified IRS. Response:
 
 * 200 if the private ID has been updated to _not_ authenticate the IRS.
-* 201 if the private ID could not be found.
+* 204 if the private ID could not be found.
 
     `/private/<private ID>/associated_public_ids`
 
@@ -108,7 +128,7 @@ Make a POST to this URL to create a new IRS. Response:
 Make a DELETE to this URL to delete an existing IRS. Response:
 
 * 200 if the IRS has been deleted.
-* 201 if the IRS could not be found.
+* 204 if the IRS could not be found.
 
     `/irs/<irs-uuid>/public_ids`
 
@@ -144,7 +164,7 @@ Make a POST to this URL to create a new service profile. Response:
 Make a DELETE to this URL to delete an existing service profile. Response:
 
 * 200 if the service profile has been deleted.
-* 201 if the service profile could not be found.
+* 204 if the service profile could not be found.
 
     `/irs/<irs-uuid>/service_profiles/<service-profile-uuid>/public_ids`
 

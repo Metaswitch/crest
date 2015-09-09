@@ -28,7 +28,7 @@ done > users.csv
         to log your phone(s) in.
 
 4.  Run
-    `/usr/share/clearwater/homestead/src/metaswitch/crest/tools/bulk_create.py users.csv` (or `users.auto.csv` if you used bulk\_autocomplete.py). If you need example call list data add the `--memento` option.  This will create a number of files in the current directory.
+    `/usr/share/clearwater/homestead/src/metaswitch/crest/tools/bulk_create.py users.csv` (or `users.auto.csv` if you used bulk\_autocomplete.py). If you need example call list data add the `--memento` option. If you want to store the passwords (in plaintext) of the subscribers add the `--plaintext_password` option. This will create a number of files in the current directory.
 5.  Run the resulting \*.create\_homestead.sh script on the homestead
     node.
 6.  Copy the \*.create\_xdm.\* files to a homer node and run the

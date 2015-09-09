@@ -273,14 +273,16 @@ class PrivateID(ProvisioningModel):
 
     DIGEST_HA1 = "digest_ha1"
     REALM = "realm"
+    PLAINTEXT_PASSWORD = "plaintext_password"
     ASSOC_IRS_PREFIX = "associated_irs_"
 
     cass_table = config.PRIVATE_TABLE
 
     @defer.inlineCallbacks
     def get_digest(self):
-        columns = yield self.get_columns([self.DIGEST_HA1, self.REALM])
+        columns = yield self.get_columns([self.DIGEST_HA1, self.PLAINTEXT_PASSWORD, self.REALM])
         defer.returnValue((columns[self.DIGEST_HA1],
+                           columns.get(self.PLAINTEXT_PASSWORD),
                            columns.get(self.REALM)))
 
     @defer.inlineCallbacks
@@ -297,12 +299,13 @@ class PrivateID(ProvisioningModel):
         defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
-    def put_digest(self, digest, realm=None):
+    def put_digest(self, digest, plaintext_password, realm=None):
         _log.debug("Create private ID %s" % self.row_key_str)
 
-        columns = {self.DIGEST_HA1: digest}
+        columns = {self.DIGEST_HA1: digest, self.PLAINTEXT_PASSWORD: plaintext_password}
         if realm:
             columns[self.REALM] = realm
+
         yield self.modify_columns(columns)
         yield self._cache.put_av(self.row_key,
                                  DigestAuthVector(digest, realm, None, True),
@@ -341,7 +344,7 @@ class PrivateID(ProvisioningModel):
 
         # Get all the information we need to rebuild the cache.  Do this before
         # deleting any cache entries to minimize the time the cache is empty.
-        (digest, realm) = yield self.get_digest()
+        (digest, plaintext_password, realm) = yield self.get_digest()
 
         public_ids = []
         for irs in (yield self.get_irses()):

@@ -48,12 +48,13 @@ class HomerCassandraPlugin(SynchroniserPluginBase):
         self._ip = params.ip
         self._local_site = params.local_site
         self._sig_namespace = params.signaling_namespace
+        self._key = params.etcd_key
         _log.debug("Raising Cassandra not-clustered alarm")
         issue_alarm(alarm_constants.CASSANDRA_NOT_YET_CLUSTERED_MAJOR)
         pdlogs.NOT_YET_CLUSTERED_ALARM.log(cluster_desc=self.cluster_description())
 
     def key(self):
-        return "/clearwater/homer/clustering/cassandra"
+        return "/" + self._key + "/homer/clustering/cassandra"
 
     def cluster_description(self):
         return "Cassandra cluster"
