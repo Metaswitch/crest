@@ -55,7 +55,7 @@ class AllPublicIDsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self):
         num_chunks = int(self.get_argument("chunk-proportion", default=256))
-        fast = (self.get_argument("fast", default="false") == "true")
+        fast = (self.get_argument("excludeuuids", default="false") == "true")
         _log.info("Retrieving all public IDs (broken into {} chunks)".format(num_chunks))
 
         # Break the Cassandra ring down into chunks
@@ -80,21 +80,23 @@ class AllPublicIDsHandler(BaseHandler):
                 sp = None
                 irs = None
 
-                # Retrieving these UUIDs is time-consuming and may not be
-                # necessary - skip them if "fast=true" is given in the URL.
-                if not fast:
-                    sp = yield p.get_sp_str()
-                    irs = yield p.get_irs_str()
-
                 if first:
                     first = False
                 else:
                     self.write(',')
 
-                self.write(json.dumps({"public_id": p.row_key_str,
-                                       "sp": sp,
-                                       "irs": irs
-                                       }))
+                # Retrieving these UUIDs is time-consuming and may not be
+                # necessary - skip them if "excludeuuids=true" is given in the URL.
+                if not fast:
+                    sp = yield p.get_sp_str()
+                    irs = yield p.get_irs_str()
+                    self.write(json.dumps({"public_id": p.row_key_str,
+                                           "sp": sp,
+                                           "irs": irs
+                                          }))
+                else:
+                    self.write(json.dumps({"public_id": p.row_key_str}))
+
             self.flush()
             start = end
             end = min([max_token, start + chunk_size])
