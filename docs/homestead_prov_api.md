@@ -10,46 +10,6 @@ All access must go via this API, rather than directly to the database.
 
 Make a GET request to this endpoint to check whether Homestead-prov is running. It will return 200 OK if so.
 
-## IMPI
-
-    /impi/<private ID>/digest
-
-Make a GET request to this URL to retrieve the digest of the specified private ID
-
-The URL takes an optional query parameter: `public_id=<public_id>` If specified a digest is only returned if the private ID is able to authenticate the public ID.
-
-Response:
-
-* 200 if the digest is found, returned as JSON: `{ "digest_ha1": "<DIGEST>" }`
-* 404 if the digest is not found.
-
-## IMPU
-
-    /impu/<public ID>
-
-Make a GET request to this URL to retrieve the IMS subscription document for this public ID
-
-Response:
-
-* 200 if the public ID is found, returned as an IMSSubscription XML document, e.g.:
-
-    <IMSSubscription>
-        <PrivateID>...</PrivateID>
-        <ServiceProfile>
-            <InitialFilterCriteria>
-                <TriggerPoint>...</SPT></TriggerPoint>
-                <ApplicationServer>
-                    <ServerName>...</ServerName>
-                </ApplicationServer>
-            </InitialFilterCriteria>
-            <PublicIdentity>
-                <Identity>...</Identity>
-            </PublicIdentity>
-        </ServiceProfile>
-    </IMSSubscription>
-
-* 404 if the public ID is not found.
-
 ## Private ID
 
     /private/<private ID>

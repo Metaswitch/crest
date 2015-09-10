@@ -7,21 +7,6 @@ homestead_password_encryption_key="2lB6HWYd1cvuGbAdey9cFL5bSWDzxHOsYyPLYOxV3Bs"
 cassandra_hostname="localhost"
 . /etc/clearwater/config
 
-# Work out what features are enabled.
-LOCAL_PROVISIONING_ENABLED=Y
-if [ -d /etc/clearwater/features.d ]
-then
-  for file in $(find /etc/clearwater/features.d -type f)
-  do
-    [ -r $file ] && . $file
-  done
-fi
-
-case "$LOCAL_PROVISIONING_ENABLED" in
-  Y) local_prov_setting=True ;;
-  *) local_prov_setting=False ;;
-esac
-
 # Only modify local_settings if the home_domain, sprout_hostname, hs_hostname,
 # public_hostname and local_ip are available (they might not be if shared_config
 # hasn't been propagated round the deployment yet).
@@ -41,7 +26,6 @@ then
           s/^HS_HOSTNAME = .*$/HS_HOSTNAME = "'$(escape $hs_hostname)'"/g
           s/^HTTP_PORT = .*$/HTTP_PORT = '$(escape $homestead_provisioning_port)'/g
           s/^PASSWORD_ENCRYPTION_KEY = .*$/PASSWORD_ENCRYPTION_KEY = "'$(escape $homestead_password_encryption_key)'"/g
-          s/^LOCAL_PROVISIONING_ENABLED = .*$/LOCAL_PROVISIONING_ENABLED = '$(escape $local_prov_setting)'/g
           s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g
           s/^CCF = .*$/CCF = "'$(escape $cdf_identity)'"/g' \
               </usr/share/clearwater/homestead/src/metaswitch/crest/local_settings.py >/tmp/local_settings.py.$$
