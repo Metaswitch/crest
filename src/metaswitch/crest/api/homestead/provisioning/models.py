@@ -380,6 +380,11 @@ class PublicID(ProvisioningModel):
         defer.returnValue(sp_uuid)
 
     @defer.inlineCallbacks
+    def get_sp_str(self):
+        sp_uuid = yield self.get_sp()
+        defer.returnValue(uuid_to_str(sp_uuid))
+
+    @defer.inlineCallbacks
     def get_publicidentity(self):
         _log.debug("Create public ID %s" % self.row_key_str)
         xml = yield self.get_column_value(self.PUBLICIDENTITY)
@@ -392,10 +397,31 @@ class PublicID(ProvisioningModel):
         defer.returnValue(irs_uuid)
 
     @defer.inlineCallbacks
+    def get_irs_str(self):
+        irs_uuid = yield self.get_irs()
+        defer.returnValue(uuid_to_str(irs_uuid))
+
+    @defer.inlineCallbacks
     def get_private_ids(self):
         irs_uuid = yield self.get_irs()
         private_ids = yield IRS(irs_uuid).get_associated_privates()
         defer.returnValue(private_ids)
+
+    @classmethod
+    @defer.inlineCallbacks
+    def get_chunk(self, start, finish):
+        # Query an appropiate section of the Cassandra ring. Because we're
+        # limiting the query by token, we can accept an unrestricted number of
+        # results (10M is our max recommended size).
+        values = yield self.client.get_range_slices(column_family=self.cass_table,
+                                                    start=start,
+                                                    finish=finish,
+                                                    use_tokens=True,
+                                                    count=10000000)
+        keys = [x.key for x in values]
+        public_ids = [PublicID(x) for x in keys]
+        _log.info("Queried tokens {} to {} - received {} results".format(start, finish, len(public_ids)))
+        defer.returnValue(public_ids)
 
     @defer.inlineCallbacks
     def put_publicidentity(self, xml, sp_uuid):

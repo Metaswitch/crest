@@ -32,13 +32,78 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-from twisted.internet import defer
+from twisted.internet import defer, reactor
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api.base import BaseHandler
+import json
+import logging
 
 from ..models import PublicID
 
+_log = logging.getLogger("crest.api.homestead.provisioning")
+
+# Twisted-friendly non-blocking sleep function
+def sleep(seconds):
+    d = defer.Deferred()
+    reactor.callLater(seconds, d.callback, seconds)
+    return d
+
+
 JSON_PRIVATE_IDS = "private_ids"
+
+class AllPublicIDsHandler(BaseHandler):
+    @defer.inlineCallbacks
+    def get(self):
+        num_chunks = int(self.get_argument("chunk-proportion", default=256))
+        fast = (self.get_argument("excludeuuids", default="false") == "true")
+        _log.info("Retrieving all public IDs (broken into {} chunks)".format(num_chunks))
+
+        # Break the Cassandra ring down into chunks
+        min_token = -2**63;
+        max_token = (2**63)-1;
+
+        chunk_size = (max_token - min_token) / num_chunks
+
+        start = min_token
+        end = start + chunk_size
+
+        # Query all subscribers, chunk-by-chunk, and stream it back to the
+        # client
+        first = True
+        self.write('{"public_ids": [')
+        while start < max_token:
+            if not first:
+                yield sleep(1)
+
+            result = yield PublicID.get_chunk(start=str(start), finish=str(end))
+            for p in result:
+                sp = None
+                irs = None
+
+                if first:
+                    first = False
+                else:
+                    self.write(',')
+
+                # Retrieving these UUIDs is time-consuming and may not be
+                # necessary - skip them if "excludeuuids=true" is given in the URL.
+                if not fast:
+                    sp = yield p.get_sp_str()
+                    irs = yield p.get_irs_str()
+                    self.write(json.dumps({"public_id": p.row_key_str,
+                                           "sp": sp,
+                                           "irs": irs
+                                          }))
+                else:
+                    self.write(json.dumps({"public_id": p.row_key_str}))
+
+            self.flush()
+            start = end
+            end = min([max_token, start + chunk_size])
+
+        self.write(']}')
+
+        self.finish()
 
 
 class PublicIDServiceProfileHandler(BaseHandler):

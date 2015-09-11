@@ -221,3 +221,48 @@ Make a GET to this URL to list the private IDs that can authenticate the public 
 
 * 200 if the public IDs exists, returned as JSON: `{ "private_ids": ["<private-id-1>", "<private-id-2>"] }`
 * 404 if the public ID does not exist.
+
+`/public/?excludeuuids=[true|false]&chunk-proportion=N`
+
+Make a GET to this URL to list all public IDs provisioned on the system.
+
+Parameters:
+
+* excludeuuids (boolean, default false) - This API can provide the service profile and implicit
+    registration set UUIDs for each public ID. This requires more database lookups, so can be
+    disabled for a faster, less CPU-intensive query if they aren't needed.
+* chunk-proportion (integer, default 256) - Internally, Homestead breaks the subscriber base into
+    this many chunks, and pauses for 1 second between querying each one. Reducing this value will
+    result in a faster response, but will be less well-paced (with a higher risk of disrupting
+    service), and as Homestead handles more data at once, results in higher memory usage. The value
+    of 256 has proved to work well in testing.
+
+This API does a lot more work than the others, so it tends to be slower - as a rough guide, from
+testing on a 1-core VM:
+
+* retrieving 100k subscribers with excludeuuids=false takes 520 seconds - 264 seconds plus 256 1-second pauses for pacing
+* retrieving 100k subscribers with excludeuuids=true takes 264 seconds - 8 seconds plus 256 1-second pauses for pacing
+
+The response is always 200 OK, with a JSON body in the following form:
+
+```
+{"public_ids":
+  [
+    {"public_id": "sip:a@example.com",
+     "sp": "fbfb0fa8-ac91-46a9-907a-1408fa0b521f",
+     "irs": "51ca6207-9261-4199-aef0-8da6fb1fdafd"},
+    {"public_id": "sip:b@example.com",
+     "sp": "fbfb0fa8-ac91-46a9-907a-1408fa0b521f",
+     "irs": "51ca6207-9261-4199-aef0-8da6fb1fdafd"},
+]}
+```
+
+or, if excludeuuids is true:
+
+```
+{"public_ids":
+  [
+    {"public_id": "sip:a@example.com"},
+    {"public_id": "sip:b@example.com"},
+]}
+```
