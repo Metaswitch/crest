@@ -100,7 +100,7 @@ class TestPrivateHandler(unittest.TestCase):
     def test_get_missing_subscriber(self, get_digest, send_error):
         get_digest.side_effect = NotFoundException()
         self.handler.get("private_id")
-        get_digest.assert_called
+        self.assertTrue(get_digest.called > 0)
         send_error.assert_called_once_with(404)
 
     @mock.patch("metaswitch.crest.api.base.BaseHandler.send_json")
@@ -122,13 +122,13 @@ class TestPrivateHandler(unittest.TestCase):
     def test_delete_missing_subscriber(self, delete, send_error):
         delete.side_effect = NotFoundException()
         self.handler.delete("private_id")
-        delete.assert_called
+        self.assertTrue(delete.called > 0)
         send_error.assert_called_once_with(204)
 
     @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.delete")
     def test_delete(self, delete):
         self.handler.finish = mock.MagicMock()
         self.handler.delete("private_id")
-        delete.assert_called
+        self.assertTrue(delete.called > 0)
         self.assertTrue(self.handler.finish.called)
 
