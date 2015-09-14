@@ -20,7 +20,7 @@ help:
 
 .PHONY: test
 test: setup.py env
-	PYTHONPATH=src:modules/common ${ENV_DIR}/bin/python setup.py test -v
+	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup.py test -v
 
 ${ENV_DIR}/bin/flake8: env
 	${ENV_DIR}/bin/pip install flake8
@@ -48,17 +48,17 @@ coverage: ${ENV_DIR}/bin/coverage setup.py
 .PHONY: env
 env: ${ENV_DIR}/.eggs_installed
 
-$(ENV_DIR)/bin/python: setup.py modules/common/setup.py
+$(ENV_DIR)/bin/python: setup.py common/setup.py
 	# Set up a fresh virtual environment
 	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
 	$(ENV_DIR)/bin/easy_install "setuptools>0.7"
 	$(ENV_DIR)/bin/easy_install distribute
 	
-${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find modules/common/metaswitch -type f -not -name "*.pyc")
+${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
 	# Generate .egg files for crest and python-common
 	${ENV_DIR}/bin/python setup.py bdist_egg -d .eggs
-	cd modules/common && EGG_DIR=../../.eggs make build_common_egg
-	cd modules/telephus && python setup.py bdist_egg -d ../../.eggs
+	cd common && EGG_DIR=../.eggs make build_common_egg
+	cd telephus && python setup.py bdist_egg -d ../.eggs
 	
 	# Download the egg files they depend upon
 	${ENV_DIR}/bin/easy_install -zmaxd .eggs/ .eggs/*.egg
