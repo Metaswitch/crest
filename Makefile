@@ -4,10 +4,13 @@ PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
 DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
-DEB_NAMES := crest
+DEB_NAMES := homer homestead-prov
 
-# The build has been seen to fail on Mac OSX when trying to build on i386. Enable this to build for x86_64 only
-X86_64_ONLY=0
+MAX_LINE_LENGTH ?= 99
+
+# As we plan to deploy on 64 bit systems, by default target 64 bit. Disable this to attempt to build on 32 bit
+# Note we do not plan to support 32 bit going forward, so this may be removed in the future
+X86_64_ONLY=1
 
 .DEFAULT_GOAL = all
 

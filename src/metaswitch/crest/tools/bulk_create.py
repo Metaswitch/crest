@@ -38,11 +38,10 @@ import string, csv, os, stat, uuid, traceback, random, time, argparse
 
 from metaswitch.crest import settings
 from metaswitch.common import utils
-from metaswitch.common import ifcs
+from metaswitch.common import ifcs, simservs
 from metaswitch.crest.tools.utils import create_imssubscription_xml, create_answered_call_list_entries, create_rejected_call_list_entry
 
-with open(settings.XDM_DEFAULT_SIMSERVS_FILE, "rb") as simservs_file:
-    SIMSERVS = simservs_file.read()
+SIMSERVS = simservs.default_simservs()
 
 # The number of call list entries to create
 CALL_LIST_NUM_CALLS = 150

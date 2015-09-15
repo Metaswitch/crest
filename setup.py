@@ -53,8 +53,8 @@ _log.addHandler(_handler)
 setup(
     name='crest',
     version='0.1',
-    #packages=find_packages('src'),
-    packages=['metaswitch.crest'],
+    namespace_packages = ['metaswitch'],
+    packages=find_packages('src'),
     package_dir={'':'src'},
     package_data={'': ['*.xsd', '*.xml']},
     test_suite='metaswitch.crest.test',
