@@ -222,7 +222,7 @@ Make a GET to this URL to list the private IDs that can authenticate the public 
 * 200 if the public IDs exists, returned as JSON: `{ "private_ids": ["<private-id-1>", "<private-id-2>"] }`
 * 404 if the public ID does not exist.
 
-`/public/?excludeuuids=[true|false]&chunk-proportion=N`
+`/public/?excludeuuids=[true|false]&chunk-proportion=N&chunk=M`
 
 Make a GET to this URL to list all public IDs provisioned on the system.
 
@@ -236,6 +236,9 @@ Parameters:
     result in a faster response, but will be less well-paced (with a higher risk of disrupting
     service), and as Homestead handles more data at once, results in higher memory usage. The value
     of 256 has proved to work well in testing.
+* chunk (integer, default unset) - If set, this API only returns this chunk (i.e. a fraction of
+    the total subscriber base).  Chunks are 0-indexed, and so run from `0` to
+    `chunk-proportion - 1`.  If absent, this API returns all chunks.
 
 This API does a lot more work than the others, so it tends to be slower - as a rough guide, from
 testing on a 1-core VM:

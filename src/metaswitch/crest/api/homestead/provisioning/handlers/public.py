@@ -55,6 +55,8 @@ class AllPublicIDsHandler(BaseHandler):
     @defer.inlineCallbacks
     def get(self):
         num_chunks = int(self.get_argument("chunk-proportion", default=256))
+        chunk = self.get_argument("chunk", default="")
+        chunk = int(chunk) if chunk != "" else None
         fast = (self.get_argument("excludeuuids", default="false") == "true")
         _log.info("Retrieving all public IDs (broken into {} chunks)".format(num_chunks))
 
@@ -64,17 +66,22 @@ class AllPublicIDsHandler(BaseHandler):
 
         chunk_size = (max_token - min_token) / num_chunks
 
-        start = min_token
-        end = start + chunk_size
+        if chunk != None:
+            start = min_token + chunk * chunk_size
+            max_start = min([max_token, start + chunk_size])
+        else:
+            start = min_token
+            max_start = max_token
 
         # Query all subscribers, chunk-by-chunk, and stream it back to the
         # client
         first = True
         self.write('{"public_ids": [')
-        while start < max_token:
+        while start < max_start:
             if not first:
                 yield sleep(1)
 
+            end = min([max_token, start + chunk_size])
             result = yield PublicID.get_chunk(start=str(start), finish=str(end))
             for p in result:
                 sp = None
@@ -99,7 +106,6 @@ class AllPublicIDsHandler(BaseHandler):
 
             self.flush()
             start = end
-            end = min([max_token, start + chunk_size])
 
         self.write(']}')
 
