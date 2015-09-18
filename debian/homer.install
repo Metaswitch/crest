@@ -1,7 +1,5 @@
-eggs usr/share/clearwater/homer/
-setup.py usr/share/clearwater/homer/
-src usr/share/clearwater/homer/
-modules usr/share/clearwater/homer/
-homer.local_settings/local_settings.py usr/share/clearwater/homer/src/metaswitch/crest/
+.eggs usr/share/clearwater/homer/
+homer.local_settings/local_settings.py usr/share/clearwater/homer/
+src/metaswitch/crest/tools usr/share/clearwater/homer/src/metaswitch/crest/
 homer.monit usr/share/clearwater/homer/
 homer.root/* .

@@ -53,9 +53,10 @@ _log.addHandler(_handler)
 setup(
     name='crest',
     version='0.1',
+    namespace_packages = ['metaswitch'],
     packages=find_packages('src'),
     package_dir={'':'src'},
-    package_data={'': ['*.xsd', 'dictionary.xml']},
+    package_data={'': ['*.xsd', '*.xml']},
     test_suite='metaswitch.crest.test',
-    install_requires=["Mock", "pyzmq", "py-bcrypt", "cyclone", "cql", "lxml", "msgpack-python"],
+    install_requires=["Mock", "pyzmq", "py-bcrypt", "cyclone==1.0", "cql", "lxml", "msgpack-python", "pure-sasl"],
     )

@@ -39,17 +39,10 @@ LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead"]
 HTTP_PORT = 8889
 HTTP_UNIX = "/tmp/.homestead-prov-sock"
-XDM_DEFAULT_SIMSERVS_FILE = "/usr/share/clearwater/homestead/modules/common/metaswitch/common/default_simservs.xml"
 ZMQ_PORT = 6667
 
 # Debian install will pick this up from /etc/clearwater/config
 CASS_HOST = "localhost"
-
-# HSS configuration (by default, synchronization with the HSS is disabled)
-# Debian install will pick this up from /etc/clearwater/config
-HSS_IP = "0.0.0.0"
-HSS_PORT = 3868
-HSS_ENABLED = HSS_IP not in ["", "0.0.0.0"]
 
 # Debian install will pick this up from /etc/clearwater/config
 LOCAL_IP = MUST_BE_CONFIGURED
@@ -57,7 +50,6 @@ SIP_DIGEST_REALM = MUST_BE_CONFIGURED
 SPROUT_HOSTNAME = MUST_BE_CONFIGURED
 PUBLIC_HOSTNAME = MUST_BE_CONFIGURED
 HS_HOSTNAME = MUST_BE_CONFIGURED
-LOWERCASE_UNKNOWN = False
 CCF = ""
 
 # We use this key to encrypt sensitive fields in the database that we can't

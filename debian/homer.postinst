@@ -58,16 +58,7 @@ case "$1" in
     configure)
         rm -rf $HOMER_DIR/build
         virtualenv --python=$(which python) $HOMER_DIR/env
-        $HOMER_DIR/env/bin/easy_install --allow-hosts=None -f $HOMER_DIR/eggs/ $HOMER_DIR/eggs/*.egg
-        cd $HOMER_DIR
-        $HOMER_DIR/env/bin/python $HOMER_DIR/setup.py install
-        cd -
-        for module in $HOMER_DIR/modules/*
-        do
-            cd $module
-            $HOMER_DIR/env/bin/python $module/setup.py install
-            cd -
-        done
+        $HOMER_DIR/env/bin/easy_install --allow-hosts=None -f $HOMER_DIR/.eggs/ $HOMER_DIR/.eggs/*.egg
 
         # Restart clearwater-infrastructure to run the script that creates the
         # homer nginx site.
