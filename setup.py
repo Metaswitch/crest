@@ -57,5 +57,6 @@ setup(
     package_dir={'':'src'},
     package_data={'': ['*.xsd', 'dictionary.xml']},
     test_suite='metaswitch.crest.test',
-    install_requires=["Mock", "pyzmq", "py-bcrypt", "cyclone", "cql", "lxml", "msgpack-python"],
+    install_requires=["pyzmq", "py-bcrypt", "cyclone", "cql", "lxml", "msgpack-python"],
+    tests_require=["pbr==1.6", "Mock"],
     )
