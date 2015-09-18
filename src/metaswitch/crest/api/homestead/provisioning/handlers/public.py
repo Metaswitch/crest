@@ -58,7 +58,6 @@ class AllPublicIDsHandler(BaseHandler):
         chunk = self.get_argument("chunk", default="")
         chunk = int(chunk) if chunk != "" else None
         fast = (self.get_argument("excludeuuids", default="false") == "true")
-        _log.info("Retrieving all public IDs (broken into {} chunks)".format(num_chunks))
 
         # Break the Cassandra ring down into chunks
         min_token = -2**63;
@@ -67,9 +66,11 @@ class AllPublicIDsHandler(BaseHandler):
         chunk_size = (max_token - min_token) / num_chunks
 
         if chunk != None:
+            _log.info("Retrieving public IDs (chunk {}/{})".format(chunk, num_chunks))
             start = min_token + chunk * chunk_size
             max_start = min([max_token, start + chunk_size])
         else:
+            _log.info("Retrieving all public IDs (broken into {} chunks)".format(num_chunks))
             start = min_token
             max_start = max_token
 
