@@ -38,7 +38,7 @@ from .cache.cache import Cache
 from .provisioning.handlers.private import PrivateHandler, PrivateAllIrsHandler, PrivateOneIrsHandler, PrivateAllPublicIdsHandler
 from .provisioning.handlers.irs import AllIRSHandler, IRSHandler, IRSAllPublicIDsHandler, IRSAllPrivateIDsHandler, IRSPrivateIDHandler
 from .provisioning.handlers.service_profile import AllServiceProfilesHandler, ServiceProfileHandler, SPAllPublicIDsHandler, SPPublicIDHandler, SPFilterCriteriaHandler
-from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicIDIRSHandler, PublicIDPrivateIDHandler
+from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicIDIRSHandler, PublicIDPrivateIDHandler, AllPublicIDsHandler
 
 from .cache.db import IMPI, IMPU, CacheModel
 from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, ProvisioningModel
@@ -128,6 +128,9 @@ ROUTES = [
 
     # List all private IDs that can authenticate this public ID.
     (r'/public/'+ANY+r'/associated_private_ids/?', PublicIDPrivateIDHandler),
+
+    # List all public IDs
+    (r'/public/?', AllPublicIDsHandler),
 ]
 
 # List of all the tables used by homestead.
