@@ -95,43 +95,9 @@ PUBLIC_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 HS_HOSTNAME = "hs.%s" % SIP_DIGEST_REALM
 CCF = "ccf"
 
-# Cache period (in seconds) for authentication details retrieved from the HSS.
-# There is no way to be notified of authentication changes over the Cx
-# interface, so we must explicitly expire/refresh the cache.
-HSS_AUTH_CACHE_PERIOD_SECS=30
-
-# Cache period (in seconds) for associated public user identities (IMPUs)
-# retrieved from the HSS.  As for authentication details, there's no way to be
-# notified of changes.  However, it's less of an issue if this is out-of-date
-# because it just means that an IMPU is linked with an old IMPI for a while.
-# This isn't as serious as using out-of-date authentication details.  As a
-# result, we can use a higher value here.
-HSS_ASSOC_IMPU_CACHE_PERIOD_SECS=60 * 60
-
-# Cache period (in seconds) for IMS subscriptions retrieved from the HSS.
-# Homestead receive notifications of changes, so the only reason to expire
-# entries from the cache is to tidy up when a subscriber is deprovisioned.  As
-# a result, we set this pretty high.
-HSS_IMS_SUB_CACHE_PERIOD_SECS=7 * 24 * 60 * 60
-
-# Some HSSes (e.g. OpenIMSCore HSS as of November 2013) require the
-# string "unknown" rather than "Unknown" on the
-# Multimedia-Auth-Request where we don't already know the
-# authentication type needed. This setting allows interop with those
-# HSSes.
-LOWERCASE_UNKNOWN = False
-
 # To avoid deploying with debug turned on, these settings should only ever be
 # changed by creating a local_settings.py file in this directory.
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
-
-# By default enable provisioning of local subscribers (those homed on homestead
-# rather than an HSS).
-LOCAL_PROVISIONING_ENABLED = True
-
-# Set of vendor IDs to include on Cx CER.  As 3GPP TS 29.229 Section 5.6, the
-# default is both 3GPP (10415) and ETSI (13019), but this can be overridden.
-CX_SUPPORTED_VENDORS = [10415, 13019]
 
 # Include any locally-defined settings.
 _local_settings_file = os.path.join(_MY_DIR, "local_settings.py")

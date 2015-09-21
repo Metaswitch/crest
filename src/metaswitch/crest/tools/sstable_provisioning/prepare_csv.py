@@ -39,12 +39,10 @@
 import sys, string, csv, traceback, uuid
 from metaswitch.crest import settings
 from metaswitch.common import utils
-from metaswitch.common import ifcs
+from metaswitch.common import ifcs, simservs
 from metaswitch.crest.tools.utils import create_imssubscription_xml
 
-with open(settings.XDM_DEFAULT_SIMSERVS_FILE, "rb") as simservs_file:
-    SIMSERVS = simservs_file.read()
-SIMSERVS = SIMSERVS.rstrip()
+SIMSERVS = simservs.default_simservs()
 
 USAGE = """
 Usage: prepare_csv.py <csv_file>

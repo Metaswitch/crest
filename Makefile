@@ -1,4 +1,5 @@
 ENV_DIR := $(shell pwd)/_env
+ENV_PYTHON := ${ENV_DIR}/bin/python
 PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
@@ -18,56 +19,58 @@ all: help
 
 .PHONY: help
 help:
-	@cat README.md
-
-.PHONY: run
-run: bin/python setup.py
-	PYTHONPATH=src bash -c 'bin/python src/metaswitch/crest/main.py'
+	@cat docs/development.md
 
 .PHONY: test
-test: bin/python setup.py
-	bin/python setup.py test
+test: setup.py env
+	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup.py test -v
 
-verify:
-	flake8 --select=E10,E11,E9,F src/
+${ENV_DIR}/bin/flake8: env
+	${ENV_DIR}/bin/pip install flake8
 
-style:
-	flake8 --select=E,W,C,N --max-line-length=${MAX_LINE_LENGTH} src/
+${ENV_DIR}/bin/coverage: env
+	${ENV_DIR}/bin/pip install coverage
 
-explain-style:
-	flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=${MAX_LINE_LENGTH} src/
+verify: ${ENV_DIR}/bin/flake8
+	${ENV_DIR}/bin/flake8 --select=E10,E11,E9,F src/
+
+style: ${ENV_DIR}/bin/flake8
+	${ENV_DIR}/bin/flake8 --select=E,W,C,N --max-line-length=100 src/
+
+explain-style: ${ENV_DIR}/bin/flake8
+	${ENV_DIR}/bin/flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
 
 .PHONY: coverage
-coverage: bin/coverage setup.py
-	# Explictly force use of bin/python so we load the correct python modules
+coverage: ${ENV_DIR}/bin/coverage setup.py
 	rm -rf htmlcov/
-	bin/python bin/coverage erase
-	bin/python bin/coverage run --source src --omit "src/metaswitch/**/test/**"  setup.py test
-	bin/python bin/coverage report -m
-	bin/python bin/coverage html
+	${ENV_DIR}/bin/coverage erase
+	${ENV_DIR}/bin/coverage run --source src --omit "**/test/**"  setup.py test
+	${ENV_DIR}/bin/coverage report -m
+	${ENV_DIR}/bin/coverage html
 
 .PHONY: env
-env: bin/python
+env: ${ENV_DIR}/.eggs_installed
 
-bin/python bin/coverage: bin/buildout buildout.cfg
-ifeq ($(X86_64_ONLY),1)
-	ARCHFLAGS="-arch x86_64" ./bin/buildout -N
-else
-	ARCHFLAGS="-arch i386 -arch x86_64" ./bin/buildout -N
-endif
-	${ENV_DIR}/bin/easy_install -zmaxd eggs/ zc.buildout
-
-bin/buildout: $(ENV_DIR)/bin/python
-	mkdir -p .buildout_downloads/dist
-	cp thrift_download/thrift-0.8.0.tar.gz .buildout_downloads/dist/
+$(ENV_DIR)/bin/python: setup.py common/setup.py
+	# Set up a fresh virtual environment
+	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
 	$(ENV_DIR)/bin/easy_install "setuptools>0.7"
 	$(ENV_DIR)/bin/easy_install distribute
-	$(ENV_DIR)/bin/easy_install zc.buildout
-	mkdir -p bin/
-	ln -s $(ENV_DIR)/bin/buildout bin/
-
-$(ENV_DIR)/bin/python:
-	virtualenv --no-site-packages --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
+	
+${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+	# Generate .egg files for crest and python-common
+	${ENV_DIR}/bin/python setup.py bdist_egg -d .eggs
+	cd common && EGG_DIR=../.eggs make build_common_egg
+	cd telephus && python setup.py bdist_egg -d ../.eggs
+	
+	# Download the egg files they depend upon
+	${ENV_DIR}/bin/easy_install -zmaxd .eggs/ .eggs/*.egg
+	
+	# Install the downloaded egg files (this should match the postinst)
+	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .eggs/ .eggs/*.egg
+	
+	# Touch the sentinel file
+	touch $@
 
 include build-infra/cw-deb.mk
 
@@ -79,14 +82,11 @@ clean: envclean pyclean
 
 .PHONY: pyclean
 pyclean:
-	find src -name \*.pyc -exec rm -f {} \;
-	rm -rf src/*.egg-info dist
-	rm -f .coverage
-	rm -rf htmlcov/
+	-find src -name \*.pyc -exec rm {} \;
+	-rm -r src/*.egg-info
+	-rm .coverage
+	-rm -r htmlcov/
 
 .PHONY: envclean
 envclean:
-	rm -rf bin eggs develop-eggs parts .installed.cfg bootstrap.py .downloads .buildout_downloads
-	rm -rf distribute-*.tar.gz
-	rm -rf $(ENV_DIR)
-
+	-rm -r .eggs build ${ENV_DIR}

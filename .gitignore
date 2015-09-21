@@ -2,10 +2,12 @@
 .installed.cfg
 *~
 /bin/
+/build/
 _env
 bootstrap.py
 develop-eggs
 eggs
+.eggs
 src/*.egg-info
 logs
 ./data
