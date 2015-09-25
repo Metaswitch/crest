@@ -238,7 +238,9 @@ Parameters:
     of 256 has proved to work well in testing.
 * chunk (integer, default unset) - If set, this API only returns this chunk (i.e. a fraction of
     the total subscriber base).  Chunks are 0-indexed, and so run from `0` to
-    `chunk-proportion - 1`.  If absent, this API returns all chunks.
+    `chunk-proportion - 1` - e.g. if you have 10000 subscribers and set `chunk-proportion=1000`, a
+    query with `chunk=0` will return ~10 subscribers and a query with `chunk=1` will return another
+    ~10 subscribers.  If absent, this API returns all chunks.
 
 This API does a lot more work than the others, so it tends to be slower - as a rough guide, from
 testing on a 1-core VM:
