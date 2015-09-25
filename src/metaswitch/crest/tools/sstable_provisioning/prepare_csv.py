@@ -37,7 +37,6 @@
 #
 
 import sys, string, csv, traceback, uuid
-from metaswitch.crest import settings
 from metaswitch.common import utils
 from metaswitch.common import ifcs, simservs
 from metaswitch.crest.tools.utils import create_imssubscription_xml
