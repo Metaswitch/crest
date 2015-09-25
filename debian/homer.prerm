@@ -64,6 +64,12 @@ case "$1" in
             service nginx reload
         fi
 
+        # Remove any clearwater-cluster-manager plugins
+        rm -f /usr/share/clearwater/clearwater-cluster-manager/plugins/homer*
+        if [ -x "/etc/init.d/clearwater-cluster-manager" ]; then
+          service clearwater-cluster-manager stop || /bin/true
+        fi
+
         # Make sure we're stopped - do this before env is removed,
         # or init.d script won't work
         service homer stop
