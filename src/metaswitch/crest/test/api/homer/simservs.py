@@ -48,6 +48,144 @@ from metaswitch.crest.api.homer import simservs
 XML_DIR_NAME = "test_xml"
 XML_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), XML_DIR_NAME)
 
+# Valid simservs xml
+
+simservs_cb = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:cp="urn:ietf:params:xml:ns:common-policy">
+    <incoming-communication-barring active="true">
+        <cp:ruleset>
+            <cp:rule id="rule1">
+                <cp:conditions/>
+                <cp:actions>
+                    <allow>true</allow>
+                </cp:actions>
+            </cp:rule>
+        </cp:ruleset>
+    </incoming-communication-barring>
+    <outgoing-communication-barring active="true">
+        <cp:ruleset>
+            <cp:rule id="rule1">
+                <cp:conditions>
+                    <international/>
+                </cp:conditions>
+                <cp:actions>
+                    <allow>true</allow>
+                </cp:actions>
+            </cp:rule>
+        </cp:ruleset>
+    </outgoing-communication-barring>
+</simservs>"""
+
+simservs_cdiv = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:cp="urn:ietf:params:xml:ns:common-policy">
+    <communication-diversion active="false">
+        <NoReplyTimer>20</NoReplyTimer>
+        <cp:ruleset>
+            <cp:rule id="rule1">
+                <cp:conditions>
+                    <busy/>
+                </cp:conditions>
+                <cp:actions>
+                    <forward-to>
+                        <target>sip:abc@def.com</target>
+                    </forward-to>
+                </cp:actions>
+            </cp:rule>
+        </cp:ruleset>
+    </communication-diversion>
+</simservs>"""
+
+simservs_fa = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <flexible-alerting-default active="true"/>
+
+    <flexible-alerting-specific active="true">
+        <identity>sip:pilot_identity@home1.net</identity>
+    </flexible-alerting-specific>
+</simservs>"""
+
+simservs_oip = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+    <originating-identity-presentation active="true"/>
+    <originating-identity-presentation-restriction active="true">
+        <default-behaviour>presentation-not-restricted</default-behaviour>
+    </originating-identity-presentation-restriction>
+</simservs>"""
+
+# Invalid simservs xml
+
+simservs_andy = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+    <!-- Strictly speaking, we don't need a XSD validator to verify this,
+         however it would be nice to be alerted if ever such a travesty
+         was allowed to be written into our database -->
+    <andy-is-cool active="true"/>
+</simservs>"""
+
+
+simservs_cb_bad_ns = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs
+    xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap"
+    xmlns:cp="urn:ietf:params:xml:ns:common-policy"
+    xmlns:ocp="urn:oma:params:xml:ns:common-policy">
+    <incoming-communication-barring active="true">
+        <ruleset>
+            <rule>
+                <conditions/>
+                <actions>
+                    <allow>true</allow>
+                </actions>
+            </rule>
+        </ruleset>
+    </incoming-communication-barring>
+    <outgoing-communication-barring active="true">
+        <ruleset>
+            <rule>
+                <conditions/>
+                <actions>
+                    <allow>true</allow>
+                </actions>
+            </rule>
+        </ruleset>
+    </outgoing-communication-barring>
+</simservs>"""
+
+simservs_cb_no_rule_id = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs
+    xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap"
+    xmlns:cp="urn:ietf:params:xml:ns:common-policy"
+    xmlns:ocp="urn:oma:params:xml:ns:common-policy">
+    <incoming-communication-barring active="true">
+        <cp:ruleset>
+            <cp:rule>
+                <cp:conditions/>
+                <cp:actions>
+                    <allow>true</allow>
+                </cp:actions>
+            </cp:rule>
+        </cp:ruleset>
+    </incoming-communication-barring>
+</simservs>"""
+
+simservs_cdiv_bad_ns = """<?xml version="1.0" encoding="UTF-8"?>
+<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <communication-diversion active="false">
+        <NoReplyTimer>20</NoReplyTimer>
+        <ruleset>
+            <rule>
+                <conditions>
+                    <busy/>
+                </conditions>
+                <actions>
+                    <forward-to>
+                        <target>sip:abc@def.com</target>
+                    </forward-to>
+                </actions>
+            </rule>
+        </ruleset>
+    </communication-diversion>
+</simservs>"""
+
 class TestSimservsHandler(unittest.TestCase):
     """
     Detailed, isolated unit tests of the SimservsHandler class.
@@ -94,40 +232,36 @@ class TestSimservsFunctional(unittest.TestCase):
         unittest.TestCase.setUp(self)
 
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
-    def assert_valid_simservs(self, file_name, passthrough_put):
-        with open(os.path.join(XML_DIR, file_name)) as f:
-            xml_doc = f.read()
+    def assert_valid_simservs(self, xml_doc, passthrough_put):
         result = xsd._validate(xml_doc, simservs.SCHEMA_PATH)
         self.assertTrue(result)
 
     def test_simservs_cb(self):
-        self.assert_valid_simservs("simservs_cb.xml")
+        self.assert_valid_simservs(simservs_cb)
 
     def test_simservs_cdiv(self):
-        self.assert_valid_simservs("simservs_cdiv.xml")
+        self.assert_valid_simservs(simservs_cdiv)
 
     def test_simservs_fa(self):
-        self.assert_valid_simservs("simservs_fa.xml")
+        self.assert_valid_simservs(simservs_fa)
 
     def test_simservs_oip(self):
-        self.assert_valid_simservs("simservs_oip.xml")
+        self.assert_valid_simservs(simservs_oip)
 
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
-    def assert_invalid_simservs(self, file_name, passthrough_put):
-        with open(os.path.join(XML_DIR, file_name)) as f:
-            xml_doc = f.read()
+    def assert_invalid_simservs(self, xml_doc, passthrough_put):
         self.assertRaises(etree.XMLSyntaxError,
                           xsd._validate,
                           xml_doc, simservs.SCHEMA_PATH)
 
     def test_simservs_andy_invalid(self):
-        self.assert_invalid_simservs("simservs_andy.xml")
+        self.assert_invalid_simservs(simservs_andy)
 
     def test_simservs_cb_bad_ns(self):
-        self.assert_invalid_simservs("simservs_cb_bad_ns.xml")
+        self.assert_invalid_simservs(simservs_cb_bad_ns)
 
     def test_simservs_cb_no_rule_id(self):
-        self.assert_invalid_simservs("simservs_cb_no_rule_id.xml")
+        self.assert_invalid_simservs(simservs_cb_no_rule_id)
 
     def test_simservs_cdiv_bad_ns(self):
-        self.assert_invalid_simservs("simservs_cdiv_bad_ns.xml")
+        self.assert_invalid_simservs(simservs_cdiv_bad_ns)

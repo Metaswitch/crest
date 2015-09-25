@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<simservs xmlns="http://uri.etsi.org/ngn/params/xml/simservs/xcap" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
-    <!-- Strictly speaking, we don't need a XSD validator to verify this,
-         however it would be nice to be alerted if ever such a travesty
-         was allowed to be written into our database -->
-    <andy-is-cool active="true"/>
-</simservs>
