@@ -418,7 +418,7 @@ class PublicID(ProvisioningModel):
                                                     finish=finish,
                                                     use_tokens=True,
                                                     count=10000000)
-        keys = [x.key for x in values]
+        keys = [x.key for x in values if len(x.columns) > 0]
         public_ids = [PublicID(x) for x in keys]
         _log.info("Queried tokens {} to {} - received {} results".format(start, finish, len(public_ids)))
         defer.returnValue(public_ids)
