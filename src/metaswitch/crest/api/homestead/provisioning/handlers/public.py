@@ -85,6 +85,11 @@ class AllPublicIDsHandler(BaseHandler):
                 # Write some data to prevent the request from being timed out by
                 # nginx. Use a space as whitespace is not significant in JSON.
                 self.write(' ')
+
+                # Sleep to avoid using too much CPU. Don't sleep on the first
+                # iteration as this makes the request take at least 1 second
+                # (which is bad for tools which query small subsections of the
+                # token space).
                 yield sleep(1)
 
             end = min([max_token, start + chunk_size])
