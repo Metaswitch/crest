@@ -246,6 +246,9 @@ class BaseHandler(cyclone.web.RequestHandler):
         super(BaseHandler, self).__init__(application, request, **kwargs)
         self.__request_data = None
 
+    def should_count_requests_in_latency(self):
+        return True
+
     def prepare(self):
         # Increment the request counter
         incoming_requests.increment()
@@ -269,7 +272,8 @@ class BaseHandler(cyclone.web.RequestHandler):
                     self.request.uri))
 
         latency = monotonic_time() - self._start
-        loadmonitor.request_complete(latency)
+        if self.should_count_requests_in_latency():
+            loadmonitor.request_complete(latency)
 
         # Track the latency of the requests (in usec)
         latency_accumulator.accumulate(latency * 1000000)
@@ -446,3 +450,10 @@ class UnknownApiHandler(BaseHandler):
     def get(self):
         _log.info("Request for unknown API")
         self.send_error(404, "Request for unknown API")
+
+class SlowRequestHandler(BaseHandler):
+    """
+    Handler that doesn't track the latency of its requests with the load monitor - used for slow requests that won't complete instantly.
+    """
+    def should_count_requests_in_latency(self):
+        return False

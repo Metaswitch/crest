@@ -34,7 +34,7 @@
 
 from twisted.internet import defer, reactor
 from telephus.cassandra.ttypes import NotFoundException
-from metaswitch.crest.api.base import BaseHandler
+from metaswitch.crest.api.base import BaseHandler, SlowRequestHandler
 import json
 import logging
 
@@ -51,7 +51,7 @@ def sleep(seconds):
 
 JSON_PRIVATE_IDS = "private_ids"
 
-class AllPublicIDsHandler(BaseHandler):
+class AllPublicIDsHandler(SlowRequestHandler):
     @defer.inlineCallbacks
     def get(self):
         num_chunks = int(self.get_argument("chunk-proportion", default=256))
