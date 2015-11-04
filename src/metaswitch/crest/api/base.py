@@ -158,8 +158,10 @@ class LoadMonitor:
             self.rejected += 1
             return False
 
-    def request_complete(self, latency):
+    def request_complete(self):
         self.pending_count -= 1
+
+    def update_latency(self, latency):
         self.smoothed_latency = (7 * self.smoothed_latency + latency) / 8
         self.smoothed_variability = (7 * self.smoothed_variability + abs(latency - self.smoothed_latency)) / 8
         self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability)
@@ -271,9 +273,10 @@ class BaseHandler(cyclone.web.RequestHandler):
                     self.request.host,
                     self.request.uri))
 
+        loadmonitor.request_complete()
         latency = monotonic_time() - self._start
         if self.should_count_requests_in_latency():
-            loadmonitor.request_complete(latency)
+            loadmonitor.update_latency(latency)
 
         # Track the latency of the requests (in usec)
         latency_accumulator.accumulate(latency * 1000000)
