@@ -47,7 +47,7 @@
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC=homer       # Introduce a short description here
-NAME=homer       # Introduce the short server's name here
+NAME=homer       # Introduce the short server's name here (must match PROCESS_NAME in local_settings.py)
 DAEMON=/usr/share/clearwater/homer/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --worker-processes $(cat /proc/cpuinfo | grep processor | wc -l)"
 DAEMON_DIR=/usr/share/clearwater/homer/
