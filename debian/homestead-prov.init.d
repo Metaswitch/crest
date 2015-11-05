@@ -47,7 +47,7 @@
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC=homestead-prov        # Introduce a short description here
-NAME=homestead-prov       # Introduce the short server's name here (not suitable for --name)
+NAME=homestead-prov       # Introduce the short server's name here
 DAEMON=/usr/share/clearwater/homestead/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --worker-processes 1"
 DAEMON_DIR=/usr/share/clearwater/homestead/
@@ -101,10 +101,10 @@ do_start()
   #   0 if daemon has been started
   #   1 if daemon was already running
   #   2 if daemon could not be started
-  start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
+  start-stop-daemon --start --quiet --pidfile $PIDFILE --name $NAME --exec $DAEMON --test > /dev/null \
     || return 1
   get_daemon_args
-  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --exec $DAEMON -- $DAEMON_ARGS --background \
+  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --name $NAME --exec $DAEMON -- $DAEMON_ARGS --background \
     || return 2
   # Add code here, if necessary, that waits for the process to be ready
   # to handle requests from services started subsequently which depend
@@ -117,7 +117,7 @@ do_start()
 do_run()
 {
   get_daemon_args
-  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --exec $DAEMON -- $DAEMON_ARGS \
+  $namespace_prefix start-stop-daemon --start --quiet --chdir $DAEMON_DIR --name $NAME --exec $DAEMON -- $DAEMON_ARGS \
     || return 2
 }
 
@@ -134,7 +134,7 @@ do_stop()
   # Kill parent and children. Don't specify pidfile, or we'll kill only
   # the parent. This must be run while $DAEMON exists in the filesystem,
   # or start-stop-daemon will exit without doing anything.
-  start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --exec $DAEMON
+  start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --name $NAME --exec $DAEMON
   RETVAL="$?"
   [ "$RETVAL" = 2 ] && return 2
   # Many daemons don't delete their pidfiles when they exit.
@@ -154,7 +154,7 @@ do_abort()
   #   1 if daemon was already stopped
   #   2 if daemon could not be stopped
   #   other if a failure occurred
-  start-stop-daemon --stop --quiet --retry=USR1/5/TERM/30/KILL/5 --exec $DAEMON
+  start-stop-daemon --stop --quiet --retry=USR1/5/TERM/30/KILL/5 --name $NAME --exec $DAEMON
   RETVAL="$?"
   [ "$RETVAL" = 2 ] && return 2
   # Many daemons don't delete their pidfiles when they exit.
