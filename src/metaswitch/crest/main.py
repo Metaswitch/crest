@@ -38,6 +38,7 @@
 import os
 import argparse
 import logging
+import prctl
 from sys import executable, exit
 from socket import AF_INET
 from fcntl import flock, LOCK_EX, LOCK_NB
@@ -115,6 +116,9 @@ def standalone():
     parser.add_argument("--shared-http-tcp-fd", default=None, type=int)
     parser.add_argument("--process-id", default=0, type=int)
     args = parser.parse_args()
+
+    # Set process name.
+    prctl.prctl(prctl.NAME, settings.PROCESS_NAME)
 
     # We don't initialize logging until we fork because we want each child to
     # have its own logging and it's awkward to reconfigure logging that is
