@@ -39,6 +39,9 @@ import argparse
 import logging
 import time
 import random
+import os
+
+os.environ.setdefault('CREST_SETTINGS', '/usr/share/clearwater/homer/local_settings.py')
 
 from metaswitch.common.logging_config import configure_logging
 from metaswitch.crest import settings
@@ -238,7 +241,6 @@ class Request(object):
         return self.schedule_time - self.creation_time
 
 if __name__ == '__main__':
-    settings.load("/usr/share/clearwater/homer")
     parser = argparse.ArgumentParser(description='Process some integers.')
     parser.add_argument('server', metavar='SERVER', type=str,
                        help='The domain name or IP address to stress.')
