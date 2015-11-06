@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file validator.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -31,3 +31,26 @@
 # "OpenSSL Licenses" means the OpenSSL License and Original SSLeay License
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
+
+
+import logging
+import os
+
+from metaswitch.crest.api.passthrough import PassthroughHandler
+from metaswitch.crest.api import xsd
+
+_log = logging.getLogger("crest.api.homer")
+
+
+def create_handler(schema):
+
+    class ValidationHandler(PassthroughHandler):
+        """
+        Handler that validates documents before storing them
+        """
+
+        @xsd.validate(schema)
+        def put(self, *args):
+            return PassthroughHandler.put(self, *args)
+
+    return ValidationHandler
