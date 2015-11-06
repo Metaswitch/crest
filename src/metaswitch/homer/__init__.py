@@ -1,4 +1,4 @@
-# @file db.py
+# @file __init__.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -33,30 +33,39 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-from metaswitch.crest.tools import connection
-from metaswitch.crest.api import get_create_statements
+from twisted.internet import reactor
+from telephus.protocol import ManagedCassandraClientFactory
 
-def create_tables(logger):
-    create_statements = get_create_statements()
+from metaswitch.crest.api import PATH_PREFIX
+from metaswitch.crest.api.passthrough import PassthroughHandler
+from metaswitch.crest import settings
+from metaswitch.homer.simservs import SimservsHandler
 
-    # Print out the statements we will execute.
-    for keyspace, statements in create_statements.items():
-        print keyspace+":"
-        for s in statements:
-            print "  "+s
+# TODO More precise regexes
+USER = r'[^/]+'
 
-    # Now execute the statements in the correct keyspace.
-    for keyspace, statements in create_statements.items():
-        c = connection.cursor(keyspace)
+# Routes for application
+# Routes for application. Each route consists of:
+# - The actual route regex, with capture groups for parameters that will be passed to the the Handler
+# - The Handler to process the request. If no validation is required, use the PassthroughHandler.
+#   To validate requests, subclass PassthroughHandler and validate before passing onto PassthroughHandler
+# - Cassandra information. This hash contains the information required by PassthroughHandler to store
+#   the data in the underlying database. Namely:
+#     - table: the table to store the values in
+#     - keys: a list of keys to use for the parameters passed in. These correspond one to one to
+#       parameters from the capture groups in the route regex
+ROUTES = [
+    # Simservs storage
+    # /org.etsi.ngn.simservs/users/USER/simservs.xml
+    (PATH_PREFIX + r'org.etsi.ngn.simservs/users/(' + USER + r')/simservs.xml/?$',
+     SimservsHandler,
+     {"factory_name": "homer", "table": "simservs", "column": "value"}),
+]
 
-        for s in statements:
-            try:
-                print "Executing %s" % s
-                c.execute(s)
-            except Exception, ex:
-                print ex
-                logger.exception("Failed to create table")
-
-            print "Done."
-
-        c.close()
+def initialize(application):
+    """Module initialization"""
+    factory = ManagedCassandraClientFactory("homer")
+    reactor.connectTCP(settings.CASS_HOST,
+                       settings.CASS_PORT,
+                       factory)
+    PassthroughHandler.add_cass_factory("homer", factory)

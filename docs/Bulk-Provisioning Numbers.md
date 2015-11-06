@@ -22,13 +22,13 @@ done > users.csv
     Increase the DN range as required to generate 100,000 subscribers per SIPp node.
 3.  If you omitted any columns,
     1.  run
-        /usr/share/clearwater/homestead/src/metaswitch/crest/tools/bulk\_autocomplete.py users.csv
+        /usr/share/clearwater/crest/src/metaswitch/crest/tools/bulk\_autocomplete.py users.csv
         - this will fill in any missing columns, as described above
     2.  take a copy of this file, as you will need the passwords later
         to log your phone(s) in.
 
 4.  Run
-    `/usr/share/clearwater/homestead/src/metaswitch/crest/tools/bulk_create.py users.csv` (or `users.auto.csv` if you used bulk\_autocomplete.py). If you need example call list data add the `--memento` option. If you want to store the passwords (in plaintext) of the subscribers add the `--plaintext_password` option. This will create a number of files in the current directory.
+    `/usr/share/clearwater/crest/src/metaswitch/crest/tools/bulk_create.py users.csv` (or `users.auto.csv` if you used bulk\_autocomplete.py). If you need example call list data add the `--memento` option. If you want to store the passwords (in plaintext) of the subscribers add the `--plaintext_password` option. This will create a number of files in the current directory.
 5.  Run the resulting \*.create\_homestead.sh script on the homestead
     node.
 6.  Copy the \*.create\_xdm.\* files to a homer node and run the

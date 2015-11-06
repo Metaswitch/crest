@@ -4,7 +4,7 @@ PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
 DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
-DEB_NAMES := homer homestead-prov
+DEB_NAMES := crest homer homestead-prov
 
 MAX_LINE_LENGTH ?= 99
 
@@ -22,8 +22,10 @@ help:
 	@cat docs/development.md
 
 .PHONY: test
-test: setup.py env
-	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup.py test -v
+test: setup_crest.py setup_homer.py setup_homestead_prov.py env
+	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_crest.py test -v
+	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_homer.py test -v
+	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_homestead_prov.py test -v
 
 ${ENV_DIR}/bin/flake8: env
 	${ENV_DIR}/bin/pip install flake8
@@ -41,34 +43,52 @@ explain-style: ${ENV_DIR}/bin/flake8
 	${ENV_DIR}/bin/flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
 
 .PHONY: coverage
-coverage: ${ENV_DIR}/bin/coverage setup.py
+coverage: ${ENV_DIR}/bin/coverage setup_crest.py setup_homer.py setup_homestead_prov.py
 	rm -rf htmlcov/
 	${ENV_DIR}/bin/coverage erase
-	${ENV_DIR}/bin/coverage run --source src --omit "**/test/**"  setup.py test
+	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**"  setup_crest.py test
+	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**"  setup_homer.py test
+	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**"  setup_homestead_prov.py test
 	${ENV_DIR}/bin/coverage report -m
 	${ENV_DIR}/bin/coverage html
 
 .PHONY: env
 env: ${ENV_DIR}/.eggs_installed
 
-$(ENV_DIR)/bin/python: setup.py common/setup.py
+$(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py common/setup.py
 	# Set up a fresh virtual environment
 	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
-	$(ENV_DIR)/bin/easy_install "setuptools>0.7"
+	$(ENV_DIR)/bin/easy_install -U "setuptools>=3.3"
 	$(ENV_DIR)/bin/easy_install distribute
-	
+
 ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-	# Generate .egg files for crest and python-common
-	${ENV_DIR}/bin/python setup.py bdist_egg -d .eggs
-	cd common && EGG_DIR=../.eggs make build_common_egg
-	cd telephus && python setup.py bdist_egg -d ../.eggs
-	
-	# Download the egg files they depend upon
-	${ENV_DIR}/bin/easy_install -zmaxd .eggs/ .eggs/*.egg
-	
+	# Generate .egg files for crest, homer, homestead_prov
+	${ENV_DIR}/bin/python setup_crest.py bdist_egg -d .crest-eggs
+	${ENV_DIR}/bin/python setup_homer.py bdist_egg -d .homer-eggs
+	${ENV_DIR}/bin/python setup_homestead_prov.py bdist_egg -d .homestead_prov-eggs
+
+	# Generate the egg files for internal crest dependencies
+	cd common && EGG_DIR=../.crest-eggs make build_common_egg
+	cd telephus && python setup.py bdist_egg -d ../.crest-eggs
+
+	# Download the egg files crest depends upon
+	${ENV_DIR}/bin/easy_install -zmaxd .crest-eggs/ .crest-eggs/*.egg
+
 	# Install the downloaded egg files (this should match the postinst)
-	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .eggs/ .eggs/*.egg
-	
+	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .crest-eggs/ .crest-eggs/*.egg
+
+	# Download the additional egg files homer depends upon
+	${ENV_DIR}/bin/easy_install -zmxd .homer-eggs/ .homer-eggs/*.egg
+
+	# Install the downloaded egg files (this should match the postinst)
+	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .homer-eggs/ .homer-eggs/*.egg
+
+	# Download the additional egg files homestead_prov depends upon
+	${ENV_DIR}/bin/easy_install -zmxd .homestead_prov-eggs/ .homestead_prov-eggs/*.egg
+
+	# Install the downloaded egg files (this should match the postinst)
+	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .homestead_prov-eggs/ .homestead_prov-eggs/*.egg
+
 	# Touch the sentinel file
 	touch $@
 
@@ -89,4 +109,4 @@ pyclean:
 
 .PHONY: envclean
 envclean:
-	-rm -r .eggs build ${ENV_DIR}
+	-rm -r .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}

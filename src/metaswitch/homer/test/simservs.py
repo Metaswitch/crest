@@ -43,7 +43,7 @@ from lxml import etree
 from cyclone.web import HTTPError
 
 from metaswitch.crest.api import xsd
-from metaswitch.crest.api.homer import simservs
+from metaswitch.homer import simservs
 
 XML_DIR_NAME = "test_xml"
 XML_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), XML_DIR_NAME)

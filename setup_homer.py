@@ -1,4 +1,4 @@
-# @file homestead_diags
+# @file setup.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,16 +32,33 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-# This script is executed in the context of the clearwater_diags_monitor script
-# (in the clearwater-infrastructure project).
+import logging
+import sys
+# Workaround bug in multiprocessing - http://bugs.python.org/issue15881
+# Without this, running tests involving twisted throws an error on completion
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
-describering_file=$CURRENT_DUMP_DIR/nodetool_describering.txt
+from setuptools import setup, find_packages
+from logging import StreamHandler
 
-for keyspace in homestead_cache homestead_provisioning
-do
-  echo $keyspace: >>$describering_file
-  $namespace_prefix nodetool describering $keyspace >>$describering_file
-  echo >>$describering_file
-done
+_log = logging.getLogger("homer")
+_log.setLevel(logging.DEBUG)
+_handler = StreamHandler(sys.stderr)
+_handler.setLevel(logging.DEBUG)
+_log.addHandler(_handler)
 
-cp /usr/share/clearwater/homestead/local_settings.py $CURRENT_DUMP_DIR
+setup(
+    name='homer',
+    version='0.1',
+    namespace_packages = ['metaswitch'],
+    packages=find_packages('src', include=['metaswitch', 'metaswitch.homer', 'metaswitch.homer.*']),
+    package_dir={'':'src'},
+    package_data={'': ['*.xsd']},
+    test_suite='metaswitch.homer.test',
+    install_requires=["crest"],
+    tests_require=["pbr==1.6", "Mock"],
+    options={"build": {"build_base": "build-homer"}},
+    )
