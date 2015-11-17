@@ -1,0 +1,11 @@
+{
+    "routes": [
+        {
+            "path": "org.etsi.ngn.simservs/users",
+            "file": "simservs.xml",
+            "schema": "simservs/mmtel.xsd",
+            "table": "simservs",
+            "column": "value"
+        }
+    ]
+}

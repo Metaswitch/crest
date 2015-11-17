@@ -36,31 +36,12 @@
 from twisted.internet import reactor
 from telephus.protocol import ManagedCassandraClientFactory
 
-from metaswitch.crest.api import PATH_PREFIX
 from metaswitch.crest.api.passthrough import PassthroughHandler
 from metaswitch.crest import settings
-from metaswitch.homer.simservs import SimservsHandler
-
-# TODO More precise regexes
-USER = r'[^/]+'
+from metaswitch.homer import routes
 
 # Routes for application
-# Routes for application. Each route consists of:
-# - The actual route regex, with capture groups for parameters that will be passed to the the Handler
-# - The Handler to process the request. If no validation is required, use the PassthroughHandler.
-#   To validate requests, subclass PassthroughHandler and validate before passing onto PassthroughHandler
-# - Cassandra information. This hash contains the information required by PassthroughHandler to store
-#   the data in the underlying database. Namely:
-#     - table: the table to store the values in
-#     - keys: a list of keys to use for the parameters passed in. These correspond one to one to
-#       parameters from the capture groups in the route regex
-ROUTES = [
-    # Simservs storage
-    # /org.etsi.ngn.simservs/users/USER/simservs.xml
-    (PATH_PREFIX + r'org.etsi.ngn.simservs/users/(' + USER + r')/simservs.xml/?$',
-     SimservsHandler,
-     {"factory_name": "homer", "table": "simservs", "column": "value"}),
-]
+ROUTES = routes.get_routes()
 
 def initialize(application):
     """Module initialization"""
