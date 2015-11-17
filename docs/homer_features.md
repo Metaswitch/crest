@@ -54,3 +54,10 @@ Being based on Crest, Homer is horizontally scalable. A cluster of Homer nodes
 provides access to the same underlying Cassandra cluster, allowing the load to
 be spread between nodes.
 
+Additional document storage and validation
+------------------------------------------
+
+Additional documents can be stored in homer by providing an extra handler
+definition file.  This maps an XDMS path and filename to a schema file,
+cassandra table and cassandra column.  See simservs.json for a sample
+handler description that describes the simservs document storage.

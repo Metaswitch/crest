@@ -1,4 +1,4 @@
-# @file setup.py
+# @file validator.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,32 +32,25 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+
 import logging
-import sys
-# Workaround bug in multiprocessing - http://bugs.python.org/issue15881
-# Without this, running tests involving twisted throws an error on completion
-try:
-    import multiprocessing
-except ImportError:
-    pass
+import os
 
-from setuptools import setup, find_packages
-from logging import StreamHandler
+from metaswitch.crest.api.passthrough import PassthroughHandler
+from metaswitch.crest.api import xsd
 
-_log = logging.getLogger("crest")
-_log.setLevel(logging.DEBUG)
-_handler = StreamHandler(sys.stderr)
-_handler.setLevel(logging.DEBUG)
-_log.addHandler(_handler)
+_log = logging.getLogger("crest.api.homer")
 
-setup(
-    name='crest',
-    version='0.1',
-    namespace_packages = ['metaswitch'],
-    packages=find_packages('src'),
-    package_dir={'':'src'},
-    package_data={'': ['*.xsd', '*.xml']},
-    test_suite='metaswitch.crest.test',
-    install_requires=["pyzmq", "py-bcrypt", "cyclone==1.0", "cql", "lxml", "msgpack-python", "pure-sasl", "prctl"],
-    tests_require=["pbr==1.6", "Mock"],
-    )
+
+def create_handler(schema):
+
+    class ValidationHandler(PassthroughHandler):
+        """
+        Handler that validates documents before storing them
+        """
+
+        @xsd.validate(schema)
+        def put(self, *args):
+            return PassthroughHandler.put(self, *args)
+
+    return ValidationHandler

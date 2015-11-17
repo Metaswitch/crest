@@ -3,6 +3,7 @@
 *.substvars
 /changelog
 /files
+/crest/
 /homer/
 /homestead/
 /homestead-prov/

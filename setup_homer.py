@@ -1,4 +1,4 @@
-# @file connection.py
+# @file setup.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,30 +32,33 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
 import logging
-import threading
-from metaswitch.crest import settings
-import cql
+import sys
+# Workaround bug in multiprocessing - http://bugs.python.org/issue15881
+# Without this, running tests involving twisted throws an error on completion
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
-_log = logging.getLogger("crest.connection")
+from setuptools import setup, find_packages
+from logging import StreamHandler
 
-thread_local = threading.local()
-thread_local.connections = {}
+_log = logging.getLogger("homer")
+_log.setLevel(logging.DEBUG)
+_handler = StreamHandler(sys.stderr)
+_handler.setLevel(logging.DEBUG)
+_log.addHandler(_handler)
 
-def get_or_create(keyspace):
-    connection = thread_local.connections.get(keyspace)
-
-    if not connection:
-        _log.info("Connecting to Cassandra on %s", settings.CASS_HOST)
-        connection = cql.connect(settings.CASS_HOST,
-                                 settings.CASS_PORT,
-                                 keyspace,
-                                 cql_version='2.0.0')
-        assert connection
-        thread_local.connections[keyspace] = connection
-    return connection
-
-def cursor(keyspace, *args, **kwargs):
-    connection = get_or_create(keyspace)
-    return connection.cursor(*args, **kwargs)
+setup(
+    name='homer',
+    version='0.1',
+    namespace_packages = ['metaswitch'],
+    packages=find_packages('src', include=['metaswitch', 'metaswitch.homer', 'metaswitch.homer.*']),
+    package_dir={'':'src'},
+    package_data={'': ['*.xsd']},
+    test_suite='metaswitch.homer.test',
+    install_requires=["crest"],
+    tests_require=["pbr==1.6", "Mock"],
+    options={"build": {"build_base": "build-homer"}},
+    )
