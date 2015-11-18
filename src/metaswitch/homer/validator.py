@@ -34,7 +34,6 @@
 
 
 import logging
-import os
 
 from metaswitch.crest.api.passthrough import PassthroughHandler
 from metaswitch.crest.api import xsd
