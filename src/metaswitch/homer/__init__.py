@@ -1,4 +1,4 @@
-# @file simservs.py
+# @file __init__.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -33,24 +33,20 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-import logging
-import os
+from twisted.internet import reactor
+from telephus.protocol import ManagedCassandraClientFactory
 
 from metaswitch.crest.api.passthrough import PassthroughHandler
-from metaswitch.crest.api import xsd
+from metaswitch.crest import settings
+from metaswitch.homer import routes
 
-SCHEMA_NAME = "mmtel.xsd"
-SCHEMA_DIR_NAME = "schema"
-SCHEMA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), SCHEMA_DIR_NAME)
-SCHEMA_PATH = os.path.join(SCHEMA_DIR, SCHEMA_NAME)
+# Routes for application
+ROUTES = routes.get_routes()
 
-_log = logging.getLogger("crest.api.homer")
-
-
-class SimservsHandler(PassthroughHandler):
-    """
-    Handler that validates simservs documents before storing them
-    """
-    @xsd.validate(SCHEMA_PATH)
-    def put(self, *args):
-        return PassthroughHandler.put(self, *args)
+def initialize(application):
+    """Module initialization"""
+    factory = ManagedCassandraClientFactory("homer")
+    reactor.connectTCP(settings.CASS_HOST,
+                       settings.CASS_PORT,
+                       factory)
+    PassthroughHandler.add_cass_factory("homer", factory)

@@ -44,4 +44,4 @@ do
   echo >>$describering_file
 done
 
-cp $(find /usr/share/clearwater/homestead/env -name local_settings.py) $CURRENT_DUMP_DIR
+cp /usr/share/clearwater/homestead/local_settings.py $CURRENT_DUMP_DIR

@@ -48,7 +48,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC=homestead-prov        # Introduce a short description here
 NAME=homestead-prov       # Introduce the short server's name here
-DAEMON=/usr/share/clearwater/homestead/env/bin/python # Introduce the server's location here
+DAEMON=/usr/share/clearwater/crest/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --worker-processes 1"
 DAEMON_DIR=/usr/share/clearwater/homestead/
 PIDFILE=/var/run/$NAME.pid
@@ -90,6 +90,9 @@ get_daemon_args()
   get_settings
 
   DAEMON_ARGS="$DAEMON_ARGS $signaling_opt"
+
+  export CREST_SETTINGS=/usr/share/clearwater/homestead/local_settings.py
+  export PYTHONPATH=/usr/share/clearwater/homestead/python/packages
 }
 
 #

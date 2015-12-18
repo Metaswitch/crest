@@ -110,7 +110,7 @@ def standalone():
     twisted.internet.address.UNIXAddress.host = "localhost"
 
     # Parse arguments
-    parser = argparse.ArgumentParser(description="Homer web server")
+    parser = argparse.ArgumentParser(description="Crest web server")
     parser.add_argument("--background", action="store_true", help="Detach and run server in background")
     parser.add_argument("--signaling-namespace", action="store_true", help="Server running in signaling namespace")
     parser.add_argument("--worker-processes", default=1, type=int)

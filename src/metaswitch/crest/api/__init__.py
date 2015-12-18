@@ -58,7 +58,7 @@ ThriftClientProtocol.connectionLost = connectionLost
 
 def load_module(name):
     """Dynamically load routes from configured modules"""
-    return __import__("metaswitch.crest.api.%s" % name,
+    return __import__("metaswitch.%s" % name,
                       fromlist=["ROUTES"])
 
 

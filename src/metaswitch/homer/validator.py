@@ -1,4 +1,4 @@
-# @file db.py
+# @file validator.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -33,30 +33,23 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 
-from metaswitch.crest.tools import connection
-from metaswitch.crest.api import get_create_statements
+import logging
 
-def create_tables(logger):
-    create_statements = get_create_statements()
+from metaswitch.crest.api.passthrough import PassthroughHandler
+from metaswitch.crest.api import xsd
 
-    # Print out the statements we will execute.
-    for keyspace, statements in create_statements.items():
-        print keyspace+":"
-        for s in statements:
-            print "  "+s
+_log = logging.getLogger("crest.api.homer")
 
-    # Now execute the statements in the correct keyspace.
-    for keyspace, statements in create_statements.items():
-        c = connection.cursor(keyspace)
 
-        for s in statements:
-            try:
-                print "Executing %s" % s
-                c.execute(s)
-            except Exception, ex:
-                print ex
-                logger.exception("Failed to create table")
+def create_handler(schema):
 
-            print "Done."
+    class ValidationHandler(PassthroughHandler):
+        """
+        Handler that validates documents before storing them
+        """
 
-        c.close()
+        @xsd.validate(schema)
+        def put(self, *args):
+            return PassthroughHandler.put(self, *args)
+
+    return ValidationHandler

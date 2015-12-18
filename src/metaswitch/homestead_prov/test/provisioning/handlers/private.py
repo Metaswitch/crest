@@ -38,7 +38,7 @@ import unittest
 import mock
 
 from telephus.cassandra.ttypes import NotFoundException
-from metaswitch.crest.api.homestead.provisioning.handlers import private
+from metaswitch.homestead_prov.provisioning.handlers import private
 
 class TestPrivateHandler(unittest.TestCase):
     """
@@ -79,7 +79,7 @@ class TestPrivateHandler(unittest.TestCase):
         self.handler.put("private_id")
         send_error.assert_called_once_with(400, "Invalid JSON - both digest_ha1 and plaintext_password present")
 
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.put_digest")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.put_digest")
     def test_put_digest(self, put_digest):
         self.request.body = "{\"digest_ha1\":\"DIGEST\"}"
         self.handler.finish = mock.MagicMock()
@@ -87,7 +87,7 @@ class TestPrivateHandler(unittest.TestCase):
         put_digest.assert_called_once_with("DIGEST", "", "example.com")
         self.assertTrue(self.handler.finish.called)
 
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.put_digest")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.put_digest")
     def test_put_plaintext_password(self, put_digest):
         self.request.body = "{\"plaintext_password\":\"ptp\", \"realm\": \"realm.com\"}"
         self.handler.finish = mock.MagicMock()
@@ -96,7 +96,7 @@ class TestPrivateHandler(unittest.TestCase):
         self.assertTrue(self.handler.finish.called)
 
     @mock.patch("metaswitch.crest.api.base.BaseHandler.send_error")
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.get_digest")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.get_digest")
     def test_get_missing_subscriber(self, get_digest, send_error):
         get_digest.side_effect = NotFoundException()
         self.handler.get("private_id")
@@ -104,28 +104,28 @@ class TestPrivateHandler(unittest.TestCase):
         send_error.assert_called_once_with(404)
 
     @mock.patch("metaswitch.crest.api.base.BaseHandler.send_json")
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.get_digest")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.get_digest")
     def test_get_digest(self, get_digest, send_json):
         get_digest.return_value =(("DIGEST", "", "REALM"))
         self.handler.get("private_id")
         send_json.assert_called_once_with({'digest_ha1':'DIGEST', 'realm': 'REALM'})
 
     @mock.patch("metaswitch.crest.api.base.BaseHandler.send_json")
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.get_digest")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.get_digest")
     def test_get_plaintext_password(self, get_digest, send_json):
         get_digest.return_value =(("DIGEST", "PASSWORD", "REALM"))
         self.handler.get("private_id")
         send_json.assert_called_once_with({'digest_ha1':'DIGEST', 'realm': 'REALM', 'plaintext_password': 'PASSWORD'})
 
     @mock.patch("metaswitch.crest.api.base.BaseHandler.send_error")
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.delete")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.delete")
     def test_delete_missing_subscriber(self, delete, send_error):
         delete.side_effect = NotFoundException()
         self.handler.delete("private_id")
         self.assertTrue(delete.called > 0)
         send_error.assert_called_once_with(204)
 
-    @mock.patch("metaswitch.crest.api.homestead.provisioning.models.PrivateID.delete")
+    @mock.patch("metaswitch.homestead_prov.provisioning.models.PrivateID.delete")
     def test_delete(self, delete):
         self.handler.finish = mock.MagicMock()
         self.handler.delete("private_id")

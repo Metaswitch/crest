@@ -48,7 +48,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC=homer       # Introduce a short description here
 NAME=homer       # Introduce the short server's name here
-DAEMON=/usr/share/clearwater/homer/env/bin/python # Introduce the server's location here
+DAEMON=/usr/share/clearwater/crest/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --worker-processes $(cat /proc/cpuinfo | grep processor | wc -l)"
 DAEMON_DIR=/usr/share/clearwater/homer/
 PIDFILE=/var/run/$NAME.pid
@@ -90,6 +90,9 @@ get_daemon_args()
   get_settings
 
   DAEMON_ARGS="$DAEMON_ARGS $signaling_opt"
+
+  export CREST_SETTINGS=/usr/share/clearwater/homer/local_settings.py
+  export PYTHONPATH=/usr/share/clearwater/homer/python/packages
 }
 
 #

@@ -55,7 +55,7 @@ HOMER_DIR=/usr/share/clearwater/homer
 case "$1" in
     remove|upgrade|deconfigure)
         # Stop monitoring ourselves
-        for f in $HOMER_DIR/*.monit; do rm -f /etc/monit/conf.d/`basename $f`; done
+        for f in $HOMER_DIR/templates/*.monit; do rm -f /etc/monit/conf.d/`basename $f`; done
         reload clearwater-monit &> /dev/null || true
 
         # Disable the homer nginx site
@@ -73,7 +73,8 @@ case "$1" in
         # Make sure we're stopped - do this before env is removed,
         # or init.d script won't work
         service homer stop
-        rm -rf $HOMER_DIR/env
+        rm -rf $HOMER_DIR/python
+        rm -f $HOMER_DIR/local_settings.py
     ;;
 
     failed-upgrade)

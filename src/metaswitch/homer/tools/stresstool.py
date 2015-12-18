@@ -39,6 +39,9 @@ import argparse
 import logging
 import time
 import random
+import os
+
+os.environ.setdefault('CREST_SETTINGS', '/usr/share/clearwater/homer/local_settings.py')
 
 from metaswitch.common.logging_config import configure_logging
 from metaswitch.crest import settings

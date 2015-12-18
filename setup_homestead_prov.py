@@ -1,4 +1,4 @@
-# @file __init__.py
+# @file setup.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,40 +32,33 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
+import logging
+import sys
+# Workaround bug in multiprocessing - http://bugs.python.org/issue15881
+# Without this, running tests involving twisted throws an error on completion
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
-from twisted.internet import reactor
-from telephus.protocol import ManagedCassandraClientFactory
+from setuptools import setup, find_packages
+from logging import StreamHandler
 
-from metaswitch.crest.api import PATH_PREFIX
-from metaswitch.crest.api.passthrough import PassthroughHandler
-from metaswitch.crest.api.homer.simservs import SimservsHandler
-from metaswitch.crest import settings
+_log = logging.getLogger("homestead_prov")
+_log.setLevel(logging.DEBUG)
+_handler = StreamHandler(sys.stderr)
+_handler.setLevel(logging.DEBUG)
+_log.addHandler(_handler)
 
-# TODO More precise regexes
-USER = r'[^/]+'
-
-# Routes for application
-# Routes for application. Each route consists of:
-# - The actual route regex, with capture groups for parameters that will be passed to the the Handler
-# - The Handler to process the request. If no validation is required, use the PassthroughHandler.
-#   To validate requests, subclass PassthroughHandler and validate before passing onto PassthroughHandler
-# - Cassandra information. This hash contains the information required by PassthroughHandler to store
-#   the data in the underlying database. Namely:
-#     - table: the table to store the values in
-#     - keys: a list of keys to use for the parameters passed in. These correspond one to one to
-#       parameters from the capture groups in the route regex
-ROUTES = [
-    # Simservs storage
-    # /org.etsi.ngn.simservs/users/USER/simservs.xml
-    (PATH_PREFIX + r'org.etsi.ngn.simservs/users/(' + USER + r')/simservs.xml/?$',
-     SimservsHandler,
-     {"factory_name": "homer", "table": "simservs", "column": "value"}),
-]
-
-def initialize(application):
-    """Module initialization"""
-    factory = ManagedCassandraClientFactory("homer")
-    reactor.connectTCP(settings.CASS_HOST,
-                       settings.CASS_PORT,
-                       factory)
-    PassthroughHandler.add_cass_factory("homer", factory)
+setup(
+    name='homestead_prov',
+    version='0.1',
+    namespace_packages = ['metaswitch'],
+    packages=find_packages('src', include=['metaswitch', 'metaswitch.homestead_prov', 'metaswitch.homestead_prov.*']),
+    package_dir={'':'src'},
+    package_data={'': ['*.xsd', '*.xml']},
+    test_suite='metaswitch.homestead_prov.test',
+    install_requires=["crest"],
+    tests_require=["pbr==1.6", "Mock"],
+    options={"build": {"build_base": "build-homestead_prov"}},
+    )
