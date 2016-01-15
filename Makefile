@@ -93,20 +93,21 @@ ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -
 	touch $@
 
 include build-infra/cw-deb.mk
+include mk/bulk-provision.mk
 
 .PHONY: deb
-deb: env deb-only
+deb: env bulk-prov deb-only
 
 .PHONY: clean
-clean: envclean pyclean
+clean: envclean bulk-prov_clean pyclean
 
 .PHONY: pyclean
 pyclean:
 	-find src -name \*.pyc -exec rm {} \;
-	-rm -r src/*.egg-info
-	-rm .coverage
-	-rm -r htmlcov/
+	-rm -rf src/*.egg-info
+	-rm -f .coverage
+	-rm -rf htmlcov/
 
 .PHONY: envclean
 envclean:
-	-rm -r .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}
+	-rm -rf .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}
