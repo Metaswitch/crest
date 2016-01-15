@@ -21,4 +21,4 @@ parts
 *.swp
 .coverage
 htmlcov/
-src/metaswitch/crest/tools/sstable_provisioning/*class
+src/metaswitch/crest/tools/sstable_provisioning/*.class
