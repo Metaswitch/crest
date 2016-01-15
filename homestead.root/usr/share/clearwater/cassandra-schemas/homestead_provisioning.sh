@@ -1,4 +1,13 @@
 #! /bin/bash
+
+cassandra_installed=$(dpkg-query -W -f='${Status}\n' cassandra | grep -q "install ok installed")
+
+if [[ ! $cassandra_installed ]]
+then
+  echo "Cassandra is not installed yet, skipping schema addition for now"
+  exit 0
+fi
+
 . /usr/share/clearwater/cassandra-schemas/replication_string.sh
 
 if [[ ! -e /var/lib/cassandra/data/homestead_provisioning ]];
