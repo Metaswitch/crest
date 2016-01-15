@@ -6,7 +6,7 @@ bulk-prov:
 	${MAKE} -C ${BULK_PROV_DIR}
 
 bulk-prov_test:
-	@echo "No tests for cpp-common"
+	@echo "No tests for bulk-prov"
 
 bulk-prov_clean:
 	${MAKE} -C ${BULK_PROV_DIR} clean
