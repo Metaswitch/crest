@@ -1,4 +1,4 @@
-#!/usr/share/clearwater/homer/env/bin/python
+#!/usr/share/clearwater/crest/env/bin/python
 
 # @file prepare_csv.py
 #
@@ -84,9 +84,9 @@ def standalone():
                     print 'Error: row %s contains <4 entries - ignoring' % row
 
         print "Bulk provisioning input created"
-        print "- BulkProvision %s homer" % (output_filename)
-        print "- BulkProvision %s homestead-local" % (output_filename)
-        print "- BulkProvision %s homestead-hss" % (output_filename)
+        print "- BulkProvision homer %s" % (output_filename)
+        print "- BulkProvision homestead-local %s" % (output_filename)
+        print "- BulkProvision homestead-hss %s" % (output_filename)
     except IOError as e:
         print "Failed to read/write to %s:" % (e.filename,)
         traceback.print_exc();

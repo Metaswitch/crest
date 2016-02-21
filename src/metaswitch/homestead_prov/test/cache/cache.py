@@ -40,10 +40,10 @@ import unittest
 from twisted.internet import defer
 from telephus.cassandra.ttypes import Column, Deletion, NotFoundException
 
-from metaswitch.crest.api.homestead import authtypes
-from metaswitch.crest.api.homestead.cache.cache import Cache
-from metaswitch.crest.api.homestead.auth_vectors import DigestAuthVector
-from metaswitch.crest.api.homestead.cache.db import CacheModel
+from metaswitch.homestead_prov import authtypes
+from metaswitch.homestead_prov.cache.cache import Cache
+from metaswitch.homestead_prov.auth_vectors import DigestAuthVector
+from metaswitch.homestead_prov.cache.db import CacheModel
 from metaswitch.crest.test.matchers import DictContaining, ListContaining
 
 def MockColumn(name, val):
@@ -68,7 +68,7 @@ class TestCache(unittest.TestCase):
     def setUp(self):
         unittest.TestCase.setUp(self)
 
-        patcher = mock.patch("metaswitch.crest.api.homestead.cassandra.CassandraClient")
+        patcher = mock.patch("metaswitch.homestead_prov.cassandra.CassandraClient")
         self.CassandraClient = patcher.start()
         self.addCleanup(patcher.stop)
 

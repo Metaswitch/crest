@@ -55,7 +55,7 @@ HOMESTEAD_DIR=/usr/share/clearwater/homestead
 case "$1" in
     remove|upgrade|deconfigure)
         # Stop monitoring ourselves
-        for f in $HOMESTEAD_DIR/*.monit; do rm -f /etc/monit/conf.d/`basename $f`; done
+        for f in $HOMESTEAD_DIR/templates/*.monit; do rm -f /etc/monit/conf.d/`basename $f`; done
         reload clearwater-monit &> /dev/null || true
 
         # Disable the homestead-prov nginx site
@@ -67,7 +67,8 @@ case "$1" in
         # Make sure we're stopped - do this before env is removed,
         # or init.d script won't work
         service homestead-prov stop
-        rm -rf $HOMESTEAD_DIR/env
+        rm -rf $HOMESTEAD_DIR/python
+        rm -f $HOMESTEAD_DIR/local_settings.py
     ;;
 
     failed-upgrade)

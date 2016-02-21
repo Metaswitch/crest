@@ -1,4 +1,4 @@
-# @file setup.py
+# @file __init__.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -32,32 +32,21 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-import logging
-import sys
-# Workaround bug in multiprocessing - http://bugs.python.org/issue15881
-# Without this, running tests involving twisted throws an error on completion
-try:
-    import multiprocessing
-except ImportError:
-    pass
 
-from setuptools import setup, find_packages
-from logging import StreamHandler
+from twisted.internet import reactor
+from telephus.protocol import ManagedCassandraClientFactory
 
-_log = logging.getLogger("crest")
-_log.setLevel(logging.DEBUG)
-_handler = StreamHandler(sys.stderr)
-_handler.setLevel(logging.DEBUG)
-_log.addHandler(_handler)
+from metaswitch.crest.api.passthrough import PassthroughHandler
+from metaswitch.crest import settings
+from metaswitch.homer import routes
 
-setup(
-    name='crest',
-    version='0.1',
-    namespace_packages = ['metaswitch'],
-    packages=find_packages('src'),
-    package_dir={'':'src'},
-    package_data={'': ['*.xsd', '*.xml']},
-    test_suite='metaswitch.crest.test',
-    install_requires=["pyzmq", "py-bcrypt", "cyclone==1.0", "cql", "lxml", "msgpack-python", "pure-sasl"],
-    tests_require=["pbr==1.6", "Mock"],
-    )
+# Routes for application
+ROUTES = routes.get_routes()
+
+def initialize(application):
+    """Module initialization"""
+    factory = ManagedCassandraClientFactory("homer")
+    reactor.connectTCP(settings.CASS_HOST,
+                       settings.CASS_PORT,
+                       factory)
+    PassthroughHandler.add_cass_factory("homer", factory)

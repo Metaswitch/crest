@@ -43,10 +43,11 @@ from lxml import etree
 from cyclone.web import HTTPError
 
 from metaswitch.crest.api import xsd
-from metaswitch.crest.api.homer import simservs
+from metaswitch.homer import validator
 
-XML_DIR_NAME = "test_xml"
-XML_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), XML_DIR_NAME)
+SCHEMA_DIR = os.path.realpath(os.path.join(
+    os.getcwd(),
+    'homer.root/usr/share/clearwater/homer/schemas'))
 
 # Valid simservs xml
 
@@ -196,15 +197,18 @@ class TestSimservsHandler(unittest.TestCase):
         self.request = mock.MagicMock()
         self.factory = mock.MagicMock()
 
-        simservs.SimservsHandler.add_cass_factory("homer", self.factory)
-        self.handler = simservs.SimservsHandler(self.app,
-                                                self.request,
-                                                factory_name="homer",
-                                                table="table",
-                                                column="column")
+        self.schema_path = os.path.join(SCHEMA_DIR, 'simservs/mmtel.xsd')
+        self.handler_class = validator.create_handler(self.schema_path)
+        self.handler_class.add_cass_factory("homer", self.factory)
+
+        self.handler = self.handler_class(self.app,
+                                          self.request,
+                                          factory_name="homer",
+                                          table="table",
+                                          column="column")
 
     def tearDown(self):
-        simservs._parsers = {}
+        pass
 
     @mock.patch("metaswitch.crest.api.xsd._validate")
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
@@ -212,7 +216,7 @@ class TestSimservsHandler(unittest.TestCase):
         self.request.body = "xml_body"
         validate.return_value = True
         self.handler.put("arg1")
-        validate.assert_called_once_with("xml_body", simservs.SCHEMA_PATH)
+        validate.assert_called_once_with("xml_body", self.schema_path)
         passthrough_put.assert_called_once_with(self.handler, "arg1")
 
     @mock.patch("metaswitch.crest.api.xsd._validate")
@@ -222,7 +226,7 @@ class TestSimservsHandler(unittest.TestCase):
         validate.side_effect = etree.XMLSyntaxError("XML Error", None, None, None)
         self.assertRaisesRegexp(HTTPError, "HTTP 400: Bad Request \(XML Error\)",
                                 self.handler.put, "arg1")
-        validate.assert_called_once_with("dodgy_xml_body", simservs.SCHEMA_PATH)
+        validate.assert_called_once_with("dodgy_xml_body", self.schema_path)
 
 class TestSimservsFunctional(unittest.TestCase):
     """
@@ -230,10 +234,11 @@ class TestSimservsFunctional(unittest.TestCase):
     """
     def setUp(self):
         unittest.TestCase.setUp(self)
+        self.schema_path = os.path.join(SCHEMA_DIR, 'simservs/mmtel.xsd')
 
     @mock.patch("metaswitch.crest.api.passthrough.PassthroughHandler.put")
     def assert_valid_simservs(self, xml_doc, passthrough_put):
-        result = xsd._validate(xml_doc, simservs.SCHEMA_PATH)
+        result = xsd._validate(xml_doc, self.schema_path)
         self.assertTrue(result)
 
     def test_simservs_cb(self):
@@ -252,7 +257,7 @@ class TestSimservsFunctional(unittest.TestCase):
     def assert_invalid_simservs(self, xml_doc, passthrough_put):
         self.assertRaises(etree.XMLSyntaxError,
                           xsd._validate,
-                          xml_doc, simservs.SCHEMA_PATH)
+                          xml_doc, self.schema_path)
 
     def test_simservs_andy_invalid(self):
         self.assert_invalid_simservs(simservs_andy)

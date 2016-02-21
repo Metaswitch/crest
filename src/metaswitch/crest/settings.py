@@ -100,7 +100,7 @@ CCF = "ccf"
 CYCLONE_DEBUG = False  # Make cyclone emit debug messages to the browser etc.
 
 # Include any locally-defined settings.
-_local_settings_file = os.path.join(_MY_DIR, "local_settings.py")
+_local_settings_file = os.environ.get('CREST_SETTINGS', os.path.join(_MY_DIR, "local_settings.py"))
 if os.path.exists(_local_settings_file):
     execfile(_local_settings_file)
 

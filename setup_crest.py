@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-# @file create_db.py
+# @file setup.py
 #
 # Project Clearwater - IMS in the Cloud
 # Copyright (C) 2013  Metaswitch Networks Ltd
@@ -34,19 +32,32 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
 import logging
+import sys
+# Workaround bug in multiprocessing - http://bugs.python.org/issue15881
+# Without this, running tests involving twisted throws an error on completion
+try:
+    import multiprocessing
+except ImportError:
+    pass
 
-from metaswitch.crest.tools import db
-from metaswitch.common import logging_config
-from metaswitch.crest import settings
+from setuptools import setup, find_packages
+from logging import StreamHandler
 
-_log = logging.getLogger("crest.create_db")
+_log = logging.getLogger("crest")
+_log.setLevel(logging.DEBUG)
+_handler = StreamHandler(sys.stderr)
+_handler.setLevel(logging.DEBUG)
+_log.addHandler(_handler)
 
-def standalone():
-    db.create_tables(_log)
-
-if __name__ == '__main__':
-    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, "create_db")
-
-    standalone()
+setup(
+    name='crest',
+    version='0.1',
+    namespace_packages = ['metaswitch'],
+    packages=find_packages('src', include=['metaswitch', 'metaswitch.crest', 'metaswitch.crest.*']),
+    package_dir={'':'src'},
+    test_suite='metaswitch.crest.test',
+    install_requires=["pyzmq", "py-bcrypt", "cyclone==1.0", "cql", "lxml", "msgpack-python", "pure-sasl", "prctl"],
+    tests_require=["pbr==1.6", "Mock"],
+    options={"build": {"build_base": "build-crest"}},
+    )
