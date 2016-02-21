@@ -63,6 +63,12 @@ Pre-requisites
    sudo apt-get install python-zmq
    ```
 
+7. Bulk provisioning
+
+   ```
+   sudo apt-get install cassandra=2.0.14 openjdk-7-jdk
+   ```
+
 Setting up a virtualenv
 =======================
 
