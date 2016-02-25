@@ -57,7 +57,7 @@ setup(
     packages=find_packages('src', include=['metaswitch', 'metaswitch.crest', 'metaswitch.crest.*']),
     package_dir={'':'src'},
     test_suite='metaswitch.crest.test',
-    install_requires=["pyzmq", "py-bcrypt", "cyclone==1.0", "cql", "lxml", "msgpack-python", "pure-sasl", "prctl"],
+    install_requires=["pyzmq==15.2", "py-bcrypt", "cyclone==1.0", "cql==1.4.0", "lxml", "msgpack-python==0.4.7", "pure-sasl", "prctl"],
     tests_require=["pbr==1.6", "Mock"],
     options={"build": {"build_base": "build-crest"}},
     )
