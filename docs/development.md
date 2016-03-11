@@ -27,6 +27,9 @@ defined in `.gitmodules`:
 
 Pre-requisites
 ==============
+
+Crest relies on APT packages available from the Project Clearwater repository server. To configure your build environment to install these packages, follow the instructions at [ReadTheDocs](http://clearwater.readthedocs.org/en/latest/Manual_Install.html#configure-the-apt-software-sources).
+
 1. Pip and virtualenv
 
     ```
