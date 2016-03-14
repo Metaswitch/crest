@@ -66,9 +66,9 @@ class Cache(object):
         _log.debug("Fetched digest for private ID '%s' from cache: %s" %
                    (private_id, av))
         if av:
-            ha1, realm, qop, preferred = av
-            if preferred or (authtype == authtypes.SIP_DIGEST):
-                defer.returnValue(DigestAuthVector(ha1, realm, qop, preferred))
+            ha1, realm, qop = av
+            if authtype == authtypes.SIP_DIGEST:
+                defer.returnValue(DigestAuthVector(ha1, realm, qop))
         # Subscriber not found, return None
         defer.returnValue(None)
 
@@ -86,7 +86,6 @@ class Cache(object):
         yield IMPI(private_id).put_av(auth_vector.ha1,
                                       auth_vector.realm,
                                       auth_vector.qop,
-                                      auth_vector.preferred,
                                       ttl=ttl,
                                       timestamp=timestamp)
 

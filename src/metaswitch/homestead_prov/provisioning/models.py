@@ -308,7 +308,7 @@ class PrivateID(ProvisioningModel):
 
         yield self.modify_columns(columns)
         yield self._cache.put_av(self.row_key,
-                                 DigestAuthVector(digest, realm, None, True),
+                                 DigestAuthVector(digest, realm, None),
                                  self._cache.generate_timestamp())
 
     @defer.inlineCallbacks
@@ -358,7 +358,7 @@ class PrivateID(ProvisioningModel):
         # update happens after the delete.
         yield self._cache.delete_private_id(self.row_key, timestamp - 1000)
         yield self._cache.put_av(self.row_key,
-                                 DigestAuthVector(digest, realm, None, True),
+                                 DigestAuthVector(digest, realm, None),
                                  self._cache.generate_timestamp())
         for pub_id in public_ids:
             yield self._cache.put_associated_public_id(self.row_key,

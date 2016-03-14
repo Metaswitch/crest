@@ -42,7 +42,7 @@ from telephus.cassandra.ttypes import Column, Deletion, NotFoundException
 
 from metaswitch.homestead_prov import authtypes
 from metaswitch.homestead_prov.cache.cache import Cache
-from metaswitch.homestead_prov.auth_vectors import DigestAuthVector
+from metaswitch.homestead_prov.auth_vectors import DigestAuthVector, AKAAuthVector
 from metaswitch.homestead_prov.cache.db import CacheModel
 from metaswitch.crest.test.matchers import DictContaining, ListContaining
 
@@ -82,10 +82,10 @@ class TestCache(unittest.TestCase):
         self.ttl = 123
         self.timestamp = 1234
 
-    def test_put_av(self):
+    def test_put_av_digest(self):
         """Test a digest can be put into the cache"""
 
-        auth = DigestAuthVector("ha1_test", "realm", "qop", True)
+        auth = DigestAuthVector("ha1_test", "realm", "qop")
 
         self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
         res = Result(self.cache.put_av("priv", auth, self.timestamp, ttl=self.ttl))
@@ -94,32 +94,11 @@ class TestCache(unittest.TestCase):
             column_family="impi",
             mapping=DictContaining({"digest_ha1": "ha1_test",
                                     "digest_realm": "realm",
-                                    "digest_qop": "qop",
-                                    "known_preferred": '\x01' }),
+                                    "digest_qop": "qop"}),
             ttl=self.ttl,
             timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
-
-    def test_put_non_preferred_av(self):
-        """Test a digest can be put into the cache and marked as non-preferred"""
-
-        auth = DigestAuthVector("ha1_test", "realm", "qop", False)
-
-        self.cass_client.batch_insert.return_value = batch_insert = defer.Deferred()
-        res = Result(self.cache.put_av("priv", auth, self.timestamp, ttl=self.ttl))
-        self.cass_client.batch_insert.assert_called_once_with(
-            key="priv",
-            column_family="impi",
-            mapping=DictContaining({"digest_ha1": "ha1_test",
-                                    "digest_realm": "realm",
-                                    "digest_qop": "qop",
-                                    "known_preferred": '\x00'}),
-            ttl=self.ttl,
-            timestamp=self.timestamp)
-        batch_insert.callback(None)
-        self.assertEquals(res.value(), None)
-
 
     def test_put_associated_public_id(self):
         """Test a public ID associated with the private ID can be put into the
@@ -256,7 +235,7 @@ class TestCache(unittest.TestCase):
                             MockColumn("_exists", "")])
         self.assertEquals(res.value().ha1, "digest")
 
-    def test_get_digest_unknown_not_preferred(self):
+    def test_get_digest_unknown(self):
 
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
         res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.UNKNOWN))
@@ -267,25 +246,10 @@ class TestCache(unittest.TestCase):
                                    names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
-                            MockColumn("_exists", ""),
-                            MockColumn("known_preferred", False)])
+                            MockColumn("_exists", "")])
         self.assertEquals(res.value(), None)
 
-    def test_get_digest_unknown_preferred(self):
-        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
-        res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.UNKNOWN))
-
-        self.cass_client.get_slice.assert_called_once_with(
-                                   key="priv",
-                                   column_family="impi",
-                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
-        get_slice.callback([MockColumn("digest_ha1", "digest"),
-                            MockColumn("public_id_miss_piggy", None),
-                            MockColumn("_exists", ""),
-                            MockColumn("known_preferred", '\x01')])
-        self.assertEquals(res.value().ha1, "digest")
-
-    def test_get_digest_sip_preferred(self):
+    def test_get_digest_sip(self):
         self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
         res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.SIP_DIGEST))
 
@@ -295,22 +259,7 @@ class TestCache(unittest.TestCase):
                                    names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
-                            MockColumn("_exists", ""),
-                            MockColumn("known_preferred", True)])
-        self.assertEquals(res.value().ha1, "digest")
-
-    def test_get_digest_sip_not_preferred(self):
-        self.cass_client.get_slice.return_value = get_slice = defer.Deferred()
-        res = Result(self.cache.get_av("priv", "miss_piggy", authtypes.SIP_DIGEST))
-
-        self.cass_client.get_slice.assert_called_once_with(
-                                   key="priv",
-                                   column_family="impi",
-                                   names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
-        get_slice.callback([MockColumn("digest_ha1", "digest"),
-                            MockColumn("public_id_miss_piggy", None),
-                            MockColumn("_exists", ""),
-                            MockColumn("known_preferred", False)])
+                            MockColumn("_exists", "")])
         self.assertEquals(res.value().ha1, "digest")
 
     def test_delete_multi_private_ids(self):
