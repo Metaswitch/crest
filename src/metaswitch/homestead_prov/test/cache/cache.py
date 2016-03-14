@@ -42,7 +42,7 @@ from telephus.cassandra.ttypes import Column, Deletion, NotFoundException
 
 from metaswitch.homestead_prov import authtypes
 from metaswitch.homestead_prov.cache.cache import Cache
-from metaswitch.homestead_prov.auth_vectors import DigestAuthVector, AKAAuthVector
+from metaswitch.homestead_prov.auth_vectors import DigestAuthVector
 from metaswitch.homestead_prov.cache.db import CacheModel
 from metaswitch.crest.test.matchers import DictContaining, ListContaining
 
