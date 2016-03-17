@@ -42,14 +42,19 @@ style: ${ENV_DIR}/bin/flake8
 explain-style: ${ENV_DIR}/bin/flake8
 	${ENV_DIR}/bin/flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
 
+# TODO This repository doesn't have full code coverage - it should. Some files
+# are temporarily excluded from coverage to make it easier to detect future
+# regressions. We should fix up the coverage when we can
+EXTRA_COVERAGE=src/metaswitch/crest/api/DeferTimeout.py,src/metaswitch/crest/api/__init__.py,src/metaswitch/crest/api/base.py,src/metaswitch/crest/api/lastvaluecache.py,src/metaswitch/crest/api/passthrough.py,src/metaswitch/crest/api/statistics.py,src/metaswitch/crest/api/utils.py,src/metaswitch/crest/main.py,src/metaswitch/crest/settings.py,src/metaswitch/crest/tools/bulk_autocomplete.py,src/metaswitch/crest/tools/bulk_create.py,src/metaswitch/crest/tools/utils.py,src/metaswitch/homer/__init__.py,src/metaswitch/homer/routes.py,src/metaswitch/homestead_prov/__init__.py,src/metaswitch/homestead_prov/auth_vectors.py,src/metaswitch/homestead_prov/cache/cache.py,src/metaswitch/homestead_prov/cache/db.py,src/metaswitch/homestead_prov/cassandra.py,src/metaswitch/homestead_prov/provisioning/handlers/irs.py,src/metaswitch/homestead_prov/provisioning/handlers/private.py,src/metaswitch/homestead_prov/provisioning/handlers/public.py,src/metaswitch/homestead_prov/provisioning/handlers/service_profile.py,src/metaswitch/homestead_prov/provisioning/models.py,src/metaswitch/homestead_prov/resultcodes.py
+
 .PHONY: coverage
 coverage: ${ENV_DIR}/bin/coverage setup_crest.py setup_homer.py setup_homestead_prov.py
 	rm -rf htmlcov/
 	${ENV_DIR}/bin/coverage erase
-	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**"  setup_crest.py test
-	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**"  setup_homer.py test
-	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**"  setup_homestead_prov.py test
-	${ENV_DIR}/bin/coverage report -m
+	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**,$(EXTRA_COVERAGE)" setup_crest.py test
+	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**,$(EXTRA_COVERAGE)" setup_homer.py test
+	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**,$(EXTRA_COVERAGE)" setup_homestead_prov.py test
+	${ENV_DIR}/bin/coverage report -m --fail-under 100
 	${ENV_DIR}/bin/coverage html
 
 .PHONY: env
