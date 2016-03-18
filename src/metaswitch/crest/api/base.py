@@ -47,7 +47,7 @@ from telephus.cassandra.ttypes import TimedOutException as CassandraTimeout
 from metaswitch.common import utils
 from metaswitch.crest import settings
 from metaswitch.crest.api.statistics import Accumulator, Counter
-from metaswitch.common.monotonic_time import monotonic_time
+from monotonic import monotonic
 from metaswitch.crest.api.DeferTimeout import TimeoutError
 from metaswitch.crest.api.exceptions import HSSOverloaded, HSSConnectionLost, HSSStillConnecting, UserNotIdentifiable, UserNotAuthorized
 from metaswitch.crest.api.lastvaluecache import LastValueCache
@@ -88,7 +88,7 @@ class LeakyBucket:
         self.max_size = max_size
         self.tokens = max_size
         self.rate = rate
-        self.replenish_time = monotonic_time()
+        self.replenish_time = monotonic()
 
     def get_token(self):
         self.replenish_bucket()
@@ -105,7 +105,7 @@ class LeakyBucket:
         self.max_size = new_max_size
 
     def replenish_bucket(self):
-        replenish_time = monotonic_time()
+        replenish_time = monotonic()
         self.tokens += self.rate * (replenish_time - self.replenish_time)
         self.replenish_time = replenish_time
         if self.tokens > self.max_size:
@@ -158,8 +158,10 @@ class LoadMonitor:
             self.rejected += 1
             return False
 
-    def request_complete(self, latency):
+    def request_complete(self):
         self.pending_count -= 1
+
+    def update_latency(self, latency):
         self.smoothed_latency = (7 * self.smoothed_latency + latency) / 8
         self.smoothed_variability = (7 * self.smoothed_variability + abs(latency - self.smoothed_latency)) / 8
         self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability)
@@ -246,12 +248,15 @@ class BaseHandler(cyclone.web.RequestHandler):
         super(BaseHandler, self).__init__(application, request, **kwargs)
         self.__request_data = None
 
+    def should_count_requests_in_latency(self):
+        return True
+
     def prepare(self):
         # Increment the request counter
         incoming_requests.increment()
 
         # timestamp the request
-        self._start = monotonic_time()
+        self._start = monotonic()
         _log.info("Received request from %s - %s %s://%s%s" %
                    (self.request.remote_ip, self.request.method, self.request.protocol, self.request.host, self.request.uri))
         if not loadmonitor.admit_request():
@@ -268,8 +273,10 @@ class BaseHandler(cyclone.web.RequestHandler):
                     self.request.host,
                     self.request.uri))
 
-        latency = monotonic_time() - self._start
-        loadmonitor.request_complete(latency)
+        loadmonitor.request_complete()
+        latency = monotonic() - self._start
+        if self.should_count_requests_in_latency():
+            loadmonitor.update_latency(latency)
 
         # Track the latency of the requests (in usec)
         latency_accumulator.accumulate(latency * 1000000)
@@ -433,7 +440,7 @@ class BaseHandler(cyclone.web.RequestHandler):
         MAX_REQUEST_TIME = 0.5
 
         def wrapper(handler, *pos_args, **kwd_args):
-            if monotonic_time() - handler._start > MAX_REQUEST_TIME:
+            if monotonic() - handler._start > MAX_REQUEST_TIME:
                 handler.send_error(503, "Request too old")
             else:
                 return func(handler, *pos_args, **kwd_args)
@@ -446,3 +453,10 @@ class UnknownApiHandler(BaseHandler):
     def get(self):
         _log.info("Request for unknown API")
         self.send_error(404, "Request for unknown API")
+
+class SlowRequestHandler(BaseHandler):
+    """
+    Handler that doesn't track the latency of its requests with the load monitor - used for slow requests that won't complete instantly.
+    """
+    def should_count_requests_in_latency(self):
+        return False

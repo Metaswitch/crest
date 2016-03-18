@@ -27,6 +27,9 @@ defined in `.gitmodules`:
 
 Pre-requisites
 ==============
+
+Crest relies on APT packages available from the Project Clearwater repository server. To configure your build environment to install these packages, follow the instructions at [ReadTheDocs](http://clearwater.readthedocs.org/en/latest/Manual_Install.html#configure-the-apt-software-sources).
+
 1. Pip and virtualenv
 
     ```
@@ -61,6 +64,12 @@ Pre-requisites
 
    ```
    sudo apt-get install python-zmq
+   ```
+
+7. Bulk provisioning
+
+   ```
+   sudo apt-get install cassandra=2.0.14 openjdk-7-jdk
    ```
 
 Setting up a virtualenv
@@ -140,7 +149,7 @@ If you haven't already set up Homestead, you will also need to install the `home
 
     echo "CREATE KEYSPACE homestead_cache WITH REPLICATION =  {'class': 'SimpleStrategy', 'replication_factor': 2};
           USE homestead_cache;
-          CREATE TABLE impi (private_id text PRIMARY KEY, digest_ha1 text, digest_realm text, digest_qop text, known_preferred boolean) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+          CREATE TABLE impi (private_id text PRIMARY KEY, digest_ha1 text, digest_realm text, digest_qop text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
           CREATE TABLE impu (public_id text PRIMARY KEY, ims_subscription_xml text, is_registered Boolean, primary_ccf text, secondary_ccf text, primary_ecf text, secondary_ecf text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
           CREATE TABLE impi_mapping (private_id text PRIMARY KEY, unused text) WITH COMPACT STORAGE AND read_repair_chance = 1.0; | cqlsh
 

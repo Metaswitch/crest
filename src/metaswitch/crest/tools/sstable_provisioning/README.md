@@ -2,20 +2,12 @@
 
 These scripts will enable you to create a collection of sstables (Cassandra raw data) and then inject those tables directly into your Cassandra cluster.
 
-All the scripts assume they are being run on a homer or homestead node with a correctly configured and balanced Cassandra cluster.
+All the scripts assume they are being run on a Homer or Homestead node with a correctly configured and balanced Cassandra cluster.
 
 ## Pre-requisites
 
-* This code - Automatically installed alongside homer/homestead to
-
-        /usr/share/clearwater/<role>/src/metaswitch/crest/tools/sstable_provisioning/
-
-* `make` - `sudo apt-get install make`
-* `javac` - `sudo apt-get install openjdk-7-jdk`
-* `python` - Installed with homer/homestead
-* `/etc/cassandra/cassandra.yaml` - Installed during clustering
-* `/usr/share/cassandra/*` - Installed with dsc1.1
-* Users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
+* The bulk provisioning binaries - automatically installed alongside Homer/Homestead to `/usr/share/clearwater/crest/tools/sstable_provisioning`
+* A users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
 
 ## Disk space
 
@@ -27,24 +19,19 @@ _For example, on AWS, instances have ony ~4Gb free so we can only provision appr
 
 The [Preparing the sstables](#preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop cassandra` and to restart it run `sudo monit start cassandra`.
 
-## Binary compilation
-
-    make
-
-This will compile the ClearwaterBulkProvisioner classes.  If the compiler cannot find the imported classes, ensure cassandra is correctly installed on your machine.
-
 ## Preparing the sstables
 
-The sstables can be created either from CSV files describing each subscriber or from command-line parameters specifying a range.  The latter is better for setting up stress runs (where you often want all your subscribers to be the same anyway) - the former is better for real subscribers.
+The sstables can be created either from CSV files describing each subscriber or from command-line parameters specifying a range.  The latter is better for setting up stress runs (where you often want all your subscribers to be the same anyway) - the former is better for real subscribers. In each case, start by running
+
+    cd /usr/share/clearwater/crest/tools/sstable_provisioning
 
 ### From CSV
 
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
-Use the python executable bundled with homer/homestead.
+Use the python executable bundled with Homer/Homestead.
 
-    export PATH=/usr/share/clearwater/homer/env/bin:$PATH
-    export PATH=/usr/share/clearwater/homestead/env/bin:$PATH
+    export PATH=/usr/share/clearwater/crest/env/bin:$PATH
 
 Prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 

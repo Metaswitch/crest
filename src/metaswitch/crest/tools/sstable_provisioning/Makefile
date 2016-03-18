@@ -1,7 +1,7 @@
 all : ClearwaterBulkProvisioner.class
 
 clean :
-	-rm *.class
+	-rm -f *.class
 
 ClearwaterBulkProvisioner.class : ClearwaterBulkProvisioner.java
 	javac -cp /usr/share/cassandra/apache-cassandra.jar ClearwaterBulkProvisioner.java
