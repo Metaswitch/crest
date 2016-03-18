@@ -1,6 +1,6 @@
 #! /bin/bash
 
-. /usr/share/clearwater/cassandra-schemas/schema_utils.sh
+. /usr/share/clearwater/cassandra_schema_utils.sh
 
 quit_if_no_cassandra
 
