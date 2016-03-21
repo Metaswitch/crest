@@ -1,5 +1,8 @@
 #!/bin/bash
-. /usr/share/clearwater/cassandra-schemas/replication_string.sh
+
+. /usr/share/clearwater/cassandra_schema_utils.sh
+
+quit_if_no_cassandra
 
 if [[ ! -e /var/lib/cassandra/data/homer ]];
 then

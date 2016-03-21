@@ -52,8 +52,5 @@ then
   mv /tmp/local_settings.py.$$ /usr/share/clearwater/homer/local_settings.py
 fi
 
-# Create Cassandra schema if Cassandra is installed.
-if dpkg-query -W -f='${Status}' cassandra | grep -iq installed
-then
-  /usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
-fi
+# Create Cassandra schema
+/usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
