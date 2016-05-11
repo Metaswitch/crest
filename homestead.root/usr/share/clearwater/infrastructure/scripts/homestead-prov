@@ -32,6 +32,3 @@ then
 
   mv /tmp/local_settings.py.$$ /usr/share/clearwater/homestead/local_settings.py
 fi
-
-# Create Cassandra schema
-/usr/share/clearwater/cassandra-schemas/homestead_provisioning.sh || /bin/true

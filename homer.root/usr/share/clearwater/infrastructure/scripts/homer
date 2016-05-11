@@ -51,6 +51,3 @@ then
           s/^CASS_HOST = .*$/CASS_HOST = "'$(escape $cassandra_hostname)'"/g' < /usr/share/clearwater/homer/templates/local_settings.py >/tmp/local_settings.py.$$
   mv /tmp/local_settings.py.$$ /usr/share/clearwater/homer/local_settings.py
 fi
-
-# Create Cassandra schema
-/usr/share/clearwater/cassandra-schemas/homer.sh || /bin/true
