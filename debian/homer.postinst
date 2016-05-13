@@ -71,7 +71,7 @@ case "$1" in
         # Start monit monitoring ourselves
         cp $HOMER_DIR/templates/*.monit /etc/monit/conf.d/
 
-        reload clearwater-monit || true
+        pkill -HUP monit || true
 
         # Stop the cluster manager, so that it is restarted by Monit and picks
         # up the new Cassandra scaling plugin. We check whether the process is 
