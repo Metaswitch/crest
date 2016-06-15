@@ -59,7 +59,7 @@ case "$1" in
     configure)
         rm -rf $HOMER_DIR/build
         mkdir -p $HOMER_DIR/python/packages
-        PYTHONPATH=$HOMER_DIR/python/packages $CREST_DIR/env/bin/easy_install --allow-hosts=None -d $HOMER_DIR/python/packages -f $HOMER_DIR/.eggs/ $HOMER_DIR/.eggs/*.egg
+        PYTHONPATH=$HOMER_DIR/python/packages $CREST_DIR/env/bin/easy_install --allow-hosts=None --always-unzip -d $HOMER_DIR/python/packages -f $HOMER_DIR/.eggs/ $HOMER_DIR/.eggs/*.egg
 
         # Restart clearwater-infrastructure to run the script that creates the
         # homer nginx site.
