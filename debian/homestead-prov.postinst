@@ -59,7 +59,7 @@ case "$1" in
     configure)
         rm -rf $HOMESTEAD_DIR/build
         mkdir -p $HOMESTEAD_DIR/python/packages
-        PYTHONPATH=$HOMESTEAD_DIR/python/packages $CREST_DIR/env/bin/easy_install --allow-hosts=None -d $HOMESTEAD_DIR/python/packages -f $HOMESTEAD_DIR/.eggs/ $HOMESTEAD_DIR/.eggs/*.egg
+        PYTHONPATH=$HOMESTEAD_DIR/python/packages $CREST_DIR/env/bin/easy_install --allow-hosts=None --always-unzip -d $HOMESTEAD_DIR/python/packages -f $HOMESTEAD_DIR/.eggs/ $HOMESTEAD_DIR/.eggs/*.egg
 
         # Restart clearwater-infrastructure to run the script that creates the
         # homestead-prov nginx site.
