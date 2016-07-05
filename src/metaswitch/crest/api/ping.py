@@ -33,8 +33,24 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 from cyclone.web import RequestHandler
+from telephus.client import CassandraClient
+from twisted.internet import defer
+from .passthrough import PassthroughHandler
 
 
 class PingHandler(RequestHandler):
+    @defer.inlineCallbacks
     def get(self):
+        # We've seen cases where the telephus fails to connect to Cassandra,
+        # and requests sit on the queue forever without being processed.
+        # Catch this error case by making a request here on each Cassandra
+        # connection.
+        factories = PassthroughHandler.cass_factories.values()
+        clients = (CassandraClient(factory) for factory in factories)
+        gets = (client.get(key='ping', column_family='ping')
+                for client in clients)
+
+        # We don't care about the result, just whether it returns
+        # in a timely fashion.
+        yield defer.gatherResults(gets, consumeErrors=True)
         self.finish("OK")
