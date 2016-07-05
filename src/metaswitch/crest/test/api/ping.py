@@ -37,6 +37,8 @@
 
 import unittest
 import mock
+from twisted.internet.defer import Deferred
+import telephus.protocol
 
 from metaswitch.crest.api import ping
 
@@ -44,13 +46,43 @@ class TestPingHandler(unittest.TestCase):
     """
     Detailed, isolated unit tests of the PingHandler class.
     """
+    # It would be good to FV the failure case where the get request
+    # hangs waiting on Cassandra to respond, but that's hard to
+    # simulate reliably here.
     def setUp(self):
         unittest.TestCase.setUp(self)
         self.app = mock.MagicMock()
         self.request = mock.MagicMock()
         self.handler = ping.PingHandler(self.app, self.request)
 
-    def test_get_mainline(self):
-        self.handler.finish = mock.MagicMock()
-        self.handler.get()
-        self.assertEquals(self.handler.finish.call_args[0][0], "OK")
+    @mock.patch('twisted.internet.defer.gatherResults')
+    @mock.patch('metaswitch.crest.api.passthrough.PassthroughHandler',
+                autospec=True)
+    @mock.patch('telephus.protocol.ManagedCassandraClientFactory',
+                autospec=True)
+    def test_get_mainline(self,
+                          mock_gather_results,
+                          mock_passthrough_handler,
+                          mock_client_factory):
+        """Test that the ping runs to completion in the mainline."""
+        # This test is designed to catch regressions where a change to
+        # the PassthroughHandler or library APIs would stop the ping
+        # from functioning in the mainline.
+        #
+        # Make sure there is at least one (fake) connection to Cassandra, to
+        # exercise the main logic, and check that only real methods are
+        # called.
+        mock_passthrough_handler.cass_factories.values.return_value = [
+            telephus.protocol.ManagedCassandraClientFactory()
+        ]
+        mock_gather_results.return_value = Deferred()
+
+        # Insert a mock so that we can extract the value that finish
+        # was called with.
+        with mock.patch.object(self.handler, 'finish') as mock_finish:
+            self.handler.get()
+
+            # Simulate all of the Cassandra requests completing.
+            mock_gather_results.return_value.callback(None)
+
+        self.assertEquals(mock_finish.call_args[0][0], "OK")
