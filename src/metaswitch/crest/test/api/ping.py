@@ -34,13 +34,13 @@
 # under which the OpenSSL Project distributes the OpenSSL toolkit software,
 # as those licenses appear in the file LICENSE-OPENSSL.
 
-
 import unittest
 import mock
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import fail
 import telephus.protocol
 
 from metaswitch.crest.api import ping
+
 
 class TestPingHandler(unittest.TestCase):
     """
@@ -55,15 +55,16 @@ class TestPingHandler(unittest.TestCase):
         self.request = mock.MagicMock()
         self.handler = ping.PingHandler(self.app, self.request)
 
-    @mock.patch('twisted.internet.defer.gatherResults')
+    @mock.patch('twisted.internet.defer.DeferredList',
+                autospec=True)
     @mock.patch('metaswitch.crest.api.passthrough.PassthroughHandler',
                 autospec=True)
     @mock.patch('telephus.protocol.ManagedCassandraClientFactory',
                 autospec=True)
     def test_get_mainline(self,
-                          mock_gather_results,
+                          mock_client_factory,
                           mock_passthrough_handler,
-                          mock_client_factory):
+                          mock_deferred_list):
         """Test that the ping runs to completion in the mainline."""
         # This test is designed to catch regressions where a change to
         # the PassthroughHandler or library APIs would stop the ping
@@ -73,16 +74,13 @@ class TestPingHandler(unittest.TestCase):
         # exercise the main logic, and check that only real methods are
         # called.
         mock_passthrough_handler.cass_factories.values.return_value = [
-            telephus.protocol.ManagedCassandraClientFactory()
+            telephus.protocol.ManagedCassandraClientFactory(),
         ]
-        mock_gather_results.return_value = Deferred()
+        mock_deferred_list.return_value = fail(Exception())
 
         # Insert a mock so that we can extract the value that finish
         # was called with.
         with mock.patch.object(self.handler, 'finish') as mock_finish:
             self.handler.get()
-
-            # Simulate all of the Cassandra requests completing.
-            mock_gather_results.return_value.callback(None)
 
         self.assertEquals(mock_finish.call_args[0][0], "OK")
