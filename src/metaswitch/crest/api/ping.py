@@ -50,7 +50,11 @@ class PingHandler(RequestHandler):
         gets = (client.get(key='ping', column_family='ping')
                 for client in clients)
 
-        # We don't care about the result, just whether it returns
-        # in a timely fashion.
-        yield defer.gatherResults(gets, consumeErrors=True)
+        try:
+            yield defer.gatherResults(gets)
+        except:
+            # We don't care about the result, just whether it returns
+            # in a timely fashion. Writing a log would be spammy.
+            pass
+
         self.finish("OK")
