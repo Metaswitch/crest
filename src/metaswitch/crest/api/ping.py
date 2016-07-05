@@ -51,8 +51,10 @@ class PingHandler(RequestHandler):
                 for client in clients)
 
         try:
-            yield defer.gatherResults(gets)
-        except:
+            # Use a DeferredList rather than gatherResults to wait
+            # for all of the clients to fail or succeed.
+            yield defer.DeferredList(gets, consume_errors=True)
+        except Exception:
             # We don't care about the result, just whether it returns
             # in a timely fashion. Writing a log would be spammy.
             pass
