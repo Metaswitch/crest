@@ -10,8 +10,8 @@ quit_if_no_cassandra
 
 CQLSH="/usr/share/clearwater/bin/run-in-signaling-namespace cqlsh $cassandra_hostname"
 
-if [[ ! -e /var/lib/cassandra/data/homestead_provisiong ]] || \
-   [[ homestead_cassandra -ne "127.0.0.1" ]];
+if [[ ! -e /var/lib/cassandra/data/homestead_provisioning ]] || \
+   [[ $cassandra_hostname != "127.0.0.1" ]];
 then
   count=0
   /usr/share/clearwater/bin/poll_cassandra.sh --no-grace-period
