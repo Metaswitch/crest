@@ -1,10 +1,15 @@
 #!/bin/bash
 
+cassandra_hostname="127.0.0.1"
+
 . /usr/share/clearwater/cassandra_schema_utils.sh
 
 quit_if_no_cassandra
 
-if [[ ! -e /var/lib/cassandra/data/homer ]];
+CQLSH="/usr/share/clearwater/bin/run-in-signaling-namespace cqlsh $cassandra_hostname"
+
+if [[ ! -e /var/lib/cassandra/data/homer ]] || \
+   [[ $cassandra_hostname != "127.0.0.1" ]];
 then
   count=0
   /usr/share/clearwater/bin/poll_cassandra.sh --no-grace-period
@@ -26,5 +31,6 @@ then
   # /usr/share/clearwater/cassandra-schemas/replication_string.sh
   echo "CREATE KEYSPACE homer WITH REPLICATION = $replication_str;
         USE homer;
-        CREATE TABLE simservs (user text PRIMARY KEY, value text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | /usr/share/clearwater/bin/run-in-signaling-namespace cqlsh
+        CREATE TABLE simservs (user text PRIMARY KEY, value text)
+        WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | $CQLSH
 fi
