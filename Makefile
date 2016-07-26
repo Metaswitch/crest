@@ -63,7 +63,7 @@ env: ${ENV_DIR}/.eggs_installed
 $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py common/setup.py
 	# Set up a fresh virtual environment
 	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
-	$(ENV_DIR)/bin/easy_install -U "setuptools>=3.3"
+	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
 
 ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
