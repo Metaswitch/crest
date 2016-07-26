@@ -52,8 +52,10 @@ class PingHandler(RequestHandler):
 
         try:
             # Use a DeferredList rather than gatherResults to wait
-            # for all of the clients to fail or succeed.
-            yield defer.DeferredList(gets, consume_errors=True)
+            # for all of the clients to fail or succeed. Don't consume errors -
+            # this masks the case when cassandra is down. The except below
+            # deals with us asking for a non existent key
+            yield defer.DeferredList(gets)
         except Exception:
             # We don't care about the result, just whether it returns
             # in a timely fashion. Writing a log would be spammy.
