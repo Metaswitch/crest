@@ -6,7 +6,7 @@ DEB_COMPONENT := crest
 DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
 DEB_NAMES := crest
 DEB_NAMES += homer homer-node
-DEB_NAMES += homestead-prov homestead-node-prov
+DEB_NAMES += homestead-prov
 
 MAX_LINE_LENGTH ?= 99
 

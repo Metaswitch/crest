@@ -25,11 +25,6 @@ Architecture: any
 Depends: crest
 Description: homer, the Cassandra powered XDMS
 
-Package: homestead-node-prov
-Architecture: any
-Depends: homestead-prov
-Description: Provisioning backend for Homestead, the Cassandra powered HSS gateway
-
 Package: homestead-prov
 Architecture: any
 Depends: crest
