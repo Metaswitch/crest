@@ -11,14 +11,14 @@ Homepage: http://projectclearwater.org/
 
 Package: crest
 Architecture: any
-Depends: clearwater-infrastructure, clearwater-nginx, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, python-zmq, libzmq3-dev, clearwater-cassandra, clearwater-log-cleanup, clearwater-monit
+Depends: clearwater-infrastructure, clearwater-nginx, libxml2-dev, libxslt1-dev, python-setuptools, python-virtualenv, python2.7-dev, python-zmq, libzmq3-dev, clearwater-log-cleanup, clearwater-monit
 Suggests: clearwater-logging, clearwater-snmpd, clearwater-secure-connections
 Description: crest, a Cassandra powered generic RESTful HTTP server platform
 
 Package: homer-node
 Architecture: any
-Depends: homer
-Description: homer-node, the Cassandra powered XDMS
+Depends: homer, clearwater-cassandra
+Description: homer-node, the Cassandra powered XDMS node
 
 Package: homer
 Architecture: any
