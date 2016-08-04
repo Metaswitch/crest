@@ -7,6 +7,7 @@ DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
 DEB_NAMES := crest
 DEB_NAMES += homer homer-node
 DEB_NAMES += homestead-prov
+DEB_NAMES += homer-cassandra homestead-prov-cassandra
 
 MAX_LINE_LENGTH ?= 99
 
