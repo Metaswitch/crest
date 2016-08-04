@@ -17,15 +17,25 @@ Description: crest, a Cassandra powered generic RESTful HTTP server platform
 
 Package: homer-node
 Architecture: any
-Depends: homer, clearwater-cassandra
-Description: homer-node, the Cassandra powered XDMS node
+Depends: homer, homer-cassandra
+Description: Homer, the Cassandra powered XDMS node
 
 Package: homer
 Architecture: any
 Depends: crest
-Description: homer, the Cassandra powered XDMS
+Description: Homer, the Cassandra powered XDMS
 
 Package: homestead-prov
 Architecture: any
 Depends: crest
 Description: Provisioning backend for Homestead, the Cassandra powered HSS gateway
+
+Package: homer-cassandra
+Architecture: any
+Depends: clearwater-cassandra, clearwater-infrastructure
+Description: Commissions a Cassandra node so that it can be used as a backend for the homer package
+
+Package: homestead-prov-cassandra
+Architecture: any
+Depends: clearwater-cassandra, clearwater-infrastructure, homestead-cassandra
+Description: Commissions a Cassandra node so that it can be used as a backend for the homestead-prov package
