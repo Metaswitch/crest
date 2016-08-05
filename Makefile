@@ -4,7 +4,9 @@ PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
 DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
-DEB_NAMES := crest homer homestead-prov
+DEB_NAMES := crest
+DEB_NAMES += homer homer-node
+DEB_NAMES += homestead-prov
 
 MAX_LINE_LENGTH ?= 99
 
@@ -63,7 +65,7 @@ env: ${ENV_DIR}/.eggs_installed
 $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py common/setup.py
 	# Set up a fresh virtual environment
 	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
-	$(ENV_DIR)/bin/easy_install -U "setuptools>=3.3"
+	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
 
 ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
