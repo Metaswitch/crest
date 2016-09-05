@@ -142,17 +142,12 @@ def standalone():
     # Setup logging
     syslog.openlog(settings.LOG_FILE_PREFIX, syslog.LOG_PID)
 
-    # Map from Clearwater log levels to Python. Python doesn't have status or
-    # verbose levels.
-    LOG_LEVELS = {0: logging.ERROR,
-                  1: logging.WARNING,
-                  2: logging.INFO,
-                  3: logging.INFO,
-                  4: logging.DEBUG,
-                  5: logging.DEBUG}
-    if args.log_level > 5 or args.log_level < 0:
-        args.log_level = 2
-    logging_config.configure_logging(LOG_LEVELS[args.log_level], settings.LOGS_DIR, settings.LOG_FILE_PREFIX, args.process_id)
+    logging_config.configure_logging(
+            utils.map_clearwater_log_level(args.log_level),
+            settings.LOGS_DIR,
+            settings.LOG_FILE_PREFIX,
+            args.process_id)
+
     twisted.python.log.addObserver(on_twisted_log)
 
     pdlogs.CREST_STARTING.log()
