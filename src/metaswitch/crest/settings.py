@@ -33,7 +33,6 @@
 # as those licenses appear in the file LICENSE-OPENSSL.
 
 import os
-import logging
 
 """
 This file contains default settings for Homer.  To override a setting
