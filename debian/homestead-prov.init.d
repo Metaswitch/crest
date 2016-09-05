@@ -72,6 +72,8 @@ SCRIPTNAME=/etc/init.d/$NAME
 #
 get_settings()
 {
+  log_level=2
+
   . /etc/clearwater/config
 
   if [ ! -z "$signaling_namespace" ]
@@ -89,7 +91,7 @@ get_daemon_args()
   # Get the settings
   get_settings
 
-  DAEMON_ARGS="$DAEMON_ARGS $signaling_opt"
+  DAEMON_ARGS="$DAEMON_ARGS $signaling_opt --log-level $log_level"
 
   export CREST_SETTINGS=/usr/share/clearwater/homestead/local_settings.py
   export PYTHONPATH=/usr/share/clearwater/homestead/python/packages
