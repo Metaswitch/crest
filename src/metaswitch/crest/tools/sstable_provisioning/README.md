@@ -25,21 +25,13 @@ The sstables can be created either from CSV files describing each subscriber or 
 
     cd /usr/share/clearwater/crest/tools/sstable_provisioning
 
-You then need to ensure that this directory is writable by the current user. E.g. running the following, where `<user>` is the user you will be running the following process as:
-
-    sudo chown <user>:<user> .
-
 ### From CSV
 
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
-Use the python executable bundled with Homer/Homestead.
+Use the python executable bundled with Homer/Homestead to prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
-    export PATH=/usr/share/clearwater/crest/env/bin:$PATH
-
-Prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
-
-    python ./prepare_csv.py <csvfilename>.csv
+    sudo /usr/share/clearwater/crest/env/bin/python ./prepare_csv.py <csvfilename>.csv
 
 This will generate `<csvfilename>_prepared.csv` in the current folder.  This filename should now be passed to BulkProvision as a command-line parameter, e.g. as follows - see more detail below.
 
