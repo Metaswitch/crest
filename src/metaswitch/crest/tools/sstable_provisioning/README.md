@@ -17,13 +17,17 @@ _For example, on AWS, instances have ony ~4Gb free so we can only provision appr
 
 ## RAM
 
-The [Preparing the sstables](#preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop cassandra` and to restart it run `sudo monit start cassandra`.
+The [Preparing the sstables](#preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop -g cassandra` and to restart it run `sudo monit start -g cassandra`.
 
 ## Preparing the sstables
 
 The sstables can be created either from CSV files describing each subscriber or from command-line parameters specifying a range.  The latter is better for setting up stress runs (where you often want all your subscribers to be the same anyway) - the former is better for real subscribers. In each case, start by running
 
     cd /usr/share/clearwater/crest/tools/sstable_provisioning
+
+You then need to ensure that this directory is writable by the current user. E.g. running the following, where `<user>` is the user you will be running the following process as:
+
+    sudo chown <user>:<user> .
 
 ### From CSV
 
@@ -61,7 +65,7 @@ For example, to create sstables for running clearwater-sip-stress stress tests w
 
 To store the passwords for the subscribers (in plaintext), add the `plaintext_password` parameter, e.g.:
 
-    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_parameter
+    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_password
 
 ### Running BulkProvision
 
