@@ -2,11 +2,11 @@
 
 These scripts will enable you to create a collection of sstables (Cassandra raw data) and then inject those tables directly into your Cassandra cluster.
 
-All the scripts assume they are being run on a Homer or Homestead node with a correctly configured and balanced Cassandra cluster.
+All the scripts assume they are being run on a node running the Homer or Homestead database and that the Cassandra database clusters are correctly configured and balanced.
 
 ## Pre-requisites
 
-* The bulk provisioning binaries - automatically installed alongside Homer/Homestead to `/usr/share/clearwater/crest/tools/sstable_provisioning`
+* The bulk provisioning binaries - automatically installed on Homer/Homestead database nodes to `/usr/share/clearwater/crest/tools/sstable_provisioning`
 * A users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
 
 ## Disk space
@@ -17,7 +17,7 @@ _For example, on AWS, instances have ony ~4Gb free so we can only provision appr
 
 ## RAM
 
-The [Preparing the sstables](#preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop -g cassandra` and to restart it run `sudo monit start -g cassandra`.
+The [Preparing the sstables](#preparing-the-sstables) step uses quite a lot of RAM, and Cassandra will likely already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop -g cassandra` and to restart it run `sudo monit start -g cassandra`.
 
 ## Preparing the sstables
 
