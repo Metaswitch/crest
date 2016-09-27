@@ -1,10 +1,17 @@
 #! /bin/bash
 
+cassandra_hostname="127.0.0.1"
+
+. /etc/clearwater/config
+
 . /usr/share/clearwater/cassandra_schema_utils.sh
 
 quit_if_no_cassandra
 
-if [[ ! -e /var/lib/cassandra/data/homestead_provisioning ]];
+CQLSH="/usr/share/clearwater/bin/run-in-signaling-namespace cqlsh $cassandra_hostname"
+
+if [[ ! -e /var/lib/cassandra/data/homestead_provisioning ]] || \
+   [[ $cassandra_hostname != "127.0.0.1" ]];
 then
   count=0
   /usr/share/clearwater/bin/poll_cassandra.sh --no-grace-period
@@ -27,11 +34,12 @@ USE homestead_provisioning;
 CREATE TABLE implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
 CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
 CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
-CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | /usr/share/clearwater/bin/run-in-signaling-namespace cqlsh
+CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text)
+WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | $CQLSH
 fi
 
-echo "USE homestead_provisioning; DESC TABLE private" | /usr/share/clearwater/bin/run-in-signaling-namespace cqlsh | grep plaintext_password > /dev/null
+echo "USE homestead_provisioning; DESC TABLE private" | $CQLSH | grep plaintext_password > /dev/null
 if [ $? != 0 ]; then
   echo "USE homestead_provisioning;
-  ALTER TABLE private ADD plaintext_password text;" | /usr/share/clearwater/bin/run-in-signaling-namespace cqlsh
+  ALTER TABLE private ADD plaintext_password text;" | $CQLSH
 fi
