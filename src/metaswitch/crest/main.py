@@ -116,6 +116,7 @@ def standalone():
     parser.add_argument("--worker-processes", default=1, type=int)
     parser.add_argument("--shared-http-tcp-fd", default=None, type=int)
     parser.add_argument("--process-id", default=0, type=int)
+    parser.add_argument("--log-level", default=2, type=int)
     args = parser.parse_args()
 
     # Set process name.
@@ -140,7 +141,13 @@ def standalone():
 
     # Setup logging
     syslog.openlog(settings.LOG_FILE_PREFIX, syslog.LOG_PID)
-    logging_config.configure_logging(settings.LOG_LEVEL, settings.LOGS_DIR, settings.LOG_FILE_PREFIX, args.process_id)
+
+    logging_config.configure_logging(
+            utils.map_clearwater_log_level(args.log_level),
+            settings.LOGS_DIR,
+            settings.LOG_FILE_PREFIX,
+            args.process_id)
+
     twisted.python.log.addObserver(on_twisted_log)
 
     pdlogs.CREST_STARTING.log()
