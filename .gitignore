@@ -9,6 +9,7 @@ _env
 bootstrap.py
 develop-eggs
 eggs
+.eggs
 .crest-eggs
 .homer-eggs
 .homestead_prov-eggs

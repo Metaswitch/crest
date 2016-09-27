@@ -17,17 +17,17 @@ Description: crest, a Cassandra powered generic RESTful HTTP server platform
 
 Package: homer-node
 Architecture: any
-Depends: homer, homer-cassandra
+Depends: homer (= ${binary:Version}), homer-cassandra
 Description: Homer, the Cassandra powered XDMS node
 
 Package: homer
 Architecture: any
-Depends: crest
+Depends: crest (= ${binary:Version})
 Description: Homer, the Cassandra powered XDMS
 
 Package: homestead-prov
 Architecture: any
-Depends: crest
+Depends: crest (= ${binary:Version})
 Description: Provisioning backend for Homestead, the Cassandra powered HSS gateway
 
 Package: homer-cassandra

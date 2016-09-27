@@ -2,11 +2,11 @@
 
 These scripts will enable you to create a collection of sstables (Cassandra raw data) and then inject those tables directly into your Cassandra cluster.
 
-All the scripts assume they are being run on a Homer or Homestead node with a correctly configured and balanced Cassandra cluster.
+All the scripts assume they are being run on a node running the Homer or Homestead database and that the Cassandra database clusters are correctly configured and balanced.
 
 ## Pre-requisites
 
-* The bulk provisioning binaries - automatically installed alongside Homer/Homestead to `/usr/share/clearwater/crest/tools/sstable_provisioning`
+* The bulk provisioning binaries - automatically installed on Homer/Homestead database nodes to `/usr/share/clearwater/crest/tools/sstable_provisioning`
 * A users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
 
 ## Disk space
@@ -17,7 +17,7 @@ _For example, on AWS, instances have ony ~4Gb free so we can only provision appr
 
 ## RAM
 
-The [Preparing the sstables](#preparing-the-sstables) step also uses quite a lot of RAM.  If you're running on a homestead or homer node, Cassandra will already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop cassandra` and to restart it run `sudo monit start cassandra`.
+The [Preparing the sstables](#preparing-the-sstables) step uses quite a lot of RAM, and Cassandra will likely already be using a lot of the node's RAM.  For improved performance, you can stop Cassandra for the duration of that step and restart it again afterwards.  This obviously causes a service outage, and so should only be used for bulk provisioning as part of initial turn-up!  To stop Cassandra, run `sudo monit stop -g cassandra` and to restart it run `sudo monit start -g cassandra`.
 
 ## Preparing the sstables
 
@@ -29,13 +29,9 @@ The sstables can be created either from CSV files describing each subscriber or 
 
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
-Use the python executable bundled with Homer/Homestead.
+Use the python executable bundled with Homer/Homestead to prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
-    export PATH=/usr/share/clearwater/crest/env/bin:$PATH
-
-Prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
-
-    python ./prepare_csv.py <csvfilename>.csv
+    sudo /usr/share/clearwater/crest/env/bin/python ./prepare_csv.py <csvfilename>.csv
 
 This will generate `<csvfilename>_prepared.csv` in the current folder.  This filename should now be passed to BulkProvision as a command-line parameter, e.g. as follows - see more detail below.
 
@@ -61,7 +57,7 @@ For example, to create sstables for running clearwater-sip-stress stress tests w
 
 To store the passwords for the subscribers (in plaintext), add the `plaintext_password` parameter, e.g.:
 
-    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_parameter
+    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_password
 
 ### Running BulkProvision
 
