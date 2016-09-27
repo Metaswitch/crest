@@ -29,13 +29,9 @@ The sstables can be created either from CSV files describing each subscriber or 
 
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
-Use the python executable provided on the Homer/Homestead database node.
+Use the python executable bundled with Homer/Homestead to prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
-    export PATH=/usr/share/clearwater/crest/env/bin:$PATH
-
-Prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
-
-    python ./prepare_csv.py <csvfilename>.csv
+    sudo /usr/share/clearwater/crest/env/bin/python ./prepare_csv.py <csvfilename>.csv
 
 This will generate `<csvfilename>_prepared.csv` in the current folder.  This filename should now be passed to BulkProvision as a command-line parameter, e.g. as follows - see more detail below.
 
@@ -61,7 +57,7 @@ For example, to create sstables for running clearwater-sip-stress stress tests w
 
 To store the passwords for the subscribers (in plaintext), add the `plaintext_password` parameter, e.g.:
 
-    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_parameter
+    sudo ./BulkProvision homestead-local 2010000000 2010999999 example.com 7kkzTyGW plaintext_password
 
 ### Running BulkProvision
 
