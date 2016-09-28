@@ -2,11 +2,11 @@
 
 These scripts will enable you to create a collection of sstables (Cassandra raw data) and then inject those tables directly into your Cassandra cluster.
 
-All the scripts assume they are being run on a node running the Homer or Homestead database and that the Cassandra database clusters are correctly configured and balanced.
+All the scripts assume they are being run on a node running the Homestead database and that the Cassandra database clusters are correctly configured and balanced.
 
 ## Pre-requisites
 
-* The bulk provisioning binaries - automatically installed on Homer/Homestead database nodes to `/usr/share/clearwater/crest/tools/sstable_provisioning`
+* The bulk provisioning binaries - automatically installed on Homestead database nodes to `/usr/share/clearwater/crest/tools/sstable_provisioning`
 * A users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
 
 ## Disk space
@@ -29,7 +29,7 @@ The sstables can be created either from CSV files describing each subscriber or 
 
 In the below, `<csvfilename>` refers to the filename of the users CSV file **without the suffix**, e.g. if the file were called `users.csv` then `<csvfilename>` would be `users`.
 
-Use the python executable bundled with Homer/Homestead to prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
+Use the python executable bundled with Homestead to prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
     sudo /usr/share/clearwater/crest/env/bin/python ./prepare_csv.py <csvfilename>.csv
 
