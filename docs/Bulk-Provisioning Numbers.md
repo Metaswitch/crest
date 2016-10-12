@@ -14,7 +14,7 @@ This provisions numbers starting at 201000000 with the password 7kkzTyGW, and wi
 /usr/share/clearwater/crest/src/metaswitch/crest/tools/stress_provision.sh 200000
 ```
 
-This will only provision data into Homestead's call-path cache, for efficiency - if you need Homer Memento of Homestead-prov provisioning, follow the process below.
+This will only provision data into Homestead's call-path cache, for efficiency - if you need Homer, Memento or Homestead-prov provisioning, follow the process below.
 
 ## Other uses
 
