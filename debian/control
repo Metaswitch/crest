@@ -39,4 +39,3 @@ Package: homestead-prov-cassandra
 Architecture: any
 Depends: clearwater-cassandra, clearwater-infrastructure, homestead-cassandra
 Description: Commissions a Cassandra node so that it can be used as a backend for the homestead-prov package
-Replaces: crest (<< 1.0-161011.180107), homestead-prov (<< 1.0-161011.180107)
