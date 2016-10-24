@@ -53,4 +53,4 @@ check program poll_homestead-prov with path "/usr/share/clearwater/bin/poll_home
   depends on homestead-prov_process
 
   # Aborting generates a core file and triggers diagnostic collection.
-  if status != 0 for 2 cycles then exec "/etc/init.d/homestead-prov abort'"
+  if status != 0 for 2 cycles then exec "/etc/init.d/homestead-prov abort"
