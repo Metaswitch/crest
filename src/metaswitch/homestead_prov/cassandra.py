@@ -44,9 +44,9 @@ class CassandraConnection(object):
     def __init__(self, keyspace):
         self._keyspace = keyspace
 
-        factory = ManagedCassandraClientFactory(keyspace)
-        reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, factory)
-        self.client = CassandraClient(factory)
+        self.factory = ManagedCassandraClientFactory(keyspace)
+        reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, self.factory)
+        self.client = CassandraClient(self.factory)
 
 
 class CassandraModel(object):
@@ -66,6 +66,10 @@ class CassandraModel(object):
         to make unit testing without a real cassandra database possible"""
         cls.cass_connection = CassandraConnection(cls.cass_keyspace)
         cls.client = cls.cass_connection.client
+
+    @classmethod
+    def get_cass_factory(cls):
+        return cls.cass_connection.factory
 
     def __init__(self, row_key):
         self.row_key = row_key

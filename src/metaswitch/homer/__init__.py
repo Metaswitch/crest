@@ -37,6 +37,7 @@ from twisted.internet import reactor
 from telephus.protocol import ManagedCassandraClientFactory
 
 from metaswitch.crest.api.passthrough import PassthroughHandler
+from metaswitch.crest.api.ping import PingHandler
 from metaswitch.crest import settings
 from metaswitch.homer import routes
 
@@ -50,3 +51,4 @@ def initialize(application):
                        settings.CASS_PORT,
                        factory)
     PassthroughHandler.add_cass_factory("homer", factory)
+    PingHandler.register_cass_factory(factory)

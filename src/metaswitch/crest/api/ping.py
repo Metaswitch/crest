@@ -35,24 +35,28 @@
 from cyclone.web import RequestHandler
 from telephus.client import CassandraClient
 from twisted.internet import defer
-from .passthrough import PassthroughHandler
 
 
 # This class responds to pings - we use it to confirm that Homer/Homestead-prov
 # are still responsive and functional
 class PingHandler(RequestHandler):
+    cass_factories = []
+
+    @classmethod
+    def register_cass_factory(cls, factory):
+        cls.cass_factories.append(factory)
+
     @defer.inlineCallbacks
     def get(self):
         # Attempt to connect to Cassandra (by asking for a non-existent key).
         # We need this check as we've seen cases where telephus fails to
         # connect to Cassandra, and requests sit on the queue forever without
         # being processed.
-        factories = PassthroughHandler.cass_factories.values()
-        clients = (CassandraClient(factory) for factory in factories)
+        clients = (CassandraClient(factory) for factory in self.cass_factories)
         gets = (client.get(key='ping', column_family='ping')
                 for client in clients)
 
-        # If Cassandra is up, it will throw an expection (because we're asking
+        # If Cassandra is up, it will throw an exception (because we're asking
         # for a nonexistent key). That's fine - it proves Cassandra is up and
         # we have a connection to it. If Cassandra is down, this call will
         # never return and Monit will time it out and kill the process for
