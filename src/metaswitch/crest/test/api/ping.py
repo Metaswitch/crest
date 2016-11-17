@@ -66,16 +66,11 @@ class TestPingHandler(unittest.TestCase):
                           mock_passthrough_handler,
                           mock_deferred_list):
         """Test that the ping runs to completion in the mainline."""
-        # This test is designed to catch regressions where a change to
-        # the PassthroughHandler or library APIs would stop the ping
-        # from functioning in the mainline.
-        #
+
         # Make sure there is at least one (fake) connection to Cassandra, to
         # exercise the main logic, and check that only real methods are
         # called.
-        mock_passthrough_handler.cass_factories.values.return_value = [
-            telephus.protocol.ManagedCassandraClientFactory(),
-        ]
+        ping.PingHandler.register_cass_factory(telephus.protocol.ManagedCassandraClientFactory())
         mock_deferred_list.return_value = fail(Exception())
 
         # Insert a mock so that we can extract the value that finish
