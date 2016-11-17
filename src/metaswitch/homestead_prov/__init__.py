@@ -40,6 +40,7 @@ from .provisioning.handlers.public import PublicIDServiceProfileHandler, PublicI
 
 from .cache.db import CacheModel
 from .provisioning.models import PrivateID, IRS, ServiceProfile, PublicID, ProvisioningModel
+from metaswitch.crest.api.ping import PingHandler
 
 # Regex that matches any path element (covers anything that isn't a slash).
 ANY = '([^/]+)'
@@ -142,6 +143,11 @@ def initialize(application):
     application.cache = Cache()
     ProvisioningModel.register_cache(application.cache)
 
-    # Connect to the cache and provisioning databases.
+    # Connect to the cache and provisioning databases. Register the cassandra
+    # factories with the PingHandler so that connectivity to cassandra is
+    # checked when crest is pinged.
     ProvisioningModel.start_connection()
+    PingHandler.register_cass_factory(ProvisioningModel.get_cass_factory())
+
     CacheModel.start_connection()
+    PingHandler.register_cass_factory(CacheModel.get_cass_factory())
