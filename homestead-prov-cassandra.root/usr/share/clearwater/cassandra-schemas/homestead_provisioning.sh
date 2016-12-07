@@ -31,12 +31,12 @@ if [[ ! -e /var/lib/cassandra/data/homestead_provisioning ]] || \
 then
   # replication_str is set up by
   # /usr/share/clearwater/cassandra-schemas/replication_string.sh
-  echo "CREATE KEYSPACE homestead_provisioning WITH REPLICATION = $replication_str;
+  echo "CREATE KEYSPACE IF NOT EXISTS homestead_provisioning WITH REPLICATION = $replication_str;
 USE homestead_provisioning;
-CREATE TABLE implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
-CREATE TABLE service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
-CREATE TABLE public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
-CREATE TABLE private (private_id text PRIMARY KEY, digest_ha1 text, realm text)
+CREATE TABLE IF NOT EXISTS implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+CREATE TABLE IF NOT EXISTS service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+CREATE TABLE IF NOT EXISTS public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
+CREATE TABLE IF NOT EXISTS private (private_id text PRIMARY KEY, digest_ha1 text, realm text)
 WITH COMPACT STORAGE AND read_repair_chance = 1.0;" | $CQLSH
 fi
 
