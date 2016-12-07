@@ -111,7 +111,6 @@ if __name__ == '__main__':
     parser.add_argument('--pstn', action='store_true',
                        help='Use PSTN number range')
 
-    global args
     args = parser.parse_args()
 
     standalone()
