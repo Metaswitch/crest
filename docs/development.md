@@ -30,43 +30,49 @@ Pre-requisites
 
 Crest relies on APT packages available from the Project Clearwater repository server. To configure your build environment to install these packages, follow the instructions at [ReadTheDocs](http://clearwater.readthedocs.org/en/latest/Manual_Install.html#configure-the-apt-software-sources).
 
-1. Pip and virtualenv
+1. Pip and build tools
 
     ```
-    sudo apt-get install python-pip python-dev python-virtualenv build-essential libffi-dev
+    sudo apt-get install python-pip python-dev build-essential libffi-dev
     ```
 
-2. Lib-curl
+2. virtualenv (we pin to 13.1.0 so that we have a known working version, but we should be careful that the version used doesn't fall too far behind)
+
+   ```
+   sudo pip install virtualenv==13.1.0
+   ```
+
+3. Lib-curl
 
     ```
     sudo apt-get install libcurl4-openssl-dev
     ```
 
-3. Building Debian packages
+4. Building Debian packages
 
     ```
     sudo apt-get install debhelper devscripts
     ```
 
-4. XML development libraries
+5. XML development libraries
 
     ```
     sudo apt-get install libxml2-dev libxslt-dev
     ```
 
-5. Python static analysis checker
+6. Python static analysis checker
 
    ```
    sudo pip install flake8 mccabe pep8-naming
    ```
 
-6. ZMQ libraries
+7. ZMQ libraries
 
    ```
    sudo apt-get install python-zmq
    ```
 
-7. Bulk provisioning
+8. Bulk provisioning
 
    ```
    sudo apt-get install cassandra=2.0.14 openjdk-7-jdk
