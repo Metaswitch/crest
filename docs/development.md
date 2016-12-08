@@ -36,10 +36,10 @@ Crest relies on APT packages available from the Project Clearwater repository se
     sudo apt-get install python-pip python-dev python-virtualenv build-essential libffi-dev
     ```
 
-2. virtualenv
+2. virtualenv (we pin to 13.1.0 so that we have a known working version, but we should be careful that the version used doesn't fall too far behind)
 
    ```
-   sudo pip install virtualenv
+   sudo pip install virtualenv==13.1.0
    ```
 
 3. Lib-curl
