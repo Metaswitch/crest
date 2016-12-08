@@ -3,7 +3,7 @@ ENV_PYTHON := ${ENV_DIR}/bin/python
 PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
-DEB_MAJOR_VERSION := 1.0${DEB_VERSION_QUALIFIER}
+DEB_MAJOR_VERSION ?= 1.0${DEB_VERSION_QUALIFIER}
 DEB_NAMES := crest
 DEB_NAMES += homer homer-node
 DEB_NAMES += homestead-prov
