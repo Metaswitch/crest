@@ -53,15 +53,22 @@ class PingHandler(RequestHandler):
         # connect to Cassandra, and requests sit on the queue forever without
         # being processed.
         clients = (CassandraClient(factory) for factory in self.cass_factories)
-        gets = (client.get(key='ping', column_family='ping')
-                for client in clients)
 
         # If Cassandra is up, it will throw an exception (because we're asking
         # for a nonexistent key). That's fine - it proves Cassandra is up and
         # we have a connection to it. If Cassandra is down, this call will
         # never return and Monit will time it out and kill the process for
         # unresponsiveness.
+
+        # Catch the Twisted error made (as 'ping' isn't a configured column) -
+        # as with the Exception we don't care about the error, we just want to
+        # test if we can contact Cassandra
+        def ping_error(err): # pragma: no cover
+            pass
+
         try:
+            gets = (client.get(key='ping', column_family='ping').addErrback(ping_error)
+                    for client in clients)
             yield defer.DeferredList(gets)
         except Exception:
             # We don't care about the result, just whether it returns
