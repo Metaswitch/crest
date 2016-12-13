@@ -173,7 +173,10 @@ class LoadMonitor:
             # mean latency, rather than the 90th percentile as per the paper.
             # Also, the additive increase is scaled as a proportion of the maximum
             # bucket size, rather than an absolute number as per the paper.
-            accepted_percent = 100 * (float(self.accepted) / float(self.accepted + self.rejected))
+            accepted_percent = 100
+            if (self.accepted + self.rejected) != 0:
+                accepted_percent = 100 * (float(self.accepted) / float(self.accepted + self.rejected))
+
             self.accepted = 0
             self.rejected = 0
             self.adjust_count = self.ADJUST_PERIOD
