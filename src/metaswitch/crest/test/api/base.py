@@ -171,5 +171,38 @@ class TestUnknownApiHandler(unittest.TestCase):
         self.handler.get()
         self.handler.send_error.assert_called_once_with(404, "Request for unknown API")
 
+class TestLoadMonitor(unittest.TestCase):
+
+    def test_divide_by_zero(self):
+        """
+        Test that twice the LoadMonitor's ADJUST_PERIOD requests all
+        arriving at once don't cause a ZeroDivisionError when they all
+        complete.
+        """
+
+        # Create a LoadMonitor with a bucket size twice as big as the
+        # ADJUST_PERIOD so we can add all the requests at once
+        size = base.LoadMonitor.ADJUST_PERIOD * 2
+        load_monitor = base.LoadMonitor(0.1, size, size, size)
+
+        success = True
+
+        # Add all the requests at once
+        for _ in range(size):
+            success &= load_monitor.admit_request()
+
+        # All the requests should have been admitted
+        self.assertTrue(success)
+
+        # Now, let the requests finish
+        try:
+            for _ in range(size):
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.1)
+        except ZeroDivisionError:
+            success = False
+
+        self.assertTrue(success)
+
 if __name__ == "__main__":
     unittest.main()
