@@ -42,6 +42,7 @@ from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 from metaswitch.crest.api import base
 from monotonic import monotonic
+from time import sleep
 
 from mock import patch, MagicMock
 
@@ -175,14 +176,14 @@ class TestLoadMonitor(unittest.TestCase):
 
     def test_divide_by_zero(self):
         """
-        Test that twice the LoadMonitor's ADJUST_PERIOD requests all
+        Test that twice the LoadMonitor's REQUESTS_BEFORE_ADJUSTMENT requests all
         arriving at once don't cause a ZeroDivisionError when they all
         complete.
         """
 
         # Create a LoadMonitor with a bucket size twice as big as the
-        # ADJUST_PERIOD so we can add all the requests at once
-        size = base.LoadMonitor.ADJUST_PERIOD * 2
+        # REQUESTS_BEFORE_ADJUSTMENT so we can add all the requests at once
+        size = base.LoadMonitor.REQUESTS_BEFORE_ADJUSTMENT * 2
         load_monitor = base.LoadMonitor(0.1, size, size, size)
 
         success = True
@@ -203,6 +204,51 @@ class TestLoadMonitor(unittest.TestCase):
             success = False
 
         self.assertTrue(success)
+
+    def test_rate_increase(self):
+        """
+        Test that when we have accepted more than half the maximum permitted requests
+        in the last update period, we increase the permitted request rate.
+        """
+
+        # Create a load monitor as we do in the main crest base
+        load_monitor = base.LoadMonitor(0.1, 100, 100, 10)
+
+        success = True 
+        initial_rate = load_monitor.bucket.rate
+        # We need this to be a float, so that the sleeps below don't round to 0
+        update_period = float(load_monitor.SECONDS_BEFORE_ADJUSTMENT)
+
+        # The number of requests we need to send to go over the threshold is: 
+        threshold_requests = load_monitor.bucket.rate * load_monitor.SECONDS_BEFORE_ADJUSTMENT
+
+        # To simulate the right load, we will add three sets of half this threshold the time period
+        # and then trigger the update_latency function at the end of it.
+        for _ in range(3):
+            for _ in range(threshold_requests/2):
+                load_monitor.admit_request()
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.08)
+            sleep(update_period/4)
+
+        # Do one last sleep, so that we pass the time threshold
+        sleep(update_period/4 + 0.5)
+
+        # Do one more request, and then test to see if the rate has increased
+        load_monitor.admit_request()
+        load_monitor.request_complete()
+        load_monitor.update_latency(0.08)
+
+        final_rate = load_monitor.bucket.rate
+        print("Initial rate {}, final rate {}".format(initial_rate, final_rate))
+        self.assertTrue(final_rate > initial_rate)
+
+        # Test if errors > threshold, rate reduced
+        # same, but hss overload
+
+        # Test if accepted > min_thresh, and t > 2, rate increased
+        # Test if accepted > min thresh and t < 2, no change
+        # Test if accepted < min thresh and t > 2, no change
 
 if __name__ == "__main__":
     unittest.main()
