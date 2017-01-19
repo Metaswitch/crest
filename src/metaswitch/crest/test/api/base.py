@@ -42,6 +42,7 @@ from cyclone.web import HTTPError
 from twisted.python.failure import Failure
 from metaswitch.crest.api import base
 from monotonic import monotonic
+from time import sleep
 
 from mock import patch, MagicMock
 
@@ -173,16 +174,26 @@ class TestUnknownApiHandler(unittest.TestCase):
 
 class TestLoadMonitor(unittest.TestCase):
 
+    def setUp(self):
+        # Mock out zmq so we don't fail if we try to report stats during the
+        # test.
+        self.real_zmq = base.zmq
+        base.zmq = MagicMock()
+
+    def tearDown(self):
+        base.zmq = self.real_zmq
+        del self.real_zmq
+
     def test_divide_by_zero(self):
         """
-        Test that twice the LoadMonitor's ADJUST_PERIOD requests all
+        Test that twice the LoadMonitor's REQUESTS_BEFORE_ADJUSTMENT requests all
         arriving at once don't cause a ZeroDivisionError when they all
         complete.
         """
 
         # Create a LoadMonitor with a bucket size twice as big as the
-        # ADJUST_PERIOD so we can add all the requests at once
-        size = base.LoadMonitor.ADJUST_PERIOD * 2
+        # REQUESTS_BEFORE_ADJUSTMENT so we can add all the requests at once
+        size = base.LoadMonitor.REQUESTS_BEFORE_ADJUSTMENT * 2
         load_monitor = base.LoadMonitor(0.1, size, size, size)
 
         success = True
@@ -203,6 +214,194 @@ class TestLoadMonitor(unittest.TestCase):
             success = False
 
         self.assertTrue(success)
+
+    def test_rate_increase(self):
+        """
+        Test that when we have accepted more than half the maximum permitted requests
+        in the last update period, we increase the permitted request rate.
+        """
+
+        # Create a load monitor as we do in the main crest base
+        load_monitor = base.LoadMonitor(0.1, 100, 100, 10)
+
+        initial_rate = load_monitor.bucket.rate
+        # We need this to be a float, so that the sleeps below don't round to 0
+        update_period = float(load_monitor.SECONDS_BEFORE_ADJUSTMENT)
+
+        # The number of requests we need to send to go over the adjustment threshold is:
+        threshold_requests = load_monitor.bucket.rate * load_monitor.SECONDS_BEFORE_ADJUSTMENT
+
+        # To simulate load, we will add three sets of half this threshold over the
+        # time period and then trigger the update_latency function at the end of it.
+        for _ in range(3):
+            for _ in range(threshold_requests/2):
+                load_monitor.admit_request()
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.08)
+            sleep(update_period/4)
+
+        # Do one last sleep, so that we pass the time threshold
+        sleep(update_period/4 + 0.1)
+
+        # Do one more request, and then test that the rate has increased
+        load_monitor.admit_request()
+        load_monitor.request_complete()
+        load_monitor.update_latency(0.08)
+
+        final_rate = load_monitor.bucket.rate
+        print("Initial rate {}, final rate {}".format(initial_rate, final_rate))
+        self.assertTrue(final_rate > initial_rate)
+
+    def test_rate_decrease_on_err(self):
+        """
+        Test that when we are accepting requests but with a higher than target
+        latency, we decrease the permitted request rate.
+        """
+
+        # Create a load monitor as we do in the main crest base, and save off initial rate
+        load_monitor = base.LoadMonitor(0.1, 100, 100, 10)
+        initial_rate = load_monitor.bucket.rate
+
+        # We need this to be a float, so that the sleeps below don't round to 0
+        update_period = float(load_monitor.SECONDS_BEFORE_ADJUSTMENT)
+
+        # The number of requests we need to send to go over the adjustment threshold is:
+        threshold_requests = load_monitor.bucket.rate * load_monitor.SECONDS_BEFORE_ADJUSTMENT
+
+        # To simulate load, we will add three sets of half this threshold over the
+        # time period and then trigger the update_latency function at the end of it.
+        # We update with a latency higher than our target to trigger the err threshold.
+        for _ in range(3):
+            for _ in range(threshold_requests/2):
+                load_monitor.admit_request()
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.15)
+            sleep(update_period/4)
+
+        # Do one last sleep, so that we pass the time threshold
+        sleep(update_period/4 + 0.1)
+
+        # Do one more request, and then test that the rate has decreased
+        load_monitor.admit_request()
+        load_monitor.request_complete()
+        load_monitor.update_latency(0.15)
+
+        final_rate = load_monitor.bucket.rate
+        print("Initial rate {}, final rate {}".format(initial_rate, final_rate))
+        self.assertTrue(final_rate < initial_rate)
+
+    # Mock out the penalty counter to return a non-zero penalty count
+    @patch("metaswitch.crest.api.base.PenaltyCounter.get_hss_penalty_count", return_value=1)
+    def test_rate_decrease_on_hss_overload(self, mock_penaltycounter):
+        """
+        Test that when we are accepting requests within target latency, but
+        are getting hss overload responses, we decrease the permitted request rate.
+        """
+
+        # Create a load monitor as we do in the main crest base, and save off initial rate
+        load_monitor = base.LoadMonitor(0.1, 100, 100, 10)
+        initial_rate = load_monitor.bucket.rate
+
+        # We need this to be a float, so that the sleeps below don't round to 0
+        update_period = float(load_monitor.SECONDS_BEFORE_ADJUSTMENT)
+
+        # The number of requests we need to send to go over the adjustment threshold is:
+        threshold_requests = load_monitor.bucket.rate * load_monitor.SECONDS_BEFORE_ADJUSTMENT
+
+        # To simulate load, we will add three sets of half this threshold over the time period
+        # and then trigger the update_latency function at the end of it.
+        # We update with a latency higher than our target to trigger the err threshold.
+        for _ in range(3):
+            for _ in range(threshold_requests/2):
+                load_monitor.admit_request()
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.08)
+            sleep(update_period/4)
+
+        # Do one last sleep, so that we pass the time threshold
+        sleep(update_period/4 + 0.1)
+
+        # Do one more request, and then test that the rate has decreased
+        load_monitor.admit_request()
+        load_monitor.request_complete()
+        load_monitor.update_latency(0.08)
+
+        final_rate = load_monitor.bucket.rate
+        print("Initial rate {}, final rate {}".format(initial_rate, final_rate))
+        self.assertTrue(final_rate < initial_rate)
+
+    def test_rate_no_change_if_time_too_short(self):
+        """
+        Test that when we have accepted more than half the maximum permitted requests
+        but haven't passed the update period, we do not change the permitted request rate.
+        """
+
+        # Create a load monitor as we do in the main crest base
+        load_monitor = base.LoadMonitor(0.1, 100, 100, 10)
+
+        initial_rate = load_monitor.bucket.rate
+        # We need this to be a float, so that the sleeps below don't round to 0
+        update_period = float(load_monitor.SECONDS_BEFORE_ADJUSTMENT)
+
+        # The number of requests we need to send to go over the adjustment threshold is:
+        threshold_requests = load_monitor.bucket.rate * load_monitor.SECONDS_BEFORE_ADJUSTMENT
+
+        # To simulate load, we will add three sets of half this threshold over the time period
+        # and then trigger the update_latency function at the end of it.
+        for _ in range(3):
+            for _ in range(threshold_requests/2):
+                load_monitor.admit_request()
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.08)
+            sleep(update_period/4)
+
+        # We do not sleep here, as we want to remain under the update_period
+        # Do one more request, and then test that the rate remains unchanged
+        load_monitor.admit_request()
+        load_monitor.request_complete()
+        load_monitor.update_latency(0.08)
+
+        final_rate = load_monitor.bucket.rate
+        print("Initial rate {}, final rate {}".format(initial_rate, final_rate))
+        self.assertTrue(final_rate == initial_rate)
+
+    def test_rate_no_change_if_too_few_requests(self):
+        """
+        Test that when we have accepted less than half the maximum permitted requests
+        over the update period, we do not change the permitted request rate.
+        """
+
+        # Create a load monitor as we do in the main crest base
+        load_monitor = base.LoadMonitor(0.1, 100, 100, 10)
+
+        initial_rate = load_monitor.bucket.rate
+        # We need this to be a float, so that the sleeps below don't round to 0
+        update_period = float(load_monitor.SECONDS_BEFORE_ADJUSTMENT)
+
+        # The number of requests we need to send to go over the adjustment threshold is:
+        threshold_requests = load_monitor.bucket.rate * load_monitor.SECONDS_BEFORE_ADJUSTMENT
+
+        # To simulate light load, we will add three sets of one tenth of this
+        # threshold over the time period and then trigger the update_latency
+        # function at the end of it.
+        for _ in range(3):
+            for _ in range(threshold_requests/10):
+                load_monitor.admit_request()
+                load_monitor.request_complete()
+                load_monitor.update_latency(0.08)
+            sleep(update_period/4)
+
+        # Do one last sleep, so that we pass the time threshold
+        sleep(update_period/4 + 0.1)
+
+        # Do one more request, and then test that the rate remains unchanged
+        load_monitor.admit_request()
+        load_monitor.request_complete()
+        load_monitor.update_latency(0.08)
+
+        final_rate = load_monitor.bucket.rate
+        print("Initial rate {}, final rate {}".format(initial_rate, final_rate))
+        self.assertTrue(final_rate == initial_rate)
 
 if __name__ == "__main__":
     unittest.main()
