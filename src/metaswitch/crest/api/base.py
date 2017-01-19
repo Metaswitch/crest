@@ -225,8 +225,8 @@ class LoadMonitor:
         penaltycounter.reset_hss_penalty_count()
 
 # Create load monitor with target latency of 100ms, maximum bucket size of
-# 100 requests, initial and minimum token rate of 10 per second
-loadmonitor = LoadMonitor(0.1, 100, 100, 10)
+# 1000 request tokens, initial token rate of 100/s, and a minimum rate of 10/s
+loadmonitor = LoadMonitor(0.1, 1000, 100, 10)
 penaltycounter = PenaltyCounter()
 
 # Create the accumulators and counters
