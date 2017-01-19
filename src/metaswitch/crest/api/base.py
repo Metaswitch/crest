@@ -113,8 +113,9 @@ class LeakyBucket:
 
 
 class LoadMonitor:
-    # Number of request processed between each adjustment of the leaky bucket rate
-    ADJUST_PERIOD = 20
+    # Minimum requests processed and time between each adjustment of the leaky bucket rate
+    REQUESTS_BEFORE_ADJUSTMENT = 20
+    SECONDS_BEFORE_ADJUSTMENT = 2
 
     # Adjustment parameters for
     DECREASE_THRESHOLD = 0.0
@@ -135,9 +136,10 @@ class LoadMonitor:
         self.smoothed_variability = target_latency
         self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability)
         self.bucket = LeakyBucket(max_bucket_size, init_token_rate)
-        self.adjust_count = self.ADJUST_PERIOD
+        self.adjust_count = self.REQUESTS_BEFORE_ADJUSTMENT
         self.min_token_rate = min_token_rate
         self.overloaded = False
+        self.last_adjustment_time = monotonic()
 
     def admit_request(self):
         if self.bucket.get_token():
@@ -166,8 +168,9 @@ class LoadMonitor:
         self.smoothed_variability = (7 * self.smoothed_variability + abs(latency - self.smoothed_latency)) / 8
         self.max_latency = self.smoothed_latency + (self.NUM_DEV * self.smoothed_variability)
         self.adjust_count -= 1
+        seconds_since_last_update = monotonic() - self.last_adjustment_time
 
-        if self.adjust_count <= 0:
+        if (self.adjust_count <= 0) and (seconds_since_last_update >= self.SECONDS_BEFORE_ADJUSTMENT):
             # This algorithm is based on the Welsh and Culler "Adaptive Overload
             # Control for Busy Internet Servers" paper, although based on a smoothed
             # mean latency, rather than the 90th percentile as per the paper.
@@ -177,9 +180,6 @@ class LoadMonitor:
             if (self.accepted + self.rejected) != 0:
                 accepted_percent = 100 * (float(self.accepted) / float(self.accepted + self.rejected))
 
-            self.accepted = 0
-            self.rejected = 0
-            self.adjust_count = self.ADJUST_PERIOD
             err = (self.smoothed_latency - self.target_latency) / self.target_latency
             hss_overloads = penaltycounter.get_hss_penalty_count()
             if ((err > self.DECREASE_THRESHOLD) or (hss_overloads > 0)):
@@ -188,25 +188,45 @@ class LoadMonitor:
                 new_rate = self.bucket.rate / self.DECREASE_FACTOR
                 if new_rate < self.min_token_rate:
                     new_rate = self.min_token_rate
-                _log.info("Accepted %f requests, latency error = %f, HSS overloads = %d, decrease rate %f to %f" %
+                _log.info("Accepted %.2f%% of requests, latency error = %f, HSS overloads = %d, decrease rate %f to %f" %
                                  (accepted_percent, err, hss_overloads, self.bucket.rate, new_rate))
                 self.bucket.update_rate(new_rate)
             elif err < self.INCREASE_THRESHOLD:
-                # latency is sufficiently below the target, so we can increase by an additive
-                # factor - weighted by how far below target we are.
-                new_rate = self.bucket.rate + (-err) * self.bucket.max_size * self.INCREASE_FACTOR
-                _log.info("Accepted %f%% of requests, latency error = %f, increase rate %f to %f" %
-                                (accepted_percent, err, self.bucket.rate, new_rate))
-                self.bucket.update_rate(new_rate)
+                # latency is sufficiently below the target, so increasing the permitted
+                # request rate would be sensible; but first check that we are using a
+                # significant proportion of the current rate - if we're allowing 100
+                # requests/sec, and we get 1 request/sec during a quiet period, we will
+                # handle that well, but it is not sufficient evidence that we can increase the rate.
+                max_permitted_requests = self.bucket.rate * seconds_since_last_update
+
+                # Arbitrary threshold of at least 50% of maximum permitted requests
+                minimum_threshold = max_permitted_requests * 0.5
+
+                if (self.accepted > minimum_threshold):
+                    new_rate = self.bucket.rate + (-err) * self.bucket.max_size * self.INCREASE_FACTOR
+                    _log.info("Accepted %.2f%% of requests, latency error = %f, increase rate %f to %f"
+                              " based on %d accepted requests in last %.2f seconds" %
+                              (accepted_percent, err, self.bucket.rate, new_rate,
+                               self.accepted, seconds_since_last_update))
+                    self.bucket.update_rate(new_rate)
+                else:
+                    _log.info("Only handled %d requests in the last %.2f seconds, rate remains unchanged."
+                              " Minimum threshold for change is %f" %
+                              (self.accepted, seconds_since_last_update, minimum_threshold))
             else:
                 _log.info("Accepted %f%% of requests, latency error = %f, rate %f unchanged" %
                                 (accepted_percent, err, self.bucket.rate))
 
+            self.accepted = 0
+            self.rejected = 0
+            self.adjust_count = self.REQUESTS_BEFORE_ADJUSTMENT
+            self.last_adjustment_time = monotonic()
+
         penaltycounter.reset_hss_penalty_count()
 
 # Create load monitor with target latency of 100ms, maximum bucket size of
-# 20 requests, initial and minimum token rate of 10 per second
-loadmonitor = LoadMonitor(0.1, 20, 10, 10)
+# 1000 request tokens, initial token rate of 100/s, and a minimum rate of 10/s
+loadmonitor = LoadMonitor(0.1, 1000, 100, 10)
 penaltycounter = PenaltyCounter()
 
 # Create the accumulators and counters
