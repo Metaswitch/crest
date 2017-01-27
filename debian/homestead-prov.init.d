@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # @file homestead-prov.init.d
 #
@@ -50,7 +50,7 @@ DESC=homestead-prov        # Introduce a short description here
 NAME=homestead-prov       # Introduce the short server's name here
 DAEMON=/usr/share/clearwater/crest/env/bin/python # Introduce the server's location here
 DAEMON_ARGS="-m metaswitch.crest.main --worker-processes 1"
-DAEMON_DIR=/usr/share/clearwater/homestead/
+DAEMON_DIR=/usr/share/clearwater/homestead
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 
@@ -174,8 +174,14 @@ else
 fi
 if [ -n "$leaked_pids" ] ; then
   for pid in $leaked_pids ; do
-    logger -p daemon.error -t $NAME Found leaked homestead-prov $pid \(correct is $(cat $PIDFILE)\) - killing $pid
-    kill -9 $pid
+    # Homer and Homestead-prov run the same daemon, but in different working directories
+    # Make sure this is actually a leaked process by checking the working directory matches
+    # our expectations, and we aren't killing the wrong things
+    working_dir=$(pwdx $pid)
+    if grep $DAEMON_DIR <<< $working_dir ; then
+      logger -p daemon.error -t $NAME Found leaked homestead-prov $pid \(correct is $(cat $PIDFILE)\) - killing $pid
+      kill -9 $pid
+    fi
   done
 fi
 
