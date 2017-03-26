@@ -52,7 +52,6 @@ set -e
 # the debian-policy package
 
 CREST_DIR=/usr/share/clearwater/crest
-. /etc/clearwater/config
 
 case "$1" in
     configure)
