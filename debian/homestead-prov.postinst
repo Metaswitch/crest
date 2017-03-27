@@ -53,7 +53,6 @@ set -e
 
 HOMESTEAD_DIR=/usr/share/clearwater/homestead
 CREST_DIR=/usr/share/clearwater/crest
-. /etc/clearwater/config
 
 case "$1" in
     configure)
