@@ -31,10 +31,15 @@ set -e
 
 #DEBHELPER#
 
+CREST_DIR=/usr/share/clearwater/crest
+
 case "$1" in
     configure)
         # Restart clearwater-infrastructure in order to trigger the
         # homestead-prov-cassandra script.
+        rm -rf $CREST_DIR/build
+        virtualenv --python=$(which python) $CREST_DIR/env
+        $CREST_DIR/env/bin/easy_install --allow-hosts=None -f $CREST_DIR/.eggs/ $CREST_DIR/.eggs/*.egg
         service clearwater-infrastructure restart
     ;;
 
