@@ -37,5 +37,5 @@ Description: Commissions a Cassandra node so that it can be used as a backend fo
 
 Package: homestead-prov-cassandra
 Architecture: any
-Depends: clearwater-cassandra, clearwater-infrastructure, homestead-cassandra
+Depends: clearwater-cassandra, clearwater-infrastructure, homestead-cassandra, crest
 Description: Commissions a Cassandra node so that it can be used as a backend for the homestead-prov package
