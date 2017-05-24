@@ -1,3 +1,4 @@
+ROOT ?= ${PWD}
 ENV_DIR := $(shell pwd)/_env
 ENV_PYTHON := ${ENV_DIR}/bin/python
 PYTHON_BIN := $(shell which python)
