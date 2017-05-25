@@ -32,10 +32,14 @@ Description: Provisioning backend for Homestead, the Cassandra powered HSS gatew
 
 Package: homer-cassandra
 Architecture: any
-Depends: clearwater-cassandra, clearwater-infrastructure
+Depends: clearwater-cassandra, clearwater-infrastructure, crest-prov
 Description: Commissions a Cassandra node so that it can be used as a backend for the homer package
 
 Package: homestead-prov-cassandra
 Architecture: any
-Depends: clearwater-cassandra, clearwater-infrastructure, homestead-cassandra, crest
+Depends: clearwater-cassandra, clearwater-infrastructure, homestead-cassandra, crest-prov
 Description: Commissions a Cassandra node so that it can be used as a backend for the homestead-prov package
+
+Package: crest-prov
+Architecture: any
+Description: Provides provisioning scripts for homestead-prov and homer

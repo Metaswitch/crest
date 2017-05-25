@@ -1,0 +1,3 @@
+src/metaswitch/crest/tools /usr/share/clearwater/crest-prov/src/metaswitch/crest/
+src/metaswitch/crest/tools/sstable_provisioning/* /usr/share/clearwater/crest-prov/tools/sstable_provisioning
+.crest-eggs/* /usr/share/clearwater/crest-prov/.eggs/
