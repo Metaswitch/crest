@@ -14,7 +14,7 @@ done > $filename
 
 echo "Creating $num_users users..."
 
-/usr/share/clearwater/crest/src/metaswitch/crest/tools/bulk_create.py $filename > /dev/null 2>&1
+/usr/share/clearwater/crest-prov/src/metaswitch/crest/tools/bulk_create.py $filename > /dev/null 2>&1
 /tmp/$$.users.create_homestead.sh > /dev/null 2>&1
 
 echo "Created $num_users users"

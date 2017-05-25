@@ -3,6 +3,7 @@
 *~
 /bin/
 /build-crest/
+/build-crest-prov/
 /build-homer/
 /build-homestead_prov/
 _env

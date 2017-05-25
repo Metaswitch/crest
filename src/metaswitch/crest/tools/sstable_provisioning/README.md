@@ -6,7 +6,7 @@ All the scripts assume they are being run on a node running the Homestead databa
 
 ## Pre-requisites
 
-* The bulk provisioning binaries - automatically installed on Homestead database nodes to `/usr/share/clearwater/crest/tools/sstable_provisioning`
+* The bulk provisioning binaries - automatically installed on Homestead database nodes to `/usr/share/clearwater/crest-prov/tools/sstable_provisioning`
 * A users CSV file - In the format output by [`bulk_autocomplete.py`](https://github.com/Metaswitch/crest/blob/dev/docs/Bulk-Provisioning%20Numbers.md)
 
 ## Disk space
@@ -23,7 +23,7 @@ The [Preparing the sstables](#preparing-the-sstables) step uses quite a lot of R
 
 The sstables can be created either from CSV files describing each subscriber or from command-line parameters specifying a range.  The latter is better for setting up stress runs (where you often want all your subscribers to be the same anyway) - the former is better for real subscribers. In each case, start by running
 
-    cd /usr/share/clearwater/crest/tools/sstable_provisioning
+    cd /usr/share/clearwater/crest-prov/tools/sstable_provisioning
 
 ### From CSV
 
@@ -31,7 +31,7 @@ In the below, `<csvfilename>` refers to the filename of the users CSV file **wit
 
 Use the python executable bundled with Homestead to prepare the CSV file by hashing the password and adding the simservs/ifc bodies.
 
-    sudo /usr/share/clearwater/crest/env/bin/python ./prepare_csv.py <csvfilename>.csv
+    sudo /usr/share/clearwater/crest-prov/env/bin/python ./prepare_csv.py <csvfilename>.csv
 
 This will generate `<csvfilename>_prepared.csv` in the current folder.  This filename should now be passed to BulkProvision as a command-line parameter, e.g. as follows - see more detail below.
 
