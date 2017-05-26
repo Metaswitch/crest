@@ -318,7 +318,6 @@ class RangeSubscriberIterator extends BaseSubscriberIterator
     static final String EMPTY_IFC_XML =                "<InitialFilterCriteria/>";
     static final String SERVICE_PROFILE_XML_SUFFIX = "</ServiceProfile>";
     static final String PUBLIC_IDENTITY_XML_PREFIX = "<PublicIdentity>" +
-                                                       "<BarringIndication>1</BarringIndication>" +
                                                        "<Identity>";
     static final String PUBLIC_IDENTITY_XML_SUFFIX =   "</Identity>" +
                                                      "</PublicIdentity>";
