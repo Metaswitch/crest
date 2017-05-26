@@ -1,5 +1,12 @@
 #! /usr/bin/python
 
+# Copyright (C) Metaswitch Networks 2017
+# If license terms are provided to you in a COPYING file in the root directory
+# of the source code repository by which you are accessing this code, then
+# the license outlined in that COPYING file applies to your use.
+# Otherwise no rights are granted except for those provided to you by
+# Metaswitch Networks in a separate written agreement.
+
 """Restores the gzipped CSV files given on the command line (created with dump-cassandra-to-csv.py) into the Cassandra database. Invoked with './restore-cassandra-from-csv.py file1.csv.gz file2.csv.gz ...' """
 
 from twisted.internet import defer, reactor
