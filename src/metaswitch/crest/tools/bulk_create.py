@@ -73,7 +73,7 @@ def write_homestead_scripts(csv_filename, write_plaintext_password):
             # Generate the user-specific data
             hash = utils.md5("%s:%s:%s" % (private_id, realm, password))
 
-            public_identity_xml = "<PublicIdentity><BarringIndication>1</BarringIndication><Identity>%s</Identity></PublicIdentity>" % public_id
+            public_identity_xml = "<PublicIdentity><Identity>%s</Identity></PublicIdentity>" % public_id
             initial_filter_xml = ifcs.generate_ifcs(utils.sip_uri_to_domain(public_id))
             ims_subscription_xml = create_imssubscription_xml(private_id, public_identity_xml, initial_filter_xml)
             irs_uuid = str(uuid.uuid4())
