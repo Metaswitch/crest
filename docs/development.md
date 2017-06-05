@@ -75,8 +75,11 @@ Crest relies on APT packages available from the Project Clearwater repository se
 8. Bulk provisioning
 
    ```
-   sudo apt-get install cassandra=2.0.14 openjdk-7-jdk
+   sudo apt-get install cassandra=2.1.15 openjdk-7-jdk
    ```
+   This cassandra version is available from the Project Clearwater repo server.
+   See the Clearwater Readthedocs Manual Install instructions for detail on how
+   to install debians from this server.
 
 Setting up a virtualenv
 =======================
