@@ -54,6 +54,10 @@ setup(
         "thrift==0.9.3",
         "Twisted==17.1.0",
         "zope.interface==4.4.1"],
-    tests_require=["pbr==1.6", "Mock"],
+     tests_require=[
+         "funcsigs==1.0.2",
+         "Mock==2.0.0",
+         "pbr==1.6",
+         "six==1.10.0"],
     options={"build": {"build_base": "build-crest"}},
     )
