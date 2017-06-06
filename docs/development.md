@@ -60,19 +60,13 @@ Crest relies on APT packages available from the Project Clearwater repository se
     sudo apt-get install libxml2-dev libxslt-dev
     ```
 
-6. Python static analysis checker
-
-   ```
-   sudo pip install flake8 mccabe pep8-naming
-   ```
-
-7. ZMQ libraries
+6. ZMQ libraries
 
    ```
    sudo apt-get install python-zmq
    ```
 
-8. Bulk provisioning
+7. Bulk provisioning
 
    ```
    sudo apt-get install cassandra=2.1.15 openjdk-7-jdk
