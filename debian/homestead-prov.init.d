@@ -81,6 +81,12 @@ do_start()
   #   0 if daemon has been started
   #   1 if daemon was already running
   #   2 if daemon could not be started
+
+  # homestead-prov is disabled if there's no configured hostname
+  if [ -z "$hs_provisioning_hostname" ]; then
+    return 2
+  fi
+
   start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
     || return 1
   get_daemon_args

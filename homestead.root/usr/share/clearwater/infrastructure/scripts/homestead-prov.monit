@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # @file homestead-prov.monit
 #
 # Copyright (C) Metaswitch Networks 2016
@@ -7,6 +9,24 @@
 # Otherwise no rights are granted except for those provided to you by
 # Metaswitch Networks in a separate written agreement.
 
+. /etc/clearwater/config
+
+if [ -z "$hs_provisioning_hostname" ]; then
+
+  if [ -f /etc/monit/conf.d/homestead-prov.monit ]; then
+    rm /etc/monit/conf.d/homestead-prov.monit
+
+    # Force monit to reload its configuration
+    reload clearwater-monit || true
+
+    # Stop homestead-prv if it was running
+    service homestead-prov stop
+  fi
+
+else
+
+  # Set up the monit configuration for homestead-prov
+  cat > /etc/monit/conf.d/homestead-prov.monit <<EOF
 # Check the Homestead-prov process.
 
 # Monitor the service's PID file and memory use.
@@ -29,3 +49,12 @@ check program poll_homestead-prov with path "/usr/share/clearwater/bin/poll_home
 
   # Aborting generates a core file and triggers diagnostic collection.
   if status != 0 for 2 cycles then exec "/etc/init.d/homestead-prov abort"
+
+EOF
+
+  chmod 0644 /etc/monit/conf.d/homestead-prov.monit
+
+  # Force monit to reload its configuration
+  reload clearwater-monit || true
+
+fi
