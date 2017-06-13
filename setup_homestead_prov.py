@@ -1,6 +1,6 @@
 # @file setup_homestead_prov.py
 #
-# Copyright (C) Metaswitch Networks 2017
+# Copyright (C) Metaswitch Networks 2016
 # If license terms are provided to you in a COPYING file in the root directory
 # of the source code repository by which you are accessing this code, then
 # the license outlined in that COPYING file applies to your use.
@@ -34,6 +34,11 @@ setup(
     package_data={'': ['*.xsd', '*.xml']},
     test_suite='metaswitch.homestead_prov.test',
     install_requires=["crest"],
-    tests_require=["pbr==1.6", "Mock"],
+    tests_require=[
+        "funcsigs==1.0.2",
+        "Mock==2.0.0",
+        "pbr==1.6",
+        "phonenumbers==7.1.1",
+        "six==1.10.0"],
     options={"build": {"build_base": "build-homestead_prov"}},
     )
