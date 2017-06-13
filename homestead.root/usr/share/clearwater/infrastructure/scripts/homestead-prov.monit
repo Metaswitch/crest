@@ -25,8 +25,8 @@ if [ -z "$hs_provisioning_hostname" ]; then
 
 else
 
-# Set up the monit configuration for homestead-prov
-cat > /etc/monit/conf.d/homestead-prov.monit <<EOF
+  # Set up the monit configuration for homestead-prov
+  cat > /etc/monit/conf.d/homestead-prov.monit <<EOF
 # Check the Homestead-prov process.
 
 # Monitor the service's PID file and memory use.
@@ -52,9 +52,9 @@ check program poll_homestead-prov with path "/usr/share/clearwater/bin/poll_home
 
 EOF
 
-chmod 0644 /etc/monit/conf.d/homestead-prov.monit
+  chmod 0644 /etc/monit/conf.d/homestead-prov.monit
 
-# Force monit to reload its configuration
-reload clearwater-monit || true
+  # Force monit to reload its configuration
+  reload clearwater-monit || true
 
 fi
