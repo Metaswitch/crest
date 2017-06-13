@@ -7,12 +7,16 @@
 # Otherwise no rights are granted except for those provided to you by
 # Metaswitch Networks in a separate written agreement.
 
+import socket
+import logging
+from random import shuffle
 from twisted.internet import defer, reactor
 from metaswitch.crest.api import settings
 from telephus.protocol import ManagedCassandraClientFactory
 from telephus.client import CassandraClient, ConsistencyLevel
 from telephus.cassandra.ttypes import Column, Deletion, NotFoundException, UnavailableException
 
+_log = logging.getLogger("hsprov.cassandra")
 
 class CassandraConnection(object):
     """Simple representation of a connection to a Cassandra keyspace"""
@@ -20,7 +24,25 @@ class CassandraConnection(object):
         self._keyspace = keyspace
 
         self.factory = ManagedCassandraClientFactory(keyspace)
-        reactor.connectTCP(settings.CASS_HOST, settings.CASS_PORT, self.factory)
+        addresses = socket.getaddrinfo(settings.CASS_HOST, settings.CASS_PORT)
+
+        # If we are using IPv6, we need to provide an IPv6 address directly
+        # to twisted, as it doesn't support IPv6.
+
+        # addresses is a list of 5 tuple:
+        # (family, socktype, proto, cannonname, sockaddr)
+        shuffle(addresses)
+        if len(addresses) > 1 and addresses[0][0] == socket.AF_INET6:
+            # sockaddr is a 4 tuple:
+            # (address, port, flow, scope)
+            address = addresses[0][4][0]
+        else:
+            address = settings.CASS_HOST
+
+        _log.debug("Cassandra is connecting to %s - for host %s",
+                   address, settings.CASS_HOST)
+
+        reactor.connectTCP(address, settings.CASS_PORT, self.factory)
         self.client = CassandraClient(self.factory)
 
 

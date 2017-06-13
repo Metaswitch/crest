@@ -7,10 +7,12 @@
 # Otherwise no rights are granted except for those provided to you by
 # Metaswitch Networks in a separate written agreement.
 
+import logging
 from cyclone.web import RequestHandler
 from telephus.client import CassandraClient
 from twisted.internet import defer
 
+_log = logging.getLogger("crest.ping")
 
 # This class responds to pings - we use it to confirm that Homer/Homestead-prov
 # are still responsive and functional
@@ -42,6 +44,7 @@ class PingHandler(RequestHandler):
             pass
 
         try:
+            _log.debug("Handling ping request")
             gets = (client.get(key='ping', column_family='ping').addErrback(ping_error)
                     for client in clients)
             yield defer.DeferredList(gets)
@@ -49,5 +52,7 @@ class PingHandler(RequestHandler):
             # We don't care about the result, just whether it returns
             # in a timely fashion. Writing a log would be spammy.
             pass
+
+        _log.debug("Handled ping request successfully")
 
         self.finish("OK")
