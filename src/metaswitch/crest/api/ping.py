@@ -53,6 +53,6 @@ class PingHandler(RequestHandler):
             # in a timely fashion. Writing a log would be spammy.
             pass
 
-        _log.debug("Handled ping request succesfully")
+        _log.debug("Handled ping request successfully")
 
         self.finish("OK")
