@@ -24,7 +24,13 @@ class CassandraConnection(object):
         self._keyspace = keyspace
 
         self.factory = ManagedCassandraClientFactory(keyspace)
-        addresses = socket.getaddrinfo(settings.CASS_HOST, settings.CASS_PORT)
+        host = settings.CASS_HOST.strip()
+
+        # Ensure that the host isn't blank
+        if host == '':
+            host = 'localhost'
+
+        addresses = socket.getaddrinfo(host, settings.CASS_PORT)
 
         # If we are using IPv6, we need to provide an IPv6 address directly
         # to twisted, as it doesn't support IPv6.
@@ -37,7 +43,7 @@ class CassandraConnection(object):
             # (address, port, flow, scope)
             address = addresses[0][4][0]
         else:
-            address = settings.CASS_HOST
+            address = host
 
         _log.debug("Cassandra is connecting to %s - for host %s",
                    address, settings.CASS_HOST)
