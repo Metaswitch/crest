@@ -18,7 +18,7 @@ check process homer_process with pidfile /var/run/homer.pid
 
   # Check the service's resource usage, and abort the process if it's too high. This will
   # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/homer abort"
+  if memory > 80% then exec "/etc/init.d/homer abort"
 
 # Check the HTTP interface. This depends on the Homer process (and so won't run
 # unless the Homer process is running)

@@ -39,7 +39,7 @@ check process homestead-prov_process with pidfile /var/run/homestead-prov.pid
 
   # Check the service's resource usage, and abort the process if it's too high. This will
   # generate a core file and trigger diagnostics collection.
-  if memory > 80% for 6 cycles then exec "/etc/init.d/homestead-prov abort"
+  if memory > 80% then exec "/etc/init.d/homestead-prov abort"
 
 # Check the HTTP interface. This depends on the Homestead-prov process (and so won't run
 # unless the Homestead-prov process is running)
