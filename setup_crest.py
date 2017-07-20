@@ -38,7 +38,6 @@ setup(
         "Automat==0.6.0",
         "constantly==15.1.0",
         "cql==1.4.0",
-        "cryptography==1.9",
         "cyclone==1.0",
         "enum34==1.1.6",
         "idna==2.5",
@@ -53,7 +52,11 @@ setup(
         "six==1.10.0",
         "thrift==0.9.3",
         "Twisted==17.1.0",
-        "zope.interface==4.4.1"],
+        "zope.interface==4.4.1",
+        # easy_install processes dependencies in reverse order
+        # We need to install cryptography last so that pyOpenSSL
+        # doesn't install a different version later.
+        "cryptography==1.9"],
      tests_require=[
          "funcsigs==1.0.2",
          "Mock==2.0.0",
