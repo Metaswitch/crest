@@ -84,7 +84,7 @@ ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -
 	cd telephus && python setup.py bdist_egg -d ../.crest-eggs
 
 	# Download the egg files crest depends upon
-	${ENV_DIR}/bin/easy_install -zmaxd .crest-eggs/ .crest-eggs/*.egg
+	${ENV_DIR}/bin/easy_install -zmaxd .crest-eggs/ .crest-eggs/metaswitchcommon-*.egg .crest-eggs/telephus-*.egg .crest-eggs/crest-*.egg
 
 	# Install the downloaded egg files (this should match the postinst)
 	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .crest-eggs/ .crest-eggs/*.egg

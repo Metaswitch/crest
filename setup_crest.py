@@ -58,7 +58,10 @@ setup(
         "cryptography==1.9",
         # We need to install idna 2.5 before installing cryptography for the
         # same reason.
-        "idna==2.5"],
+        "idna==2.5",
+        # metaswitchcommon installs pycparser which cryptography depends on,
+        # so we need to install that first.
+        "metaswitchcommon==0.1"],
      tests_require=[
          "funcsigs==1.0.2",
          "Mock==2.0.0",
