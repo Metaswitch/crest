@@ -1,6 +1,7 @@
 *.debhelper.log
 *.debhelper
 *.substvars
+/copyright
 /changelog
 /files
 /crest/
