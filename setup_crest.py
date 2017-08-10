@@ -40,7 +40,6 @@ setup(
         "cql==1.4.0",
         "cyclone==1.0",
         "enum34==1.1.6",
-        "idna==2.5",
         "incremental==17.5.0",
         "ipaddress==1.0.18",
         "lxml==3.6.0",
@@ -54,9 +53,12 @@ setup(
         "Twisted==17.1.0",
         "zope.interface==4.4.1",
         # easy_install processes dependencies in reverse order
-        # We need to install cryptography last so that pyOpenSSL
-        # doesn't install a different version later.
-        "cryptography==1.9"],
+        # We need to install cryptography before pyOpenSSL, so that
+        # we doesn't install a different version prior to installing crypto.
+        "cryptography==1.9",
+        # We need to install idna 2.5 before installing cryptography for the
+        # same reason.
+        "idna==2.5"],
      tests_require=[
          "funcsigs==1.0.2",
          "Mock==2.0.0",
