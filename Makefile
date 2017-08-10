@@ -71,6 +71,9 @@ $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py com
 	$(ENV_DIR)/bin/easy_install distribute
 
 ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+	# Get rid of any old egg files
+	rm -rf .crest-eggs .homer-eggs .homestead_prov-eggs
+
 	# Generate .egg files for crest, homer, homestead_prov
 	${ENV_DIR}/bin/python setup_crest.py bdist_egg -d .crest-eggs
 	${ENV_DIR}/bin/python setup_homer.py bdist_egg -d .homer-eggs
