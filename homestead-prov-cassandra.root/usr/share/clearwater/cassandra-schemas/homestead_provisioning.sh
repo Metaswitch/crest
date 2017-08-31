@@ -38,8 +38,7 @@ then
              CREATE TABLE IF NOT EXISTS implicit_registration_sets (id uuid PRIMARY KEY, dummy text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
              CREATE TABLE IF NOT EXISTS service_profiles (id uuid PRIMARY KEY, irs text, initialfiltercriteria text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
              CREATE TABLE IF NOT EXISTS public (public_id text PRIMARY KEY, publicidentity text, service_profile text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;
-             CREATE TABLE IF NOT EXISTS private (private_id text PRIMARY KEY, digest_ha1 text, realm text, plaintext_password text)
-             WITH COMPACT STORAGE AND read_repair_chance = 1.0;"
+             CREATE TABLE IF NOT EXISTS private (private_id text PRIMARY KEY, digest_ha1 text, realm text, plaintext_password text) WITH COMPACT STORAGE AND read_repair_chance = 1.0;"
   rc=$?
 fi
 

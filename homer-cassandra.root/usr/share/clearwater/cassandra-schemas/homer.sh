@@ -39,3 +39,5 @@ then
              WITH COMPACT STORAGE AND read_repair_chance = 1.0;"
   rc=$?
 fi
+
+exit $rc
