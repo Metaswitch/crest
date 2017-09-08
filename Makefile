@@ -104,7 +104,7 @@ ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -
 	# Touch the sentinel file
 	touch $@
 
-BANDIT_EXCLUDE_LIST = .eggs,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
+BANDIT_EXCLUDE_LIST = .crest-eggs,.homer-eggs,.homestead_prov-eggs,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
 include build-infra/cw-deb.mk
 include build-infra/python.mk
 include mk/bulk-provision.mk
