@@ -72,7 +72,7 @@ $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py com
 
 ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
 	# Get rid of any old egg files
-	rm -rf .crest-eggs .homer-eggs .homestead_prov-eggs
+	rm -rf .eggs .crest-eggs .homer-eggs .homestead_prov-eggs
 
 	# Generate .egg files for crest, homer, homestead_prov
 	${ENV_DIR}/bin/python setup_crest.py bdist_egg -d .crest-eggs
@@ -104,7 +104,7 @@ ${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -
 	# Touch the sentinel file
 	touch $@
 
-BANDIT_EXCLUDE_LIST = .crest-eggs,.homer-eggs,.homestead_prov-eggs,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
+BANDIT_EXCLUDE_LIST = .eggs,.crest-eggs,.homer-eggs,.homestead_prov-eggs,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
 include build-infra/cw-deb.mk
 include build-infra/python.mk
 include mk/bulk-provision.mk
@@ -124,4 +124,4 @@ pyclean:
 
 .PHONY: envclean
 envclean:
-	-rm -rf .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}
+	-rm -rf .eggs .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}
