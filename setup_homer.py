@@ -35,9 +35,9 @@ setup(
     test_suite='metaswitch.homer.test',
     install_requires=["crest"],
     tests_require=[
-        "funcsigs==1.0.2",
-        "Mock==2.0.0",
-        "pbr==1.6",
-        "six==1.10.0"],
+        "funcsigs",
+        "Mock",
+        "pbr",
+        "six"],
     options={"build": {"build_base": "build-homer"}},
     )

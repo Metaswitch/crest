@@ -32,7 +32,13 @@ case "$1" in
     configure)
         rm -rf $CREST_DIR/build
         virtualenv --python=$(which python) $CREST_DIR/env
-        $CREST_DIR/env/bin/easy_install --allow-hosts=None -f $CREST_DIR/.eggs/ $CREST_DIR/.eggs/*.egg
+        $CREST_DIR/env/bin/pip install --compile \
+                    --no-index \
+                    --upgrade \
+                    --pre \
+                    --force-reinstall \
+                    --find-links $CREST_DIR/.wheelhouse \
+                    crest
 
         # Stop the cluster manager, so that it is restarted by Monit and picks
         # up the new Cassandra scaling plugin. We check whether the process is 

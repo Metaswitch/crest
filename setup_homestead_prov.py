@@ -35,10 +35,10 @@ setup(
     test_suite='metaswitch.homestead_prov.test',
     install_requires=["crest"],
     tests_require=[
-        "funcsigs==1.0.2",
-        "Mock==2.0.0",
-        "pbr==1.6",
-        "phonenumbers==7.1.1",
-        "six==1.10.0"],
+        "funcsigs",
+        "Mock",
+        "pbr",
+        "phonenumbers",
+        "six"],
     options={"build": {"build_base": "build-homestead_prov"}},
     )
