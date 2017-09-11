@@ -40,6 +40,7 @@ case "$1" in
         $CREST_PROV_DIR/env/bin/pip install --compile \
                     --no-index \
                     --upgrade \
+                    --pre \
                     --force-reinstall \
                     --find-links $CREST_PROV_DIR/.wheelhouse \
                     crest

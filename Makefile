@@ -73,10 +73,11 @@ $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py com
 	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
 
-INSTALLER := ${ENV_DIR}/bin/pip install --compile \
-                                        --no-index \
-                                        --upgrade \
-                                        --force-reinstall
+INSTALLER := ${PIP} install --compile \
+                            --no-index \
+                            --upgrade \
+                            --pre \
+                            --force-reinstall
 
 CREST_REQS := -r crest-requirements.txt -r common/requirements.txt
 
@@ -86,10 +87,7 @@ ${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt cre
 
 	# Get crest's dependencies
 	cd common && REQUIREMENTS=../crest-requirements.txt WHEELHOUSE=../.crest-wheelhouse make build_common_wheel
-	cd telephus && ${PIP} wheel -w ../.crest-wheelhouse \
-								-r ../crest-requirements.txt \
-								-r ../common/requirements.txt \
-								.
+	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../.crest-wheelhouse
 
 	# Generate wheels for crest
 	${PYTHON} setup_crest.py bdist_wheel -d .crest-wheelhouse
@@ -101,7 +99,7 @@ ${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt cre
 	${PYTHON} setup_homer.py bdist_wheel -d .homer-wheelhouse
 	${PIP} wheel -w .homer-wheelhouse \
 					-r homer-requirements.txt \
-					--find-links .homer wheelhouse \
+					--find-links .homer-wheelhouse
 
 	# Generate wheels for homestead_prov
 	${PYTHON} setup_homestead_prov.py bdist_wheel -d .homestead_prov-wheelhouse
@@ -113,6 +111,9 @@ ${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt cre
 	${INSTALLER} --find-links .crest-wheelhouse crest
 	${INSTALLER} --find-links .crest-wheelhouse --find-links .homer-wheelhouse homer
 	${INSTALLER} --find-links .crest-wheelhouse --find-links .homestead_prov-wheelhouse homestead_prov
+
+	# Install the test dependencies. We don't need to store these off
+	${PIP} install -r common/requirements-test.txt
 
 	# Touch the sentinel file
 	touch $@
