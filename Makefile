@@ -21,6 +21,11 @@ X86_64_ONLY=1
 .PHONY: all
 all: help
 
+BANDIT_EXCLUDE_LIST = .crest-wheelhouse,.homestead_prov-wheelhouse,.homer-wheelhouse,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
+include build-infra/cw-deb.mk
+include build-infra/python.mk
+include mk/bulk-provision.mk
+
 .PHONY: help
 help:
 	@cat docs/development.md
@@ -108,11 +113,6 @@ ${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt cre
 
 	# Touch the sentinel file
 	touch $@
-
-BANDIT_EXCLUDE_LIST = .crest-wheelhouse,.homestead_prov-wheelhouse,.homer-wheelhouse,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
-include build-infra/cw-deb.mk
-include build-infra/python.mk
-include mk/bulk-provision.mk
 
 .PHONY: deb
 deb: env bulk-prov deb-only
