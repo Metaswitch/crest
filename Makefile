@@ -76,6 +76,10 @@ ${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt cre
 
 	rm -rf .crest-wheelhouse .homer-wheelhouse .homestead_prov-wheelhouse
 
+	# Ensure we have an up to date version of pip with wheel support
+	${PIP} install --upgrade pip==9.0.1
+	${PIP} install wheel
+
 	# Get crest's dependencies
 	cd common && REQUIREMENTS=../crest-requirements.txt WHEELHOUSE=../.crest-wheelhouse make build_common_wheel
 	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../.crest-wheelhouse
