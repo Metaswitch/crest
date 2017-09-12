@@ -1,8 +1,5 @@
 ROOT ?= ${PWD}
 ENV_DIR := $(shell pwd)/_env
-PYTHON := ${ENV_DIR}/bin/python
-PIP := ${ENV_DIR}/bin/pip
-FLAKE8 := ${ENV_DIR}/bin/flake8
 
 PYTHON_BIN := $(shell which python)
 
@@ -72,12 +69,6 @@ $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py com
 	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
 	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
-
-INSTALLER := ${PIP} install --compile \
-                            --no-index \
-                            --upgrade \
-                            --pre \
-                            --force-reinstall
 
 CREST_REQS := -r crest-requirements.txt -r common/requirements.txt
 
