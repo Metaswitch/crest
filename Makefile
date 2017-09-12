@@ -129,8 +129,4 @@ pyclean:
 
 .PHONY: envclean
 envclean:
-<<<<<<< HEAD
 	-rm -rf .crest-wheelhouse .homer-wheelhouse .homestead_prov-wheelhouse build-crest build-homer build-homestead_prov ${ENV_DIR}
-=======
-	-rm -rf .eggs .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}
->>>>>>> origin/master
