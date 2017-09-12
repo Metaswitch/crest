@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 # @file crest-prov.postinst
 #
@@ -37,7 +37,13 @@ case "$1" in
     configure)
         rm -rf $CREST_PROV_DIR/build
         virtualenv --python=$(which python) $CREST_PROV_DIR/env
-        $CREST_PROV_DIR/env/bin/easy_install --allow-hosts=None -f $CREST_PROV_DIR/.eggs/ $CREST_PROV_DIR/.eggs/*.egg
+        $CREST_PROV_DIR/env/bin/pip install --compile \
+                    --no-index \
+                    --upgrade \
+                    --pre \
+                    --force-reinstall \
+                    --find-links $CREST_PROV_DIR/.wheelhouse \
+                    crest
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

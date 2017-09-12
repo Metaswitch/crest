@@ -11,9 +11,9 @@ bootstrap.py
 develop-eggs
 eggs
 .eggs
-.crest-eggs
-.homer-eggs
-.homestead_prov-eggs
+.crest-wheelhouse
+.homer-wheelhouse
+.homestead_prov-wheelhouse
 src/*.egg-info
 logs
 ./data

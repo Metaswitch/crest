@@ -1,6 +1,6 @@
 ROOT ?= ${PWD}
 ENV_DIR := $(shell pwd)/_env
-ENV_PYTHON := ${ENV_DIR}/bin/python
+
 PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
@@ -31,20 +31,20 @@ test: setup_crest.py setup_homer.py setup_homestead_prov.py env
 	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_homer.py test -v
 	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_homestead_prov.py test -v
 
-${ENV_DIR}/bin/flake8: env
-	${ENV_DIR}/bin/pip install flake8
+${FLAKE8}: env
+	${PIP} install flake8
 
 ${ENV_DIR}/bin/coverage: env
 	${ENV_DIR}/bin/pip install coverage
 
-verify: ${ENV_DIR}/bin/flake8
-	${ENV_DIR}/bin/flake8 --select=E10,E11,E9,F src/
+verify: ${FLAKE8}
+	${FLAKE8} --select=E10,E11,E9,F src/
 
-style: ${ENV_DIR}/bin/flake8
-	${ENV_DIR}/bin/flake8 --select=E,W,C,N --max-line-length=100 src/
+style: ${FLAKE8}
+	${FLAKE8} --select=E,W,C,N --max-line-length=100 src/
 
-explain-style: ${ENV_DIR}/bin/flake8
-	${ENV_DIR}/bin/flake8 --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
+explain-style: ${FLAKE8}
+	${FLAKE8} --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
 
 # TODO This repository doesn't have full code coverage - it should. Some files
 # are temporarily excluded from coverage to make it easier to detect future
@@ -62,7 +62,7 @@ coverage: ${ENV_DIR}/bin/coverage setup_crest.py setup_homer.py setup_homestead_
 	${ENV_DIR}/bin/coverage html
 
 .PHONY: env
-env: ${ENV_DIR}/.eggs_installed
+env: ${ENV_DIR}/.wheels_installed
 
 $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py common/setup.py
 	# Set up a fresh virtual environment
@@ -70,41 +70,46 @@ $(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py com
 	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
 	$(ENV_DIR)/bin/easy_install distribute
 
-${ENV_DIR}/.eggs_installed : $(ENV_DIR)/bin/python $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-	# Get rid of any old egg files
-	rm -rf .eggs .crest-eggs .homer-eggs .homestead_prov-eggs
+CREST_REQS := -r crest-requirements.txt -r common/requirements.txt
 
-	# Generate .egg files for crest, homer, homestead_prov
-	${ENV_DIR}/bin/python setup_crest.py bdist_egg -d .crest-eggs
-	${ENV_DIR}/bin/python setup_homer.py bdist_egg -d .homer-eggs
-	${ENV_DIR}/bin/python setup_homestead_prov.py bdist_egg -d .homestead_prov-eggs
+${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt crest-requirements.txt homer-requirements.txt homestead_prov-requirements.txt $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
 
-	# Generate the egg files for internal crest dependencies
-	cd common && EGG_DIR=../.crest-eggs make build_common_egg
-	cd telephus && python setup.py bdist_egg -d ../.crest-eggs
+	rm -rf .crest-wheelhouse .homer-wheelhouse .homestead_prov-wheelhouse
 
-	# Download the egg files crest depends upon
-	${ENV_DIR}/bin/easy_install -zmaxd .crest-eggs/ .crest-eggs/metaswitchcommon-*.egg .crest-eggs/telephus-*.egg .crest-eggs/crest-*.egg
+	# Get crest's dependencies
+	cd common && REQUIREMENTS=../crest-requirements.txt WHEELHOUSE=../.crest-wheelhouse make build_common_wheel
+	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../.crest-wheelhouse
 
-	# Install the downloaded egg files (this should match the postinst)
-	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .crest-eggs/ .crest-eggs/*.egg
+	# Generate wheels for crest
+	${PYTHON} setup_crest.py bdist_wheel -d .crest-wheelhouse
+	${PIP} wheel -w .crest-wheelhouse \
+					${CREST_REQS} \
+					--find-links .crest-wheelhouse
 
-	# Download the additional egg files homer depends upon
-	${ENV_DIR}/bin/easy_install -zmxd .homer-eggs/ .homer-eggs/*.egg
+	# Generate wheels for homer
+	${PYTHON} setup_homer.py bdist_wheel -d .homer-wheelhouse
+	${PIP} wheel -w .homer-wheelhouse \
+					-r homer-requirements.txt \
+					--find-links .homer-wheelhouse
 
-	# Install the downloaded egg files (this should match the postinst)
-	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .homer-eggs/ .homer-eggs/*.egg
+	# Generate wheels for homestead_prov
+	${PYTHON} setup_homestead_prov.py bdist_wheel -d .homestead_prov-wheelhouse
+	${PIP} wheel -w .homestead_prov-wheelhouse \
+					-r homestead_prov-requirements.txt \
+					--find-links .homestead_prov-wheelhouse
 
-	# Download the additional egg files homestead_prov depends upon
-	${ENV_DIR}/bin/easy_install -zmxd .homestead_prov-eggs/ .homestead_prov-eggs/*.egg
+	# Install the wheels
+	${INSTALLER} --find-links .crest-wheelhouse crest
+	${INSTALLER} --find-links .crest-wheelhouse --find-links .homer-wheelhouse homer
+	${INSTALLER} --find-links .crest-wheelhouse --find-links .homestead_prov-wheelhouse homestead_prov
 
-	# Install the downloaded egg files (this should match the postinst)
-	${ENV_DIR}/bin/easy_install --allow-hosts=None -f .homestead_prov-eggs/ .homestead_prov-eggs/*.egg
+	# Install the test dependencies. We don't need to store these off
+	${PIP} install -r common/requirements-test.txt
 
 	# Touch the sentinel file
 	touch $@
 
-BANDIT_EXCLUDE_LIST = .eggs,.crest-eggs,.homer-eggs,.homestead_prov-eggs,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
+BANDIT_EXCLUDE_LIST = .crest-wheelhouse,.homestead_prov-wheelhouse,.homer-wheelhouse,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
 include build-infra/cw-deb.mk
 include build-infra/python.mk
 include mk/bulk-provision.mk
@@ -124,4 +129,8 @@ pyclean:
 
 .PHONY: envclean
 envclean:
+<<<<<<< HEAD
+	-rm -rf .crest-wheelhouse .homer-wheelhouse .homestead_prov-wheelhouse build-crest build-homer build-homestead_prov ${ENV_DIR}
+=======
 	-rm -rf .eggs .crest-eggs .homer-eggs .homestead_prov-eggs build-crest build-homer build-homestead_prov ${ENV_DIR}
+>>>>>>> origin/master
