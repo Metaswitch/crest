@@ -32,18 +32,20 @@ set -e
 #DEBHELPER#
 
 CREST_PROV_DIR=/usr/share/clearwater/crest-prov
+INSTALLER="$CREST_PROV_DIR/env/bin/pip install --compile \
+                    --no-index \
+                    --upgrade \
+                    --pre \
+                    --force-reinstall \
+                    --find-links $CREST_PROV_DIR/.wheelhouse"
 
 case "$1" in
     configure)
         rm -rf $CREST_PROV_DIR/build
         virtualenv --python=$(which python) $CREST_PROV_DIR/env
-        $CREST_PROV_DIR/env/bin/pip install --compile \
-                    --no-index \
-                    --upgrade \
-                    --pre \
-                    --force-reinstall \
-                    --find-links $CREST_PROV_DIR/.wheelhouse \
-                    crest
+        $INSTALLER pip
+        $INSTALLER wheel
+        $INSTALLER crest
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
