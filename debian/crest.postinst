@@ -27,18 +27,22 @@ set -e
 # the debian-policy package
 
 CREST_DIR=/usr/share/clearwater/crest
-
-case "$1" in
-    configure)
-        rm -rf $CREST_DIR/build
-        virtualenv --python=$(which python) $CREST_DIR/env
-        $CREST_DIR/env/bin/pip install --compile \
+INSTALLER="$CREST_DIR/env/bin/pip install --compile \
                     --no-index \
                     --upgrade \
                     --pre \
                     --force-reinstall \
-                    --find-links $CREST_DIR/.wheelhouse \
-                    crest
+                    --find-links $CREST_DIR/.wheelhouse"
+
+case "$1" in
+    configure)
+        rm -rf $CREST_DIR/build
+
+        rm -rf $CREST_DIR/env
+        virtualenv --python=$(which python) $CREST_DIR/env
+        $INSTALLER pip
+        $INSTALLER wheel
+        $INSTALLER crest
 
         # Stop the cluster manager, so that it is restarted by Monit and picks
         # up the new Cassandra scaling plugin. We check whether the process is 
