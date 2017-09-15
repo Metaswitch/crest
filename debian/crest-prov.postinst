@@ -42,6 +42,7 @@ INSTALLER="$CREST_PROV_DIR/env/bin/pip install --compile \
 case "$1" in
     configure)
         rm -rf $CREST_PROV_DIR/build
+        rm -rf $CREST_PROV_DIR/env
         virtualenv --python=$(which python) $CREST_PROV_DIR/env
         $INSTALLER pip
         $INSTALLER wheel
