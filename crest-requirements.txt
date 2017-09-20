@@ -14,6 +14,7 @@ pure-sasl==0.4.0
 pyOpenSSL==17.0.0
 requests==2.18.4
 setuptools==24.0.0
+six==1.10.0
 thrift==0.9.3
 Twisted==17.1.0
 zope.interface==4.4.1
