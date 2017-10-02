@@ -43,12 +43,12 @@ help:
 # Crest
 
 # Add a target that builds the python-common wheel into the correct wheelhouse
-${ENV_DIR}/.crest_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc")
+${ENV_DIR}/.crest_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-built
 	cd common && WHEELHOUSE=../crest_wheelhouse make build_common_wheel
 	touch $@
 
 # Add a target that builds the telephus wheel into the correct wheelhouse
-${ENV_DIR}/.crest_build_telephus_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc")
+${ENV_DIR}/.crest_build_telephus_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-built
 	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../crest_wheelhouse
 	touch $@
 
