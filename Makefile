@@ -1,6 +1,5 @@
 ROOT ?= ${PWD}
 ENV_DIR := $(shell pwd)/_env
-
 PYTHON_BIN := $(shell which python)
 
 DEB_COMPONENT := crest
@@ -10,7 +9,6 @@ DEB_NAMES += homer homer-node
 DEB_NAMES += homestead-prov
 DEB_NAMES += homer-cassandra homestead-prov-cassandra
 
-MAX_LINE_LENGTH ?= 99
 
 # As we plan to deploy on 64 bit systems, by default target 64 bit. Disable this to attempt to build on 32 bit
 # Note we do not plan to support 32 bit going forward, so this may be removed in the future
@@ -20,8 +18,19 @@ X86_64_ONLY=1
 
 .PHONY: all
 all: help
-
+FLAKE8_INCLUDE_DIR = src/
 BANDIT_EXCLUDE_LIST = .crest-wheelhouse,.homestead_prov-wheelhouse,.homer-wheelhouse,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
+COVERAGE_SRC_DIR = src
+TEST_SETUP_PY = setup_crest.py setup_homer.py setup_homestead_prov.py
+
+# TODO This repository doesn't have full code coverage - it should. Some files
+# are temporarily excluded from coverage to make it easier to detect future
+# regressions. We should fix up the coverage when we can
+COVERAGE_EXCL = "**/test/**,src/metaswitch/crest/api/DeferTimeout.py,src/metaswitch/crest/api/__init__.py,src/metaswitch/crest/api/base.py,src/metaswitch/crest/api/lastvaluecache.py,src/metaswitch/crest/api/passthrough.py,src/metaswitch/crest/api/statistics.py,src/metaswitch/crest/api/utils.py,src/metaswitch/crest/main.py,src/metaswitch/crest/settings.py,src/metaswitch/crest/tools/bulk_autocomplete.py,src/metaswitch/crest/tools/bulk_create.py,src/metaswitch/crest/tools/utils.py,src/metaswitch/homer/__init__.py,src/metaswitch/homer/routes.py,src/metaswitch/homestead_prov/__init__.py,src/metaswitch/homestead_prov/auth_vectors.py,src/metaswitch/homestead_prov/cache/cache.py,src/metaswitch/homestead_prov/cache/db.py,src/metaswitch/homestead_prov/cassandra.py,src/metaswitch/homestead_prov/provisioning/handlers/irs.py,src/metaswitch/homestead_prov/provisioning/handlers/private.py,src/metaswitch/homestead_prov/provisioning/handlers/public.py,src/metaswitch/homestead_prov/provisioning/handlers/service_profile.py,src/metaswitch/homestead_prov/provisioning/models.py,src/metaswitch/homestead_prov/resultcodes.py"
+
+TEST_REQUIREMENTS = common/requirements-test.txt
+CLEAN_SRC_DIR = src
+
 include build-infra/cw-deb.mk
 include build-infra/python.mk
 include mk/bulk-provision.mk
@@ -30,107 +39,64 @@ include mk/bulk-provision.mk
 help:
 	@cat docs/development.md
 
-.PHONY: test
-test: setup_crest.py setup_homer.py setup_homestead_prov.py env
-	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_crest.py test -v
-	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_homer.py test -v
-	PYTHONPATH=src:common ${ENV_DIR}/bin/python setup_homestead_prov.py test -v
 
-${FLAKE8}: env
-	${PIP} install flake8
+# Crest
 
-${ENV_DIR}/bin/coverage: env
-	${ENV_DIR}/bin/pip install coverage
-
-verify: ${FLAKE8}
-	${FLAKE8} --select=E10,E11,E9,F src/
-
-style: ${FLAKE8}
-	${FLAKE8} --select=E,W,C,N --max-line-length=100 src/
-
-explain-style: ${FLAKE8}
-	${FLAKE8} --select=E,W,C,N --show-pep8 --first --max-line-length=100 src/
-
-# TODO This repository doesn't have full code coverage - it should. Some files
-# are temporarily excluded from coverage to make it easier to detect future
-# regressions. We should fix up the coverage when we can
-EXTRA_COVERAGE=src/metaswitch/crest/api/DeferTimeout.py,src/metaswitch/crest/api/__init__.py,src/metaswitch/crest/api/base.py,src/metaswitch/crest/api/lastvaluecache.py,src/metaswitch/crest/api/passthrough.py,src/metaswitch/crest/api/statistics.py,src/metaswitch/crest/api/utils.py,src/metaswitch/crest/main.py,src/metaswitch/crest/settings.py,src/metaswitch/crest/tools/bulk_autocomplete.py,src/metaswitch/crest/tools/bulk_create.py,src/metaswitch/crest/tools/utils.py,src/metaswitch/homer/__init__.py,src/metaswitch/homer/routes.py,src/metaswitch/homestead_prov/__init__.py,src/metaswitch/homestead_prov/auth_vectors.py,src/metaswitch/homestead_prov/cache/cache.py,src/metaswitch/homestead_prov/cache/db.py,src/metaswitch/homestead_prov/cassandra.py,src/metaswitch/homestead_prov/provisioning/handlers/irs.py,src/metaswitch/homestead_prov/provisioning/handlers/private.py,src/metaswitch/homestead_prov/provisioning/handlers/public.py,src/metaswitch/homestead_prov/provisioning/handlers/service_profile.py,src/metaswitch/homestead_prov/provisioning/models.py,src/metaswitch/homestead_prov/resultcodes.py
-
-.PHONY: coverage
-coverage: ${ENV_DIR}/bin/coverage setup_crest.py setup_homer.py setup_homestead_prov.py
-	rm -rf htmlcov/
-	${ENV_DIR}/bin/coverage erase
-	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**,$(EXTRA_COVERAGE)" setup_crest.py test
-	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**,$(EXTRA_COVERAGE)" setup_homer.py test
-	${ENV_DIR}/bin/coverage run --append --source src --omit "**/test/**,$(EXTRA_COVERAGE)" setup_homestead_prov.py test
-	${ENV_DIR}/bin/coverage report -m --fail-under 100
-	${ENV_DIR}/bin/coverage html
-
-.PHONY: env
-env: ${ENV_DIR}/.wheels_installed
-
-$(ENV_DIR)/bin/python: setup_crest.py setup_homer.py setup_homestead_prov.py common/setup.py
-	# Set up a fresh virtual environment
-	virtualenv --setuptools --python=$(PYTHON_BIN) $(ENV_DIR)
-	$(ENV_DIR)/bin/easy_install -U "setuptools==24"
-	$(ENV_DIR)/bin/easy_install distribute
-
-CREST_REQS := -r crest-requirements.txt -r common/requirements.txt
-
-${ENV_DIR}/.wheels_installed : $(ENV_DIR)/bin/python common/requirements.txt crest-requirements.txt homer-requirements.txt homestead_prov-requirements.txt $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-
-	rm -rf .crest-wheelhouse .homer-wheelhouse .homestead_prov-wheelhouse
-
-	# Ensure we have an up to date version of pip with wheel support
-	${PIP} install --upgrade pip==9.0.1
-	${PIP} install wheel
-
-	# Get crest's dependencies
-	cd common && REQUIREMENTS=../crest-requirements.txt WHEELHOUSE=../.crest-wheelhouse make build_common_wheel
-	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../.crest-wheelhouse
-
-	# Generate wheels for crest
-	${PYTHON} setup_crest.py bdist_wheel -d .crest-wheelhouse
-	${PIP} wheel -w .crest-wheelhouse \
-					${CREST_REQS} \
-					--find-links .crest-wheelhouse
-
-	# Generate wheels for homer
-	${PYTHON} setup_homer.py bdist_wheel -d .homer-wheelhouse
-	${PIP} wheel -w .homer-wheelhouse \
-					-r homer-requirements.txt \
-					--find-links .homer-wheelhouse
-
-	# Generate wheels for homestead_prov
-	${PYTHON} setup_homestead_prov.py bdist_wheel -d .homestead_prov-wheelhouse
-	${PIP} wheel -w .homestead_prov-wheelhouse \
-					-r homestead_prov-requirements.txt \
-					--find-links .homestead_prov-wheelhouse
-
-	# Install the wheels
-	${INSTALLER} --find-links .crest-wheelhouse crest
-	${INSTALLER} --find-links .crest-wheelhouse --find-links .homer-wheelhouse homer
-	${INSTALLER} --find-links .crest-wheelhouse --find-links .homestead_prov-wheelhouse homestead_prov
-
-	# Install the test dependencies. We don't need to store these off
-	${PIP} install -r common/requirements-test.txt
-
-	# Touch the sentinel file
+# Add a target that builds the python-common wheel into the correct wheelhouse
+${ENV_DIR}/.crest_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc")
+	cd common && WHEELHOUSE=../crest_wheelhouse make build_common_wheel
 	touch $@
+
+# Add a target that builds the telephus wheel into the correct wheelhouse
+${ENV_DIR}/.crest_build_telephus_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc")
+	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../crest_wheelhouse
+	touch $@
+
+# Add dependency to the install-wheels to ensure we also install the python-common and telephus wheels
+${ENV_DIR}/.crest-install-wheels: ${ENV_DIR}/.crest_build_common_wheel ${ENV_DIR}/.crest_build_telephus_wheel
+
+# Set up the variables for crest
+crest_SETUP = setup_crest.py
+crest_REQUIREMENTS = crest-requirements.txt common/requirements.txt
+crest_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
+crest_WHEELS = crest
+
+# Create targets using the common python_component macro
+$(eval $(call python_component,crest))
+
+# Homestead-Prov
+
+# Set up the variables for homestead-prov
+homestead_prov_SETUP = setup_homestead_prov.py
+homestead_prov_REQUIREMENTS = homestead_prov-requirements.txt
+homestead_prov_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc")
+homestead_prov_WHEELS = homestead_prov
+homestead_prov_EXTRA_LINKS = crest_wheelhouse
+
+# Force homestead-prov to depend on crest
+${ENV_DIR}/.homestead_prov-install-wheels: ${ENV_DIR}/.crest-install-wheels
+
+# Create targets using the common python_component macro
+$(eval $(call python_component,homestead_prov))
+
+# Homer
+
+# Set up the variables for homer
+homer_SETUP = setup_homer.py
+homer_REQUIREMENTS = homer-requirements.txt
+homer_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc")
+homer_WHEELS = homer
+homer_EXTRA_LINKS = crest_wheelhouse
+
+# Force homestead-prov to depend on crest
+${ENV_DIR}/.homer-install-wheels: ${ENV_DIR}/.crest-install-wheels
+
+# Create targets using the common python_component macro
+$(eval $(call python_component,homer))
 
 .PHONY: deb
 deb: env bulk-prov deb-only
 
 .PHONY: clean
-clean: envclean bulk-prov_clean pyclean
+clean: bulk-prov_clean
 
-.PHONY: pyclean
-pyclean:
-	-find src -name \*.pyc -exec rm {} \;
-	-rm -rf src/*.egg-info
-	-rm -f .coverage
-	-rm -rf htmlcov/
-
-.PHONY: envclean
-envclean:
-	-rm -rf .crest-wheelhouse .homer-wheelhouse .homestead_prov-wheelhouse build-crest build-homer build-homestead_prov ${ENV_DIR}
