@@ -1,3 +1,3 @@
-.homestead_prov-wheelhouse/* usr/share/clearwater/homestead/.wheelhouse/
+homestead_prov_wheelhouse/* usr/share/clearwater/homestead/.wheelhouse/
 homestead.local_settings/local_settings.py usr/share/clearwater/homestead/templates/
 homestead.root/* .

@@ -12,8 +12,11 @@ develop-eggs
 eggs
 .eggs
 .crest-wheelhouse
+crest_wheelhouse
 .homer-wheelhouse
+homer_wheelhouse
 .homestead_prov-wheelhouse
+homestead_prov_wheelhouse
 src/*.egg-info
 logs
 ./data
@@ -22,5 +25,6 @@ parts
 *.pid
 *.swp
 .coverage
+coverage.xml
 htmlcov/
 src/metaswitch/crest/tools/sstable_provisioning/*.class

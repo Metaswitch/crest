@@ -1,4 +1,4 @@
-.homer-wheelhouse/* usr/share/clearwater/homer/.wheelhouse/
+homer_wheelhouse/* usr/share/clearwater/homer/.wheelhouse/
 src/metaswitch/homer/tools usr/share/clearwater/homer/src/metaswitch/homer/
 homer.local_settings/local_settings.py usr/share/clearwater/homer/templates/
 homer.monit usr/share/clearwater/homer/templates/
