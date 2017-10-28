@@ -14,7 +14,6 @@ import logging
 
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
-from telephus.client import ConsistencyLevel
 from metaswitch.crest.api.exceptions import IRSNoSIPURI
 
 from .. import config
@@ -393,8 +392,7 @@ class PublicID(ProvisioningModel):
                                                     start=start,
                                                     finish=finish,
                                                     use_tokens=True,
-                                                    count=10000000,
-                                                    consistency=ConsistencyLevel.QUORUM)
+                                                    count=10000000)
         keys = [x.key for x in values if len(x.columns) > 0]
         public_ids = [PublicID(x) for x in keys]
         _log.info("Queried tokens {} to {} - received {} results".format(start, finish, len(public_ids)))

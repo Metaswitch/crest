@@ -14,7 +14,6 @@ import unittest
 
 from twisted.internet import defer
 from telephus.cassandra.ttypes import Column, Deletion, NotFoundException
-from telephus.client import ConsistencyLevel
 
 from metaswitch.homestead_prov import authtypes
 from metaswitch.homestead_prov.cache.cache import Cache
@@ -72,8 +71,7 @@ class TestCache(unittest.TestCase):
                                     "digest_realm": "realm",
                                     "digest_qop": "qop"}),
             ttl=self.ttl,
-            timestamp=self.timestamp,
-            consistency=ConsistencyLevel.QUORUM)
+            timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -91,8 +89,7 @@ class TestCache(unittest.TestCase):
                                              column_family="impi",
                                              mapping=DictContaining({"public_id_kermit": ""}),
                                              ttl=self.ttl,
-                                             timestamp=self.timestamp,
-                                             consistency=ConsistencyLevel.QUORUM)
+                                             timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -133,8 +130,7 @@ class TestCache(unittest.TestCase):
                                         column_family="impu",
                                         mapping=DictContaining({"ims_subscription_xml": "xml", "primary_ccf": "ccf"}),
                                         ttl=self.ttl,
-                                        timestamp=self.timestamp,
-                                        consistency=ConsistencyLevel.QUORUM)
+                                        timestamp=self.timestamp)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -147,7 +143,7 @@ class TestCache(unittest.TestCase):
                                                            timestamp=self.timestamp))
         row = {"impu": [Column("ims_subscription_xml", "xml", self.timestamp, self.ttl),
                         Column("_exists", "", self.timestamp, self.ttl)]}
-        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row}, consistency=ConsistencyLevel.QUORUM)
+        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row})
         batch_mutate.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -246,7 +242,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
         res = Result(self.cache.delete_multi_private_ids(["priv1", "priv2"], self.timestamp))
         row = {"impi": [Deletion(self.timestamp)]}
-        self.cass_client.batch_mutate.assert_called_once_with({"priv1": row, "priv2": row}, consistency=ConsistencyLevel.QUORUM)
+        self.cass_client.batch_mutate.assert_called_once_with({"priv1": row, "priv2": row})
         batch_mutate.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -255,6 +251,6 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
         res = Result(self.cache.delete_multi_public_ids(["pub1", "pub2"], self.timestamp))
         row = {"impu": [Deletion(self.timestamp)]}
-        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row}, consistency=ConsistencyLevel.QUORUM)
+        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row})
         batch_mutate.callback(None)
         self.assertEquals(res.value(), None)

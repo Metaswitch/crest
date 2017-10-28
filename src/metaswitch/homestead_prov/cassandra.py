@@ -157,8 +157,7 @@ class CassandraModel(object):
                                        column_family=self.cass_table,
                                        mapping=mapping,
                                        ttl=ttl,
-                                       timestamp=timestamp,
-                                       consistency=ConsistencyLevel.QUORUM)
+                                       timestamp=timestamp)
 
     @classmethod
     @defer.inlineCallbacks
@@ -168,16 +167,14 @@ class CassandraModel(object):
         row = map(lambda x: Column(x, mapping[x], timestamp, ttl), mapping)
         row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
         mutmap = {key: {cls.cass_table: row} for key in keys}
-        yield cls.client.batch_mutate(mutmap,
-                                      consistency=ConsistencyLevel.QUORUM)
+        yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_row(self, timestamp=None):
         """Delete this entire row"""
         yield self.client.remove(key=self.row_key,
                                  column_family=self.cass_table,
-                                 timestamp=timestamp,
-                                 consistency=ConsistencyLevel.QUORUM)
+                                 timestamp=timestamp)
 
     @classmethod
     @defer.inlineCallbacks
@@ -186,8 +183,7 @@ class CassandraModel(object):
         mutmap = {}
         row = [Deletion(timestamp)]
         mutmap = {key: {cls.cass_table: row} for key in keys}
-        yield cls.client.batch_mutate(mutmap,
-                                      consistency=ConsistencyLevel.QUORUM)
+        yield cls.client.batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_column(self, column_name, timestamp=None):
@@ -195,8 +191,7 @@ class CassandraModel(object):
         yield self.client.remove(key=self.row_key,
                                  column_family=self.cass_table,
                                  column=column_name,
-                                 timestamp=timestamp,
-                                 consistency=ConsistencyLevel.QUORUM)
+                                 timestamp=timestamp)
 
     @classmethod
     @defer.inlineCallbacks
