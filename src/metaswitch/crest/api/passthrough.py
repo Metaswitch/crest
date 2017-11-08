@@ -73,37 +73,22 @@ class PassthroughHandler(BaseHandler):
 
     # After growing a cluster, Cassandra does not pro-actively populate the
     # new nodes with their data (the nodes are expected to use `nodetool
-    # repair` if they need to get their data).  Combining this with
-    # the fact that we generally use consistency ONE when reading data, the
-    # behaviour on new nodes is to return NotFoundException or empty result
-    # sets to queries, even though the other nodes have a copy of the data.
+    # repair` if they need to get their data).
     #
-    # To resolve this issue, these two functions can be used as drop-in
-    # replacements for `CassandraClient#get` and `CassandraClient#get_slice`
-    # and will attempt a QUORUM read in the event that a ONE read returns
-    # no data.  If the QUORUM read fails due to unreachable nodes, the
-    # original result will be returned (i.e. an empty set or NotFound).
     @defer.inlineCallbacks
     def ha_get(self, *args, **kwargs):
+        kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
         try:
             result = yield self.cass.get(*args, **kwargs)
             defer.returnValue(result)
-        except NotFoundException as e:
-            kwargs['consistency'] = ConsistencyLevel.QUORUM
-            try:
-                result = yield self.cass.get(*args, **kwargs)
-                defer.returnValue(result)
-            except (NotFoundException, UnavailableException):
-                raise e
+        except (NotFoundException, UnavailableException) as e:
+            raise e
 
     @defer.inlineCallbacks
     def ha_get_slice(self, *args, **kwargs):
-        result = yield self.cass.get_slice(*args, **kwargs)
-        if len(result) == 0:
-            kwargs['consistency'] = ConsistencyLevel.QUORUM
-            try:
-                qresult = yield self.cass.get_slice(*args, **kwargs)
-                result = qresult
-            except UnavailableException:
-                pass
+        kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
+        try:
+            result = yield self.cass.get_slice(*args, **kwargs)
+        except UnavailableException:
+            pass
         defer.returnValue(result)
