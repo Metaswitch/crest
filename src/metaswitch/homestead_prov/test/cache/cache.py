@@ -73,7 +73,7 @@ class TestCache(unittest.TestCase):
                                     "digest_qop": "qop"}),
             ttl=self.ttl,
             timestamp=self.timestamp,
-            consistency=ConsistencyLevel.QUORUM)
+            consistency=ConsistencyLevel.LOCAL_QUORUM)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -92,7 +92,7 @@ class TestCache(unittest.TestCase):
                                              mapping=DictContaining({"public_id_kermit": ""}),
                                              ttl=self.ttl,
                                              timestamp=self.timestamp,
-                                             consistency=ConsistencyLevel.QUORUM)
+                                             consistency=ConsistencyLevel.LOCAL_QUORUM)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -103,6 +103,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="priv",
                                                  column_family="impi",
+                                                 consistency=ConsistencyLevel.LOCAL_QUORUM,
                                                  names=None)
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_sip:foo@bar.com", ""),
@@ -117,6 +118,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="priv",
                                                  column_family="impi",
+                                                 consistency=ConsistencyLevel.LOCAL_QUORUM,
                                                  names=None)
         get_slice.errback(NotFoundException())
         self.assertEquals(res.value(), [])
@@ -134,7 +136,7 @@ class TestCache(unittest.TestCase):
                                         mapping=DictContaining({"ims_subscription_xml": "xml", "primary_ccf": "ccf"}),
                                         ttl=self.ttl,
                                         timestamp=self.timestamp,
-                                        consistency=ConsistencyLevel.QUORUM)
+                                        consistency=ConsistencyLevel.LOCAL_QUORUM)
         batch_insert.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -147,7 +149,7 @@ class TestCache(unittest.TestCase):
                                                            timestamp=self.timestamp))
         row = {"impu": [Column("ims_subscription_xml", "xml", self.timestamp, self.ttl),
                         Column("_exists", "", self.timestamp, self.ttl)]}
-        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row}, consistency=ConsistencyLevel.QUORUM)
+        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row}, consistency=ConsistencyLevel.LOCAL_QUORUM)
         batch_mutate.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -160,6 +162,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="pub",
                                                  column_family="impu",
+                                                 consistency=ConsistencyLevel.LOCAL_QUORUM,
                                                  names=ListContaining(["ims_subscription_xml"]))
         get_slice.callback([MockColumn("ims_subscription_xml", "xml"),
                             MockColumn("_exists", "")])
@@ -175,6 +178,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                                  key="priv",
                                                  column_family="impi",
+                                                 consistency=ConsistencyLevel.LOCAL_QUORUM,
                                                  names=ListContaining(["digest_ha1"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("_exists", "")])
@@ -191,6 +195,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
                                    column_family="impi",
+                                   consistency=ConsistencyLevel.LOCAL_QUORUM,
                                    names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_kermit", None),
@@ -208,6 +213,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
                                    column_family="impi",
+                                   consistency=ConsistencyLevel.LOCAL_QUORUM,
                                    names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
@@ -222,6 +228,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
                                    column_family="impi",
+                                   consistency=ConsistencyLevel.LOCAL_QUORUM,
                                    names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
@@ -235,6 +242,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.get_slice.assert_called_once_with(
                                    key="priv",
                                    column_family="impi",
+                                   consistency=ConsistencyLevel.LOCAL_QUORUM,
                                    names=ListContaining(["digest_ha1", "public_id_miss_piggy"]))
         get_slice.callback([MockColumn("digest_ha1", "digest"),
                             MockColumn("public_id_miss_piggy", None),
@@ -246,7 +254,7 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
         res = Result(self.cache.delete_multi_private_ids(["priv1", "priv2"], self.timestamp))
         row = {"impi": [Deletion(self.timestamp)]}
-        self.cass_client.batch_mutate.assert_called_once_with({"priv1": row, "priv2": row}, consistency=ConsistencyLevel.QUORUM)
+        self.cass_client.batch_mutate.assert_called_once_with({"priv1": row, "priv2": row}, consistency=ConsistencyLevel.LOCAL_QUORUM)
         batch_mutate.callback(None)
         self.assertEquals(res.value(), None)
 
@@ -255,6 +263,6 @@ class TestCache(unittest.TestCase):
         self.cass_client.batch_mutate.return_value = batch_mutate = defer.Deferred()
         res = Result(self.cache.delete_multi_public_ids(["pub1", "pub2"], self.timestamp))
         row = {"impu": [Deletion(self.timestamp)]}
-        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row}, consistency=ConsistencyLevel.QUORUM)
+        self.cass_client.batch_mutate.assert_called_once_with({"pub1": row, "pub2": row}, consistency=ConsistencyLevel.LOCAL_QUORUM)
         batch_mutate.callback(None)
         self.assertEquals(res.value(), None)

@@ -158,7 +158,7 @@ class CassandraModel(object):
                                        mapping=mapping,
                                        ttl=ttl,
                                        timestamp=timestamp,
-                                       consistency=ConsistencyLevel.QUORUM)
+                                       consistency=ConsistencyLevel.LOCAL_QUORUM)
 
     @classmethod
     @defer.inlineCallbacks
@@ -169,7 +169,7 @@ class CassandraModel(object):
         row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
         mutmap = {key: {cls.cass_table: row} for key in keys}
         yield cls.client.batch_mutate(mutmap,
-                                      consistency=ConsistencyLevel.QUORUM)
+                                      consistency=ConsistencyLevel.LOCAL_QUORUM)
 
     @defer.inlineCallbacks
     def delete_row(self, timestamp=None):
@@ -177,7 +177,7 @@ class CassandraModel(object):
         yield self.client.remove(key=self.row_key,
                                  column_family=self.cass_table,
                                  timestamp=timestamp,
-                                 consistency=ConsistencyLevel.QUORUM)
+                                 consistency=ConsistencyLevel.LOCAL_QUORUM)
 
     @classmethod
     @defer.inlineCallbacks
@@ -187,7 +187,7 @@ class CassandraModel(object):
         row = [Deletion(timestamp)]
         mutmap = {key: {cls.cass_table: row} for key in keys}
         yield cls.client.batch_mutate(mutmap,
-                                      consistency=ConsistencyLevel.QUORUM)
+                                      consistency=ConsistencyLevel.LOCAL_QUORUM)
 
     @defer.inlineCallbacks
     def delete_column(self, column_name, timestamp=None):
@@ -196,7 +196,7 @@ class CassandraModel(object):
                                  column_family=self.cass_table,
                                  column=column_name,
                                  timestamp=timestamp,
-                                 consistency=ConsistencyLevel.QUORUM)
+                                 consistency=ConsistencyLevel.LOCAL_QUORUM)
 
     @classmethod
     @defer.inlineCallbacks
@@ -217,37 +217,21 @@ class CassandraModel(object):
 
     # After growing a cluster, Cassandra does not pro-actively populate the
     # new nodes with their data (the nodes are expected to use `nodetool
-    # repair` if they need to get their data).  Combining this with
-    # the fact that we generally use consistency ONE when reading data, the
-    # behaviour on new nodes is to return NotFoundException or empty result
-    # sets to queries, even though the other nodes have a copy of the data.
-    #
-    # To resolve this issue, these two functions can be used as drop-in
-    # replacements for `CassandraClient#get` and `CassandraClient#get_slice`
-    # and will attempt a QUORUM read in the event that a ONE read returns
-    # no data.  If the QUORUM read fails due to unreachable nodes, the
-    # original result will be returned (i.e. an empty set or NotFound).
+    # repair` if they need to get their data).
     @defer.inlineCallbacks
     def ha_get(self, *args, **kwargs):
+        kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
         try:
             result = yield self.client.get(*args, **kwargs)
             defer.returnValue(result)
-        except NotFoundException as e:
-            kwargs['consistency'] = ConsistencyLevel.QUORUM
-            try:
-                result = yield self.client.get(*args, **kwargs)
-                defer.returnValue(result)
-            except (NotFoundException, UnavailableException):
-                raise e
+        except (NotFoundException, UnavailableException) as e:
+            raise e
 
     @defer.inlineCallbacks
     def ha_get_slice(self, *args, **kwargs):
-        result = yield self.client.get_slice(*args, **kwargs)
-        if len(result) == 0:
-            kwargs['consistency'] = ConsistencyLevel.QUORUM
-            try:
-                qresult = yield self.client.get_slice(*args, **kwargs)
-                result = qresult
-            except UnavailableException:
-                pass
+        kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
+        try:
+            result = yield self.client.get_slice(*args, **kwargs)
+        except UnavailableException:
+            pass
         defer.returnValue(result)
