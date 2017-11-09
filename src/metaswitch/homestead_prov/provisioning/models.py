@@ -13,7 +13,7 @@ import uuid
 import logging
 
 from twisted.internet import defer
-from telephus.cassandra.ttypes import NotFoundException
+from telephus.cassandra.ttypes import NotFoundException, UnavailableException
 from telephus.client import ConsistencyLevel
 from metaswitch.crest.api.exceptions import IRSNoSIPURI
 
@@ -389,12 +389,21 @@ class PublicID(ProvisioningModel):
         # Query an appropiate section of the Cassandra ring. Because we're
         # limiting the query by token, we can accept an unrestricted number of
         # results (10M is our max recommended size).
-        values = yield self.client.get_range_slices(column_family=self.cass_table,
-                                                    start=start,
-                                                    finish=finish,
-                                                    use_tokens=True,
-                                                    count=10000000,
-                                                    consistency=ConsistencyLevel.LOCAL_QUORUM)
+        try:
+            values = yield self.client.get_range_slices(column_family=self.cass_table,
+                                                        start=start,
+                                                        finish=finish,
+                                                        use_tokens=True,
+                                                        count=10000000,
+                                                        consistency=ConsistencyLevel.LOCAL_QUORUM)
+        except UnavailableException:
+            values = yield self.client.get_range_slices(column_family=self.cass_table,
+                                                        start=start,
+                                                        finish=finish,
+                                                        use_tokens=True,
+                                                        count=10000000,
+                                                        consistency=ConsistencyLevel.ONE)
+
         keys = [x.key for x in values if len(x.columns) > 0]
         public_ids = [PublicID(x) for x in keys]
         _log.info("Queried tokens {} to {} - received {} results".format(start, finish, len(public_ids)))
