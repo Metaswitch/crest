@@ -230,8 +230,5 @@ class CassandraModel(object):
     @defer.inlineCallbacks
     def ha_get_slice(self, *args, **kwargs):
         kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
-        try:
-            result = yield self.client.get_slice(*args, **kwargs)
-        except UnavailableException:
-            pass
+        result = yield self.client.get_slice(*args, **kwargs)
         defer.returnValue(result)
