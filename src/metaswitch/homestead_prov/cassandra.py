@@ -152,13 +152,12 @@ class CassandraModel(object):
         # was passed in.
         mapping = dict(mapping)
         mapping[self.EXISTS_COLUMN] = ""
+        yield self.ha_batch_insert(key=self.row_key,
+                                   column_family=self.cass_table,
+                                   mapping=mapping,
+                                   ttl=ttl,
+                                   timestamp=timestamp)
 
-        yield self.client.batch_insert(key=self.row_key,
-                                       column_family=self.cass_table,
-                                       mapping=mapping,
-                                       ttl=ttl,
-                                       timestamp=timestamp,
-                                       consistency=ConsistencyLevel.LOCAL_QUORUM)
 
     @classmethod
     @defer.inlineCallbacks
@@ -168,16 +167,14 @@ class CassandraModel(object):
         row = map(lambda x: Column(x, mapping[x], timestamp, ttl), mapping)
         row.append(Column(cls.EXISTS_COLUMN, "", timestamp, ttl))
         mutmap = {key: {cls.cass_table: row} for key in keys}
-        yield cls.client.batch_mutate(mutmap,
-                                      consistency=ConsistencyLevel.LOCAL_QUORUM)
+        yield cls.ha_batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_row(self, timestamp=None):
         """Delete this entire row"""
-        yield self.client.remove(key=self.row_key,
-                                 column_family=self.cass_table,
-                                 timestamp=timestamp,
-                                 consistency=ConsistencyLevel.LOCAL_QUORUM)
+        yield self.ha_remove(key=self.row_key,
+                             column_family=self.cass_table,
+                             timestamp=timestamp)
 
     @classmethod
     @defer.inlineCallbacks
@@ -186,17 +183,15 @@ class CassandraModel(object):
         mutmap = {}
         row = [Deletion(timestamp)]
         mutmap = {key: {cls.cass_table: row} for key in keys}
-        yield cls.client.batch_mutate(mutmap,
-                                      consistency=ConsistencyLevel.LOCAL_QUORUM)
+        yield cls.ha_batch_mutate(mutmap)
 
     @defer.inlineCallbacks
     def delete_column(self, column_name, timestamp=None):
         """Delete a single column from the row"""
-        yield self.client.remove(key=self.row_key,
-                                 column_family=self.cass_table,
-                                 column=column_name,
-                                 timestamp=timestamp,
-                                 consistency=ConsistencyLevel.LOCAL_QUORUM)
+        yield self.ha_remove(key=self.row_key,
+                             column_family=self.cass_table,
+                             column=column_name,
+                             timestamp=timestamp)
 
     @classmethod
     @defer.inlineCallbacks
@@ -220,18 +215,65 @@ class CassandraModel(object):
     # repair` if they need to get their data).
     @defer.inlineCallbacks
     def ha_get(self, *args, **kwargs):
-        kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
         try:
+            kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
             result = yield self.client.get(*args, **kwargs)
             defer.returnValue(result)
-        except (NotFoundException, UnavailableException) as e:
-            raise e
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                result = yield self.client.get(*args, **kwargs)
+                defer.returnValue(result)
+            except (NotFoundException, UnavailableException) as e:
+                raise e
 
     @defer.inlineCallbacks
     def ha_get_slice(self, *args, **kwargs):
-        kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
         try:
+            kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
             result = yield self.client.get_slice(*args, **kwargs)
-        except UnavailableException:
-            pass
-        defer.returnValue(result)
+            defer.returnValue(result)
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                result = yield self.client.get_slice(*args, **kwargs)
+                defer.returnValue(result)
+            except (NotFoundException, UnavailableException) as e:
+                raise e
+
+    @defer.inlineCallbacks
+    def ha_batch_insert(self, *args, **kwargs):
+        try:
+            kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
+            yield self.client.batch_insert(*args, **kwargs)
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                yield self.client.batch_insert(*args, **kwargs)
+            except (NotFoundException, UnavailableException) as e:
+                raise e
+
+    @classmethod
+    @defer.inlineCallbacks
+    def ha_batch_mutate(cls, *args, **kwargs):
+        try:
+            kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
+            yield cls.client.batch_mutate(*args, **kwargs)
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                yield cls.client.batch_mutate(*args, **kwargs)
+            except (NotFoundException, UnavailableException) as e:
+                raise e
+
+    @defer.inlineCallbacks
+    def ha_remove(self, *args, **kwargs):
+        try:
+            kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
+            yield self.client.remove(*args, **kwargs)
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                yield self.client.remove(*args, **kwargs)
+            except (NotFoundException, UnavailableException) as e:
+                raise e

@@ -81,14 +81,24 @@ class PassthroughHandler(BaseHandler):
         try:
             result = yield self.cass.get(*args, **kwargs)
             defer.returnValue(result)
-        except (NotFoundException, UnavailableException) as e:
-            raise e
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                result = yield self.cass.get(*args, **kwargs)
+                defer.returnValue(result)
+            except (NotFoundException, UnavailableException) as e:
+                raise e
 
     @defer.inlineCallbacks
     def ha_get_slice(self, *args, **kwargs):
         kwargs['consistency'] = ConsistencyLevel.LOCAL_QUORUM
         try:
             result = yield self.cass.get_slice(*args, **kwargs)
-        except UnavailableException:
-            pass
-        defer.returnValue(result)
+            defer.returnValue(result)
+        except UnavailableException as e:
+            try:
+                kwargs['consistency'] = ConsistencyLevel.ONE
+                result = yield self.cass.get_slice(*args, **kwargs)
+                defer.returnValue(result)
+            except (NotFoundException, UnavailableException) as e:
+                raise e
