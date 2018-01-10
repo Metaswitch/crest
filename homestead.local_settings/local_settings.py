@@ -7,13 +7,15 @@
 # Otherwise no rights are granted except for those provided to you by
 # Metaswitch Networks in a separate written agreement.
 
+import tempfile
+
 PROCESS_NAME="homestead-prov"
 LOGS_DIR = "/var/log/homestead-prov"
 PID_FILE = "/var/run/homestead-prov.pid"
 LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead_prov"]
 HTTP_PORT = 8889
-HTTP_UNIX = "/tmp/.homestead-prov-sock"
+HTTP_UNIX = tempfile.mkstemp()[1]
 ZMQ_PORT = 6667
 
 # Debian install will pick this up from /etc/clearwater/config

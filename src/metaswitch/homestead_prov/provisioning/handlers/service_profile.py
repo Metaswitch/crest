@@ -10,7 +10,7 @@
 from twisted.internet import defer
 from telephus.cassandra.ttypes import NotFoundException
 from metaswitch.crest.api.base import BaseHandler
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 
 from ..models import PublicID, ServiceProfile
 

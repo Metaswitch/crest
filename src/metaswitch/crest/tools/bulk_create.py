@@ -177,9 +177,11 @@ def write_homer_scripts(csv_filename):
 
         for public_id, private_id, realm, password in csv_iterator(csv_filename):
             # Add the simservs document for the user to the documents table on Homer
+            # This SQL command is as safe from injection risk as the CSV file is.
+            # Exclude from Bandit security check as there's no workaround when
+            # we need to write the command to bash script.
             xdm_cqlsh_file.write(
-                "INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id,
-                                                                               SIMSERVS))
+                "INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id, SIMSERVS)) # nosec
 
     # Make the created .sh files executable
     permissions = stat.S_IEXEC | stat.S_IREAD | stat.S_IWRITE

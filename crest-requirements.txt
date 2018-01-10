@@ -23,3 +23,4 @@ idna==2.5
 urllib3==1.22
 certifi==2017.7.27.1
 chardet==3.0.4
+defusedxml==0.5.0

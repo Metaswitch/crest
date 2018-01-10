@@ -7,7 +7,7 @@
 # Otherwise no rights are granted except for those provided to you by
 # Metaswitch Networks in a separate written agreement.
 
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 import StringIO
 import uuid
 import logging
