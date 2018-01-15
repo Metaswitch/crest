@@ -1,1 +1,1 @@
-crest_wheelhouse/* /usr/share/clearwater/crest/.wheelhouse/
+crest_wheelhouse/*.whl /usr/share/clearwater/crest/.wheelhouse/
