@@ -21,14 +21,13 @@ all: help
 FLAKE8_INCLUDE_DIR = src/
 BANDIT_EXCLUDE_LIST = .crest-wheelhouse,.homestead_prov-wheelhouse,.homer-wheelhouse,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
 COVERAGE_SRC_DIR = src
-TEST_SETUP_PY = setup_crest.py setup_homer.py setup_homestead_prov.py
+COVERAGE_SETUP_PY = setup_crest.py setup_homer.py setup_homestead_prov.py
 
 # TODO This repository doesn't have full code coverage - it should. Some files
 # are temporarily excluded from coverage to make it easier to detect future
 # regressions. We should fix up the coverage when we can
 COVERAGE_EXCL = "**/test/**,src/metaswitch/crest/api/DeferTimeout.py,src/metaswitch/crest/api/__init__.py,src/metaswitch/crest/api/base.py,src/metaswitch/crest/api/lastvaluecache.py,src/metaswitch/crest/api/passthrough.py,src/metaswitch/crest/api/statistics.py,src/metaswitch/crest/api/utils.py,src/metaswitch/crest/main.py,src/metaswitch/crest/settings.py,src/metaswitch/crest/tools/bulk_autocomplete.py,src/metaswitch/crest/tools/bulk_create.py,src/metaswitch/crest/tools/utils.py,src/metaswitch/homer/__init__.py,src/metaswitch/homer/routes.py,src/metaswitch/homestead_prov/__init__.py,src/metaswitch/homestead_prov/auth_vectors.py,src/metaswitch/homestead_prov/cache/cache.py,src/metaswitch/homestead_prov/cache/db.py,src/metaswitch/homestead_prov/cassandra.py,src/metaswitch/homestead_prov/provisioning/handlers/irs.py,src/metaswitch/homestead_prov/provisioning/handlers/private.py,src/metaswitch/homestead_prov/provisioning/handlers/public.py,src/metaswitch/homestead_prov/provisioning/handlers/service_profile.py,src/metaswitch/homestead_prov/provisioning/models.py,src/metaswitch/homestead_prov/resultcodes.py"
 
-TEST_REQUIREMENTS = common/requirements-test.txt
 CLEAN_SRC_DIR = src
 
 include build-infra/cw-deb.mk
@@ -43,23 +42,30 @@ help:
 # Crest
 
 # Add a target that builds the python-common wheel into the correct wheelhouse
-${ENV_DIR}/.crest_build_common_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-cleaned
+crest_wheelhouse/.crest_build_common_wheel: $(shell find common/metaswitch -type f -not -name "*.pyc") crest_wheelhouse/.clean-wheels
 	cd common && WHEELHOUSE=../crest_wheelhouse make build_common_wheel
 	touch $@
 
 # Add a target that builds the telephus wheel into the correct wheelhouse
-${ENV_DIR}/.crest_build_telephus_wheel: common/requirements.txt $(shell find common/metaswitch -type f -not -name "*.pyc") ${ENV_DIR}/.wheels-cleaned
+crest_wheelhouse/.crest_build_telephus_wheel: $(shell find common/metaswitch -type f -not -name "*.pyc") crest_wheelhouse/.clean-wheels
 	cd telephus && ${PYTHON} setup.py bdist_wheel -d ../crest_wheelhouse
 	touch $@
 
-# Add dependency to the install-wheels to ensure we also install the python-common and telephus wheels
-${ENV_DIR}/.crest-install-wheels: ${ENV_DIR}/.crest_build_common_wheel ${ENV_DIR}/.crest_build_telephus_wheel
+# Add dependency to the install-wheels and wheelhouse-complete to ensure we've built
+# python-common and telephus before we try to install them or consider the wheelhouse complete
+${ENV_DIR}/.crest-install-wheels: crest_wheelhouse/.crest_build_common_wheel
+crest_wheelhouse/.wheelhouse_complete: crest_wheelhouse/.crest_build_common_wheel
+
+${ENV_DIR}/.crest-install-wheels: crest_wheelhouse/.crest_build_telephus_wheel
+crest_wheelhouse/.wheelhouse_complete: crest_wheelhouse/.crest_build_telephus_wheel
 
 # Set up the variables for crest
 crest_SETUP = setup_crest.py
 crest_REQUIREMENTS = crest-requirements.txt common/requirements.txt
+crest_TEST_SETUP = setup_crest.py
+crest_TEST_REQUIREMENTS = common/requirements-test.txt
 crest_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-crest_WHEELS = crest
+crest_WHEELS = metaswitchcommon
 
 # Create targets using the common python_component macro
 $(eval $(call python_component,crest))
@@ -69,12 +75,15 @@ $(eval $(call python_component,crest))
 # Set up the variables for homestead-prov
 homestead_prov_SETUP = setup_homestead_prov.py
 homestead_prov_REQUIREMENTS = homestead_prov-requirements.txt
+homestead_prov_TEST_SETUP = setup_homestead_prov.py
+homestead_prov_TEST_REQUIREMENTS = common/requirements-test.txt
 homestead_prov_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc")
-homestead_prov_WHEELS = homestead_prov
+homestead_prov_WHEELS = metaswitchcommon
 homestead_prov_EXTRA_LINKS = crest_wheelhouse
 
 # Force homestead-prov to depend on crest
 ${ENV_DIR}/.homestead_prov-install-wheels: ${ENV_DIR}/.crest-install-wheels
+##${ENV_DIR}/.homestead_prov-install-wheels: ${ENV_DIR}/.crest-install-wheels
 
 # Create targets using the common python_component macro
 $(eval $(call python_component,homestead_prov))
@@ -84,19 +93,22 @@ $(eval $(call python_component,homestead_prov))
 # Set up the variables for homer
 homer_SETUP = setup_homer.py
 homer_REQUIREMENTS = homer-requirements.txt
+homer_TEST_SETUP = setup_homer.py
+homer_TEST_REQUIREMENTS = common/requirements-test.txt
 homer_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc")
-homer_WHEELS = homer
+homer_WHEELS = metaswitchcommon
 homer_EXTRA_LINKS = crest_wheelhouse
 
-# Force homestead-prov to depend on crest
+# Force homer to depend on crest
+##${ENV_DIR}/.homer-install-wheels: ${ENV_DIR}/.crest-install-wheels
 ${ENV_DIR}/.homer-install-wheels: ${ENV_DIR}/.crest-install-wheels
 
 # Create targets using the common python_component macro
 $(eval $(call python_component,homer))
 
 .PHONY: deb
-deb: env bulk-prov deb-only
+deb: wheelhouses bulk-prov deb-only
 
 .PHONY: clean
-clean: bulk-prov_clean
+clean: envclean pyclean bulk-prov_clean
 
