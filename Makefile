@@ -65,7 +65,7 @@ crest_REQUIREMENTS = crest-requirements.txt common/requirements.txt
 crest_TEST_SETUP = setup_crest.py
 crest_TEST_REQUIREMENTS = common/requirements-test.txt
 crest_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc") $(shell find common/metaswitch -type f -not -name "*.pyc")
-crest_WHEELS = metaswitchcommon
+crest_WHEELS = metaswitchcommon telephus
 
 # Create targets using the common python_component macro
 $(eval $(call python_component,crest))
@@ -78,7 +78,7 @@ homestead_prov_REQUIREMENTS = homestead_prov-requirements.txt
 homestead_prov_TEST_SETUP = setup_homestead_prov.py
 homestead_prov_TEST_REQUIREMENTS = common/requirements-test.txt
 homestead_prov_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc")
-homestead_prov_WHEELS = metaswitchcommon
+homestead_prov_WHEELS = crest
 homestead_prov_EXTRA_LINKS = crest_wheelhouse
 
 # Force homestead-prov to depend on crest
@@ -96,7 +96,7 @@ homer_REQUIREMENTS = homer-requirements.txt
 homer_TEST_SETUP = setup_homer.py
 homer_TEST_REQUIREMENTS = common/requirements-test.txt
 homer_SOURCES = $(shell find src/metaswitch -type f -not -name "*.pyc")
-homer_WHEELS = metaswitchcommon
+homer_WHEELS = crest
 homer_EXTRA_LINKS = crest_wheelhouse
 
 # Force homer to depend on crest
