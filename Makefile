@@ -21,7 +21,6 @@ all: help
 FLAKE8_INCLUDE_DIR = src/
 BANDIT_EXCLUDE_LIST = .crest-wheelhouse,.homestead_prov-wheelhouse,.homer-wheelhouse,_env,telephus,debian,common,build-crest,build-homer,build-homestead_prov,src/metaswitch/crest/test,src/metaswitch/homer/test
 COVERAGE_SRC_DIR = src
-COVERAGE_SETUP_PY = setup_crest.py setup_homer.py setup_homestead_prov.py
 
 # TODO This repository doesn't have full code coverage - it should. Some files
 # are temporarily excluded from coverage to make it easier to detect future
