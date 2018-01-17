@@ -19,7 +19,10 @@ _parsers = {}
 
 def _validate(xml, schema_path):
     parser = _get_parser(schema_path)
-    etree.fromstring(xml, parser)  # Will throw etree.XMLSyntaxError exception on failure
+    # Exclude following line from Bandit security analysis as Homer code
+    # appears in Project Clearwater only
+    # Will throw etree.XMLSyntaxError exception on failure
+    etree.fromstring(xml, parser)  # nosec
     return True
 
 
@@ -28,7 +31,9 @@ def _get_parser(schema_path):
         return _parsers[schema_path]
     else:
         with open(schema_path, 'r') as f:
-            parser = etree.XMLParser(schema=etree.XMLSchema(etree.parse(f)))
+            # Exclude following line from Bandit security analysis as Homer code
+            # appears in Project Clearwater only
+            parser = etree.XMLParser(schema=etree.XMLSchema(etree.parse(f))) # nosec
             return _parsers.setdefault(schema_path, parser)
 
 
