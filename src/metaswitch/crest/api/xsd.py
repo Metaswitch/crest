@@ -10,7 +10,9 @@
 
 import logging
 
-from lxml import etree
+# Exclude following package from Bandit security analysis as this Homer file
+# exists in Project Clearwater only
+from lxml import etree # nosec
 from cyclone.web import HTTPError
 
 _log = logging.getLogger("crest.api")
@@ -19,10 +21,7 @@ _parsers = {}
 
 def _validate(xml, schema_path):
     parser = _get_parser(schema_path)
-    # Exclude following line from Bandit security analysis as Homer code
-    # appears in Project Clearwater only
-    # Will throw etree.XMLSyntaxError exception on failure
-    etree.fromstring(xml, parser)  # nosec
+    etree.fromstring(xml, parser)  # Will throw etree.XMLSyntaxError exception on failure
     return True
 
 
@@ -31,9 +30,7 @@ def _get_parser(schema_path):
         return _parsers[schema_path]
     else:
         with open(schema_path, 'r') as f:
-            # Exclude following line from Bandit security analysis as Homer code
-            # appears in Project Clearwater only
-            parser = etree.XMLParser(schema=etree.XMLSchema(etree.parse(f))) # nosec
+            parser = etree.XMLParser(schema=etree.XMLSchema(etree.parse(f)))
             return _parsers.setdefault(schema_path, parser)
 
 
