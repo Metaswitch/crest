@@ -7,7 +7,7 @@
 # Otherwise no rights are granted except for those provided to you by
 # Metaswitch Networks in a separate written agreement.
 
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET # nosec
 import random, datetime, StringIO
 
 def create_imssubscription_xml(private_id, publicidentity_xml, ifc_xml):

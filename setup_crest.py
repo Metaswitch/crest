@@ -55,7 +55,9 @@ setup(
         "telephus",
         "thrift",
         "Twisted",
-        "zope.interface"],
+        "zope.interface",
+        "defusedxml"
+        ],
      tests_require=[
          "funcsigs",
          "Mock",

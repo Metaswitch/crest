@@ -13,7 +13,8 @@ PID_FILE = "/var/run/homestead-prov.pid"
 LOG_FILE_PREFIX = "homestead-prov"
 INSTALLED_HANDLERS = ["homestead_prov"]
 HTTP_PORT = 8889
-HTTP_UNIX = "/tmp/.homestead-prov-sock"
+# Leave out the filename from Bandit check as it's UNIX domain socket prefix
+HTTP_UNIX = "/tmp/.homestead-prov-sock" # nosec
 ZMQ_PORT = 6667
 
 # Debian install will pick this up from /etc/clearwater/config

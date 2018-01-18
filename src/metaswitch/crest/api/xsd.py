@@ -10,7 +10,9 @@
 
 import logging
 
-from lxml import etree
+# Exclude following package from Bandit security analysis as this Homer file
+# exists in Project Clearwater only
+from lxml import etree # nosec
 from cyclone.web import HTTPError
 
 _log = logging.getLogger("crest.api")

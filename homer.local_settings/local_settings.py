@@ -13,7 +13,8 @@ PID_FILE = "/var/run/homer.pid"
 LOG_FILE_PREFIX = "homer"
 INSTALLED_HANDLERS = ["homer"]
 HTTP_PORT = 7888
-HTTP_UNIX = "/tmp/.homer-sock"
+# Leave out the filename from Bandit check as it's UNIX domain socket prefix
+HTTP_UNIX = "/tmp/.homer-sock" # nosec
 ZMQ_PORT = 6665
 
 # Debian install will pick this up from /etc/clearwater/config

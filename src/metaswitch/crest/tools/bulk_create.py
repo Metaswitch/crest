@@ -177,9 +177,10 @@ def write_homer_scripts(csv_filename):
 
         for public_id, private_id, realm, password in csv_iterator(csv_filename):
             # Add the simservs document for the user to the documents table on Homer
+            # Exclude the following line from Bandit security analysis it's 
+            # writing to script rather than executing SQL command here.
             xdm_cqlsh_file.write(
-                "INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id,
-                                                                               SIMSERVS))
+                "INSERT INTO simservs (user, value) VALUES ('%s', '%s');\n" % (public_id, SIMSERVS)) # nosec
 
     # Make the created .sh files executable
     permissions = stat.S_IEXEC | stat.S_IREAD | stat.S_IWRITE
