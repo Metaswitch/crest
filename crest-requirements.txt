@@ -18,7 +18,7 @@ six==1.10.0
 thrift==0.9.3
 Twisted==17.1.0
 zope.interface==4.4.1
-cryptography==1.9
+cryptography==2.3
 idna==2.5
 urllib3==1.22
 certifi==2017.7.27.1
